@@ -10,7 +10,7 @@ export const calculateTrade = (
   // Determine direction
   const direction: Direction = priceB > priceA ? "BUY" : "SELL";
 
-  // Calculate pips
+  // Calculate pips (always absolute)
   const priceDiff = Math.abs(priceB - priceA);
   const pips = parseFloat((priceDiff / pipSize!).toFixed(2));
 
@@ -18,12 +18,19 @@ export const calculateTrade = (
   const pipValuePerPip = (pipSize! / priceA) * (lot * contractSize!);
   const pipValuePerPipRounded = parseFloat(pipValuePerPip.toFixed(2));
 
-  // Calculate profit (signed based on direction)
-  let profitAmount = pips * pipValuePerPip;
-  if (direction === "SELL") {
-    profitAmount = priceA > priceB ? profitAmount : -profitAmount;
+  // Calculate profit with correct sign
+  // For BUY: profit if exit > entry, loss if exit < entry
+  // For SELL: profit if entry > exit, loss if entry < exit
+  let profitAmount: number;
+  
+  if (direction === "BUY") {
+    // BUY: profit when price goes up
+    const priceDiffSigned = priceB - priceA;
+    profitAmount = (priceDiffSigned / pipSize!) * pipValuePerPip;
   } else {
-    profitAmount = priceB > priceA ? profitAmount : -profitAmount;
+    // SELL: profit when price goes down
+    const priceDiffSigned = priceA - priceB;
+    profitAmount = (priceDiffSigned / pipSize!) * pipValuePerPip;
   }
 
   return {
