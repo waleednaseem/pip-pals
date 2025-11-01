@@ -14,6 +14,7 @@ import PairSelector from "@/components/PairSelector";
 import CalculatorForm from "@/components/CalculatorForm";
 import TradeHistory from "@/components/TradeHistory";
 import TotalsSummary from "@/components/TotalsSummary";
+import TimeConversion from "@/components/TimeConversion";
 import ActionButtons from "@/components/ActionButtons";
 import { useToast } from "@/hooks/use-toast";
 
@@ -144,8 +145,9 @@ const Index = () => {
             <TradeHistory trades={trades} />
           </div>
 
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <TotalsSummary totals={totals} />
+            <TimeConversion />
           </div>
         </div>
       </div>

@@ -1,5 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
-import { TradeEntry, Direction, CalculatorInputs, TradingPair } from "@/types/calculator";
+import {
+  TradeEntry,
+  Direction,
+  CalculatorInputs,
+  TradingPair,
+} from "@/types/calculator";
+import { buildDurationDetails } from "@/utils/time";
 
 export const calculateTrade = (
   inputs: CalculatorInputs,
@@ -35,6 +41,10 @@ export const calculateTrade = (
     profitAmount = (priceDiffSigned / pipSize!) * pipValuePerPip;
   }
 
+  const durationDetails = inputs.duration
+    ? buildDurationDetails(inputs.duration.value, inputs.duration.unit)
+    : undefined;
+
   return {
     id: uuidv4(),
     timestamp: new Date().toISOString(),
@@ -54,6 +64,11 @@ export const calculateTrade = (
       amount: parseFloat(profitAmount.toFixed(2)),
       currency: accountCurrency,
     },
+    duration: durationDetails
+      ? {
+          ...durationDetails,
+        }
+      : undefined,
   };
 };
 

@@ -4,6 +4,20 @@ export type Direction = "BUY" | "SELL";
 
 export type Currency = "USD" | "EUR" | "GBP";
 
+export type TimeUnit = "Minutes" | "Hours" | "Days";
+
+export interface DurationInput {
+  value: number;
+  unit: TimeUnit;
+}
+
+export interface TradeDuration extends DurationInput {
+  totalMinutes: number;
+  hours: number;
+  minutes: number;
+  formatted: string;
+}
+
 export interface PairConfig {
   pipSize: number;
   contractSize: number;
@@ -28,6 +42,7 @@ export interface TradeEntry {
     amount: number;
     currency: string;
   };
+  duration?: TradeDuration;
 }
 
 export interface Totals {
@@ -47,4 +62,5 @@ export interface CalculatorInputs {
   accountCurrency: Currency;
   contractSize?: number;
   pipSize?: number;
+  duration?: DurationInput;
 }

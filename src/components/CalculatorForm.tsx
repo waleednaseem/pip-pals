@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { TradingPair, Currency, CalculatorInputs } from "@/types/calculator";
+import {
+  TradingPair,
+  Currency,
+  CalculatorInputs,
+  TimeUnit,
+} from "@/types/calculator";
 import { getPairConfig } from "@/utils/pairConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +32,8 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
   const [priceB, setPriceB] = useState("");
   const [lot, setLot] = useState("1");
   const [accountCurrency, setAccountCurrency] = useState<Currency>("USD");
+  const [timeValue, setTimeValue] = useState("");
+  const [timeUnit, setTimeUnit] = useState<TimeUnit>("Minutes");
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,6 +45,7 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
     const lotNum = parseFloat(lot);
     const contractSizeNum = config.contractSize;
     const pipSizeNum = config.pipSize;
+    const durationValueNum = parseFloat(timeValue);
 
     if (isNaN(priceANum) || isNaN(priceBNum)) {
       setError("Please enter valid numbers for Entry and Exit prices");
@@ -46,6 +54,11 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
 
     if (isNaN(lotNum) || lotNum <= 0) {
       setError("Lot must be greater than 0");
+      return;
+    }
+
+    if (isNaN(durationValueNum) || durationValueNum <= 0) {
+      setError("Please enter a valid time duration");
       return;
     }
 
@@ -63,11 +76,16 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
       accountCurrency,
       contractSize: contractSizeNum,
       pipSize: pipSizeNum,
+      duration: {
+        value: durationValueNum,
+        unit: timeUnit,
+      },
     });
 
     // Reset price fields after successful calculation
     setPriceA("");
     setPriceB("");
+    setTimeValue("");
   };
 
   return (
@@ -145,6 +163,38 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
                   <SelectItem value="USD">USD</SelectItem>
                   <SelectItem value="EUR">EUR</SelectItem>
                   <SelectItem value="GBP">GBP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="timeValue">Trade Duration</Label>
+              <Input
+                id="timeValue"
+                type="number"
+                inputMode="decimal"
+                step="any"
+                min="0"
+                placeholder="e.g., 90"
+                value={timeValue}
+                onChange={(e) => setTimeValue(e.target.value)}
+                required
+                className="font-mono-num"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="timeUnit">Unit</Label>
+              <Select value={timeUnit} onValueChange={(v) => setTimeUnit(v as TimeUnit)}>
+                <SelectTrigger id="timeUnit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Minutes">Minutes</SelectItem>
+                  <SelectItem value="Hours">Hours</SelectItem>
+                  <SelectItem value="Days">Days</SelectItem>
                 </SelectContent>
               </Select>
             </div>

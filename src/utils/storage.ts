@@ -47,6 +47,9 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     "Currency",
     "Profit",
     "Currency",
+    "Duration Value",
+    "Duration Unit",
+    "Duration (Hours & Minutes)",
   ];
 
   const rows = trades.map((trade) => [
@@ -61,6 +64,9 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     trade.pipValuePerPip.currency,
     trade.profit.amount.toFixed(2),
     trade.profit.currency,
+    trade.duration ? trade.duration.value.toString() : "",
+    trade.duration ? trade.duration.unit : "",
+    trade.duration ? trade.duration.formatted : "",
   ]);
 
   // Calculate totals
@@ -69,12 +75,46 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
   const totalProfit = trades.reduce((sum, trade) => sum + trade.profit.amount, 0);
   const currency = trades[0]?.profit.currency || "USD";
 
+  const totalsRowSigned = [
+    "TOTALS",
+    "",
+    "",
+    "",
+    "",
+    "",
+    `${totalPipsSigned.toFixed(2)} (Signed)`,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ];
+
+  const totalsRowAbsolute = [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    `${totalPipsAbsolute.toFixed(2)} (Absolute)`,
+    "",
+    "",
+    totalProfit.toFixed(2),
+    currency,
+    "",
+    "",
+    "",
+  ];
+
   const csvContent = [
     headers.join(","),
     ...rows.map((row) => row.join(",")),
     "",
-    `TOTALS,,,,,${totalPipsSigned.toFixed(2)} (Signed),,,,`,
-    `,,,,,,${totalPipsAbsolute.toFixed(2)} (Absolute),,,${totalProfit.toFixed(2)},${currency}`,
+    totalsRowSigned.join(","),
+    totalsRowAbsolute.join(","),
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

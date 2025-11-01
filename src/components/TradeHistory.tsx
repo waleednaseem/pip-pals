@@ -1,7 +1,7 @@
 import { TradeEntry } from "@/types/calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, TrendingUp, TrendingDown } from "lucide-react";
+import { History, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import { formatNumber, formatCurrency } from "@/utils/calculator";
 
 interface TradeHistoryProps {
@@ -102,6 +102,20 @@ const TradeHistory = ({ trades }: TradeHistoryProps) => {
                       {formatNumber(trade.lot, 2)}
                     </div>
                   </div>
+
+                  {trade.duration && (
+                    <div className="col-span-2 md:col-span-4">
+                      <div className="text-muted-foreground text-xs flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" /> Duration
+                      </div>
+                      <div className="font-mono-num font-semibold">
+                        {trade.duration.formatted}
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({trade.duration.value} {trade.duration.unit})
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
