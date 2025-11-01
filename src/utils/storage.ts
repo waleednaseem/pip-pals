@@ -59,9 +59,18 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     `${trade.profit.amount.toFixed(2)} ${trade.profit.currency}`,
   ]);
 
+  // Calculate totals
+  const totalPipsSigned = trades.reduce((sum, trade) => sum + trade.pips, 0);
+  const totalPipsAbsolute = trades.reduce((sum, trade) => sum + Math.abs(trade.pips), 0);
+  const totalProfit = trades.reduce((sum, trade) => sum + trade.profit.amount, 0);
+  const currency = trades[0]?.profit.currency || "USD";
+
   const csvContent = [
     headers.join(","),
     ...rows.map((row) => row.join(",")),
+    "",
+    `TOTALS,,,,,,"${totalPipsSigned.toFixed(2)} (Signed)",,`,
+    `,,,,,,"${totalPipsAbsolute.toFixed(2)} (Absolute)",,"${totalProfit.toFixed(2)} ${currency}"`,
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
