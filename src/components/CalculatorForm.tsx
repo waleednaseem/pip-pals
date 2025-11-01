@@ -27,8 +27,6 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
   const [priceB, setPriceB] = useState("");
   const [lot, setLot] = useState("1");
   const [accountCurrency, setAccountCurrency] = useState<Currency>("USD");
-  const [contractSize, setContractSize] = useState(config.contractSize.toString());
-  const [pipSize, setPipSize] = useState(config.pipSize.toString());
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,8 +36,8 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
     const priceANum = parseFloat(priceA);
     const priceBNum = parseFloat(priceB);
     const lotNum = parseFloat(lot);
-    const contractSizeNum = parseFloat(contractSize);
-    const pipSizeNum = parseFloat(pipSize);
+    const contractSizeNum = config.contractSize;
+    const pipSizeNum = config.pipSize;
 
     if (isNaN(priceANum) || isNaN(priceBNum)) {
       setError("Please enter valid numbers for Entry and Exit prices");
@@ -149,31 +147,6 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
                   <SelectItem value="GBP">GBP</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contractSize">Contract Size</Label>
-              <Input
-                id="contractSize"
-                type="number"
-                value={contractSize}
-                onChange={(e) => setContractSize(e.target.value)}
-                className="font-mono-num"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pipSize">Pip Size</Label>
-              <Input
-                id="pipSize"
-                type="number"
-                step="any"
-                value={pipSize}
-                onChange={(e) => setPipSize(e.target.value)}
-                className="font-mono-num"
-              />
             </div>
           </div>
 
