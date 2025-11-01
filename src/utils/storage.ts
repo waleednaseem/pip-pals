@@ -44,7 +44,9 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     "Lot",
     "Pips",
     "Pip Value",
+    "Currency",
     "Profit",
+    "Currency",
   ];
 
   const rows = trades.map((trade) => [
@@ -55,8 +57,10 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     trade.direction,
     trade.lot.toFixed(2),
     trade.pips.toFixed(2),
-    `${trade.pipValuePerPip.amount.toFixed(2)} ${trade.pipValuePerPip.currency}`,
-    `${trade.profit.amount.toFixed(2)} ${trade.profit.currency}`,
+    trade.pipValuePerPip.amount.toFixed(2),
+    trade.pipValuePerPip.currency,
+    trade.profit.amount.toFixed(2),
+    trade.profit.currency,
   ]);
 
   // Calculate totals
@@ -69,8 +73,8 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     headers.join(","),
     ...rows.map((row) => row.join(",")),
     "",
-    `TOTALS,,,,,,"${totalPipsSigned.toFixed(2)} (Signed)",,`,
-    `,,,,,,"${totalPipsAbsolute.toFixed(2)} (Absolute)",,"${totalProfit.toFixed(2)} ${currency}"`,
+    `TOTALS,,,,,${totalPipsSigned.toFixed(2)} (Signed),,,,`,
+    `,,,,,,${totalPipsAbsolute.toFixed(2)} (Absolute),,,${totalProfit.toFixed(2)},${currency}`,
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
