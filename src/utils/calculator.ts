@@ -15,7 +15,9 @@ export const calculateTrade = (
   const pips = parseFloat((priceDiff / pipSize!).toFixed(2));
 
   // Calculate pip value per pip
-  const pipValuePerPip = (pipSize! / priceA) * (lot * contractSize!);
+  // For XAUUSD and most instruments where USD is quote currency:
+  // Pip value = pip_size * lot * contract_size
+  const pipValuePerPip = pipSize! * lot * contractSize!;
   const pipValuePerPipRounded = parseFloat(pipValuePerPip.toFixed(2));
 
   // Calculate profit with correct sign
