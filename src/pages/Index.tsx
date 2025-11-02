@@ -15,12 +15,23 @@ import CalculatorForm from "@/components/CalculatorForm";
 import TradeHistory from "@/components/TradeHistory";
 import TotalsSummary from "@/components/TotalsSummary";
 import TimeConversion from "@/components/TimeConversion";
+import DynamicCalculator from "@/components/DynamicCalculator";
 import ActionButtons from "@/components/ActionButtons";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [trades, setTrades] = useState<TradeEntry[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -125,11 +136,32 @@ const Index = () => {
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold">Forex Pip Calculator</h1>
-            <p className="text-muted-foreground mt-1">
-              Calculate pips and profits for your trades
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Hamburger Menu Button - All Screen Sizes */}
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle sidebar</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[320px] sm:w-[380px] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle className="text-xl">Tools & Summary</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-6 pb-6">
+                  <DynamicCalculator pair={selectedPair} />
+                  <TotalsSummary totals={totals} />
+                  <TimeConversion />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold">Forex Pip Calculator</h1>
+              <p className="text-muted-foreground mt-1">
+                Calculate pips and profits for your trades
+              </p>
+            </div>
           </div>
           <ActionButtons
             onClearHistory={handleClearHistory}
@@ -139,16 +171,10 @@ const Index = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
-            <TradeHistory trades={trades} />
-          </div>
-
-          <div className="lg:col-span-1 space-y-6">
-            <TotalsSummary totals={totals} />
-            <TimeConversion />
-          </div>
+        {/* Main Content - Full Width when sidebar is closed */}
+        <div className="space-y-6">
+          <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
+          <TradeHistory trades={trades} />
         </div>
       </div>
     </div>
