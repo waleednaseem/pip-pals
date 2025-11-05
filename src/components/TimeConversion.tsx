@@ -13,7 +13,7 @@ import { Clock } from "lucide-react";
 import { TimeUnit } from "@/types/calculator";
 import { buildDurationDetails } from "@/utils/time";
 
-const unitOptions: TimeUnit[] = ["Minutes", "Hours", "Days"];
+const unitOptions: TimeUnit[] = ["Minutes", "Hours", "Days", "Minutes_5", "Minutes_30", "Hours_4"];
 
 const TimeConversion = () => {
   const [timeValue, setTimeValue] = useState("");
@@ -77,7 +77,13 @@ const TimeConversion = () => {
                 <SelectContent>
                   {unitOptions.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option}
+                      {option === "Minutes_5"
+                        ? "5 minutes"
+                        : option === "Minutes_30"
+                        ? "30 minutes"
+                        : option === "Hours_4"
+                        ? "4 hours"
+                        : option}
                     </SelectItem>
                   ))}
                 </SelectContent>

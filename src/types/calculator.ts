@@ -4,7 +4,13 @@ export type Direction = "BUY" | "SELL";
 
 export type Currency = "USD" | "EUR" | "GBP";
 
-export type TimeUnit = "Minutes" | "Hours" | "Days";
+export type TimeUnit =
+  | "Minutes"
+  | "Hours"
+  | "Days"
+  | "Minutes_5"
+  | "Minutes_30"
+  | "Hours_4";
 
 export interface DurationInput {
   value: number;

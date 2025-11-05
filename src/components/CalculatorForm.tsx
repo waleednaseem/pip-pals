@@ -195,6 +195,9 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
                   <SelectItem value="Minutes">Minutes</SelectItem>
                   <SelectItem value="Hours">Hours</SelectItem>
                   <SelectItem value="Days">Days</SelectItem>
+                  <SelectItem value="Minutes_5">5 minutes</SelectItem>
+                  <SelectItem value="Minutes_30">30 minutes</SelectItem>
+                  <SelectItem value="Hours_4">4 hours</SelectItem>
                 </SelectContent>
               </Select>
             </div>

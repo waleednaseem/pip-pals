@@ -16,6 +16,15 @@ export const convertToMinutes = (value: number, unit: TimeUnit): number => {
   if (unit === "Days") {
     return value * 24 * 60;
   }
+  if (unit === "Minutes_5") {
+    return value * 5;
+  }
+  if (unit === "Minutes_30") {
+    return value * 30;
+  }
+  if (unit === "Hours_4") {
+    return value * 4 * 60;
+  }
   return value;
 };
 
