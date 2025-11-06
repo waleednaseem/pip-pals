@@ -17,6 +17,7 @@ import TotalsSummary from "@/components/TotalsSummary";
 import TimeConversion from "@/components/TimeConversion";
 import DynamicCalculator from "@/components/DynamicCalculator";
 import ActionButtons from "@/components/ActionButtons";
+import { Lifeline } from "@/components/Lifeline";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
@@ -152,6 +153,7 @@ const Index = () => {
                 <div className="mt-6 space-y-6 pb-6">
                   <DynamicCalculator pair={selectedPair} />
                   <TotalsSummary totals={totals} />
+                  <Lifeline trades={trades} />
                   <TimeConversion />
                 </div>
               </SheetContent>
