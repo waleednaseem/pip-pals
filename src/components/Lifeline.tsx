@@ -229,6 +229,23 @@ export const Lifeline = ({ trades }: LifelineProps) => {
               </span>
             </div>
             <Progress value={stats.progressPercent} className="h-3" />
+            
+            {/* Show how many months/weeks filled */}
+            <div className="text-sm text-muted-foreground">
+              {(() => {
+                const monthsFilled = Math.floor(stats.remaining / data.settings.monthlyExpense);
+                const remainingAfterMonths = stats.remaining % data.settings.monthlyExpense;
+                const weeklyExpense = data.settings.monthlyExpense / 4.35; // Average weeks per month
+                const weeksFilled = Math.floor(remainingAfterMonths / weeklyExpense);
+                
+                return (
+                  <span>
+                    Quota Filled: <span className="font-semibold text-foreground">{monthsFilled} months</span> and <span className="font-semibold text-foreground">{weeksFilled} weeks</span> out of {data.settings.periodMonths} months
+                  </span>
+                );
+              })()}
+            </div>
+            
             {quotaStatus === "complete" && (
               <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                 🎉 Congratulations! Your {data.settings.periodMonths}-month quota is complete!
