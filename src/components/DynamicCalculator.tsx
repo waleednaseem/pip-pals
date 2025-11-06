@@ -9,7 +9,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calculator } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calculator, X } from "lucide-react";
 
 interface DynamicCalculatorProps {
   pair: TradingPair;
@@ -136,13 +137,30 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
     performCalculation();
   };
 
+  const handleClear = () => {
+    setPips("");
+    setLot("1");
+    setProfitUSD("");
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Calculator className="h-5 w-5 text-primary" />
-          Dynamic Calculator
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Calculator className="h-5 w-5 text-primary" />
+            Dynamic Calculator
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClear}
+            className="gap-1"
+          >
+            <X className="h-4 w-4" />
+            Clear
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
