@@ -20,7 +20,7 @@ import ActionButtons from "@/components/ActionButtons";
 import { Lifeline } from "@/components/Lifeline";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, ChevronDown } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -28,6 +28,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
@@ -151,17 +157,45 @@ const Index = () => {
                   <SheetTitle className="text-xl">Tools & Summary</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6 space-y-6 pb-6">
-                  <DynamicCalculator pair={selectedPair} />
-                  <TotalsSummary totals={totals} />
-                  <Lifeline trades={trades} />
-                  <TimeConversion />
+                  {/* Collapsible Dynamic Calculator */}
+                  <Collapsible defaultOpen>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                      <span className="font-semibold">Dynamic Calculator</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-4">
+                      <DynamicCalculator pair={selectedPair} />
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  {/* Collapsible Totals Summary */}
+                  <Collapsible defaultOpen>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                      <span className="font-semibold">Totals Summary</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-4">
+                      <TotalsSummary totals={totals} />
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  {/* Collapsible Time Conversion */}
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                      <span className="font-semibold">Time Conversion</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-4">
+                      <TimeConversion />
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               </SheetContent>
             </Sheet>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">Forex Pip Calculator</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">Forex Trading Tools</h1>
               <p className="text-muted-foreground mt-1">
-                Calculate pips and profits for your trades
+                Calculate trades and manage your financial goals
               </p>
             </div>
           </div>
@@ -173,11 +207,24 @@ const Index = () => {
           />
         </div>
 
-        {/* Main Content - Full Width when sidebar is closed */}
-        <div className="space-y-6">
-          <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
-          <TradeHistory trades={trades} />
-        </div>
+        {/* Tabs for Calculator and Lifeline */}
+        <Tabs defaultValue="calculator" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="calculator">Forex Pip Calculator</TabsTrigger>
+            <TabsTrigger value="lifeline">Setup Your Lifeline</TabsTrigger>
+          </TabsList>
+
+          {/* Calculator Tab */}
+          <TabsContent value="calculator" className="space-y-6 mt-6">
+            <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
+            <TradeHistory trades={trades} />
+          </TabsContent>
+
+          {/* Lifeline Tab */}
+          <TabsContent value="lifeline" className="mt-6">
+            <Lifeline trades={trades} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
