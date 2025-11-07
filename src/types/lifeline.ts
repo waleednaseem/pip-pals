@@ -10,12 +10,25 @@ export interface Transaction {
   amount: number;
   description: string;
   date: string;
-  type: "expense" | "earning";
+  type: "expense" | "earning" | "tax";
+  taxed?: boolean; // For earnings, tracks if tax has been paid
+}
+
+export interface TaxPayment {
+  id: string;
+  amount: number;
+  amountCAD: number;
+  exchangeRate: number;
+  date: string;
+  earningsIds: string[]; // Track which earnings were taxed
 }
 
 export interface LifelineData {
   settings: LifelineSettings;
   transactions: Transaction[];
+  taxPayments: TaxPayment[];
+  lastExchangeRateUpdate?: string;
+  cachedExchangeRate?: number;
 }
 
 export interface LifelineStats {
@@ -23,6 +36,8 @@ export interface LifelineStats {
   weeklyTarget: number;
   totalEarned: number;
   totalSpent: number;
+  totalTaxPaid: number;
+  untaxedEarnings: number;
   remaining: number;
   progressPercent: number;
   daysElapsed: number;

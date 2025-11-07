@@ -18,6 +18,7 @@ import TimeConversion from "@/components/TimeConversion";
 import DynamicCalculator from "@/components/DynamicCalculator";
 import ActionButtons from "@/components/ActionButtons";
 import { Lifeline } from "@/components/Lifeline";
+import { TaxHistory } from "@/components/TaxHistory";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronDown } from "lucide-react";
@@ -209,9 +210,10 @@ const Index = () => {
 
         {/* Tabs for Calculator and Lifeline */}
         <Tabs defaultValue="calculator" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="calculator">Forex Pip Calculator</TabsTrigger>
             <TabsTrigger value="lifeline">Setup Your Lifeline</TabsTrigger>
+            <TabsTrigger value="tax">Tax History</TabsTrigger>
           </TabsList>
 
           {/* Calculator Tab */}
@@ -223,6 +225,27 @@ const Index = () => {
           {/* Lifeline Tab */}
           <TabsContent value="lifeline" className="mt-6">
             <Lifeline trades={trades} />
+          </TabsContent>
+
+          {/* Tax History Tab */}
+          <TabsContent value="tax" className="mt-6">
+            {(() => {
+              const lifelineData = localStorage.getItem("forex-lifeline-data");
+              if (!lifelineData) {
+                return (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Please setup your Lifeline first to track tax payments
+                  </div>
+                );
+              }
+              const data = JSON.parse(lifelineData);
+              return (
+                <TaxHistory 
+                  taxPayments={data.taxPayments || []} 
+                  currency={data.settings?.currency || "USD"} 
+                />
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </div>

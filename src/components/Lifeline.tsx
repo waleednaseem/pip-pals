@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Plus, Trash2, TrendingUp, TrendingDown, Target, Calendar } from "lucide-react";
+import { Activity, Plus, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle } from "lucide-react";
 import { TradeEntry } from "@/types/calculator";
 import { LifelineData, Transaction, LifelineStats } from "@/types/lifeline";
 import {
@@ -15,6 +15,9 @@ import {
   deleteTransaction,
   calculateLifelineStats,
   formatCurrency,
+  getUSDToCADRate,
+  calculateTaxOwed,
+  payTax,
 } from "@/utils/lifeline";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -27,6 +30,9 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   const [data, setData] = useState<LifelineData | null>(null);
   const [stats, setStats] = useState<LifelineStats | null>(null);
   const [isSetup, setIsSetup] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<number>(1.35);
+  const [isLoadingRate, setIsLoadingRate] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const { toast } = useToast();
 
   // Setup form states
@@ -41,7 +47,20 @@ export const Lifeline = ({ trades }: LifelineProps) => {
 
   useEffect(() => {
     loadData();
+    fetchExchangeRate();
   }, [trades]);
+
+  const fetchExchangeRate = async () => {
+    setIsLoadingRate(true);
+    try {
+      const rate = await getUSDToCADRate();
+      setExchangeRate(rate);
+    } catch (error) {
+      console.error('Failed to fetch exchange rate:', error);
+    } finally {
+      setIsLoadingRate(false);
+    }
+  };
 
   const loadData = () => {
     const lifelineData = getLifelineData();
@@ -128,6 +147,38 @@ export const Lifeline = ({ trades }: LifelineProps) => {
     });
   };
 
+  const handlePayTax = async () => {
+    if (!data) return;
+    
+    const taxOwed = calculateTaxOwed(data, trades);
+    if (taxOwed <= 0) {
+      toast({
+        title: "No Tax Owed",
+        description: "You have no untaxed earnings at the moment",
+      });
+      return;
+    }
+
+    setIsPaying(true);
+    try {
+      await payTax(trades, exchangeRate);
+      loadData();
+      
+      toast({
+        title: "Tax Paid Successfully",
+        description: `Paid $${taxOwed.toFixed(2)} USD ($${(taxOwed * exchangeRate).toFixed(2)} CAD)`,
+      });
+    } catch (error) {
+      toast({
+        title: "Payment Failed",
+        description: "Failed to process tax payment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   const handleReset = () => {
     localStorage.removeItem("forex-lifeline-data");
     setData(null);
@@ -203,9 +254,41 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   if (!stats || !data) return null;
 
   const quotaStatus = stats.progressPercent >= 100 ? "complete" : "active";
+  const taxOwed = calculateTaxOwed(data, trades);
 
   return (
     <div className="space-y-4">
+      {/* Exchange Rate Display */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-sm font-semibold">USD to CAD Exchange Rate</p>
+                <p className="text-xs text-muted-foreground">
+                  Updated {data.lastExchangeRateUpdate ? new Date(data.lastExchangeRateUpdate).toLocaleDateString() : 'today'}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-primary">
+                {isLoadingRate ? "..." : exchangeRate.toFixed(4)}
+              </p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={fetchExchangeRate}
+                disabled={isLoadingRate}
+                className="text-xs h-auto py-1 px-2"
+              >
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Progress Card */}
       <Card>
         <CardHeader>
@@ -230,17 +313,20 @@ export const Lifeline = ({ trades }: LifelineProps) => {
             </div>
             <Progress value={stats.progressPercent} className="h-3" />
             
-            {/* Show how many months/weeks filled */}
+            {/* Show how many months/weeks/days filled */}
             <div className="text-sm text-muted-foreground">
               {(() => {
                 const monthsFilled = Math.floor(stats.remaining / data.settings.monthlyExpense);
                 const remainingAfterMonths = stats.remaining % data.settings.monthlyExpense;
                 const weeklyExpense = data.settings.monthlyExpense / 4.35; // Average weeks per month
                 const weeksFilled = Math.floor(remainingAfterMonths / weeklyExpense);
+                const remainingAfterWeeks = remainingAfterMonths % weeklyExpense;
+                const dailyExpense = weeklyExpense / 7;
+                const daysFilled = Math.floor(remainingAfterWeeks / dailyExpense);
                 
                 return (
                   <span>
-                    Quota Filled: <span className="font-semibold text-foreground">{monthsFilled} months</span> and <span className="font-semibold text-foreground">{weeksFilled} weeks</span> out of {data.settings.periodMonths} months
+                    Quota Filled: <span className="font-semibold text-foreground">{monthsFilled} months</span>, <span className="font-semibold text-foreground">{weeksFilled} weeks</span>, and <span className="font-semibold text-foreground">{daysFilled} days</span> out of {data.settings.periodMonths} months
                   </span>
                 );
               })()}
@@ -313,6 +399,62 @@ export const Lifeline = ({ trades }: LifelineProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tax Payment Card */}
+      {taxOwed > 0 && (
+        <Card className="border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg text-orange-700 dark:text-orange-400">
+              <AlertCircle className="h-5 w-5" />
+              Canadian Tax Due (30%)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Untaxed Earnings</span>
+                <span className="font-semibold">${(taxOwed / 0.30).toFixed(2)} USD</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Tax Amount (USD)</span>
+                <span className="font-semibold text-orange-600 dark:text-orange-400">
+                  ${taxOwed.toFixed(2)} USD
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Tax Amount (CAD)</span>
+                <span className="font-semibold text-orange-600 dark:text-orange-400">
+                  ${(taxOwed * exchangeRate).toFixed(2)} CAD
+                </span>
+              </div>
+            </div>
+            <Button 
+              onClick={handlePayTax} 
+              className="w-full bg-orange-600 hover:bg-orange-700"
+              disabled={isPaying}
+            >
+              {isPaying ? "Processing..." : "Pay Tax Now"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tax Summary if already paid */}
+      {stats.totalTaxPaid > 0 && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Total Tax Paid</span>
+              </div>
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                {formatCurrency(stats.totalTaxPaid, data.settings.currency)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add Transaction Card */}
       <Card>
