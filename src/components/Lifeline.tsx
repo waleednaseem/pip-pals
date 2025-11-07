@@ -62,12 +62,14 @@ export const Lifeline = ({ trades }: LifelineProps) => {
     }
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     const lifelineData = getLifelineData();
     if (lifelineData) {
       setData(lifelineData);
       setIsSetup(true);
-      const calculatedStats = calculateLifelineStats(lifelineData, trades);
+      const rate = await getUSDToCADRate();
+      setExchangeRate(rate);
+      const calculatedStats = calculateLifelineStats(lifelineData, trades, rate);
       setStats(calculatedStats);
     }
   };
@@ -84,7 +86,7 @@ export const Lifeline = ({ trades }: LifelineProps) => {
 
     const settings = {
       monthlyExpense: parseFloat(monthlyExpense),
-      currency,
+      currency: "CAD", // Always use CAD
       startDate: new Date().toISOString(),
       periodMonths: parseInt(periodMonths),
     };
@@ -117,12 +119,20 @@ export const Lifeline = ({ trades }: LifelineProps) => {
       return;
     }
 
+    // For earnings in USD, convert to CAD
+    const amountUSD = transType === "earning" && currency === "USD" ? parseFloat(transAmount) : undefined;
+    const finalAmount = amountUSD ? amountUSD * exchangeRate : parseFloat(transAmount);
+    
     const transaction: Transaction = {
       id: uuidv4(),
-      amount: parseFloat(transAmount),
-      description: transDescription,
+      amount: finalAmount, // Store in CAD
+      amountUSD: amountUSD,
+      description: amountUSD 
+        ? `${transDescription} (USD $${amountUSD.toFixed(2)} @ ${exchangeRate.toFixed(4)})`
+        : transDescription,
       date: new Date().toISOString(),
       type: transType,
+      exchangeRate: amountUSD ? exchangeRate : undefined,
     };
 
     addTransaction(transaction);
@@ -150,8 +160,8 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   const handlePayTax = async () => {
     if (!data) return;
     
-    const taxOwed = calculateTaxOwed(data, trades);
-    if (taxOwed <= 0) {
+    const taxOwedCAD = calculateTaxOwed(data, trades, exchangeRate);
+    if (taxOwedCAD <= 0) {
       toast({
         title: "No Tax Owed",
         description: "You have no untaxed earnings at the moment",
@@ -164,9 +174,10 @@ export const Lifeline = ({ trades }: LifelineProps) => {
       await payTax(trades, exchangeRate);
       loadData();
       
+      const taxOwedUSD = taxOwedCAD / exchangeRate;
       toast({
         title: "Tax Paid Successfully",
-        description: `Paid $${taxOwed.toFixed(2)} USD ($${(taxOwed * exchangeRate).toFixed(2)} CAD)`,
+        description: `Paid $${taxOwedCAD.toFixed(2)} CAD (USD $${taxOwedUSD.toFixed(2)})`,
       });
     } catch (error) {
       toast({
@@ -220,10 +231,8 @@ export const Lifeline = ({ trades }: LifelineProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-                <SelectItem value="PKR">PKR</SelectItem>
+                <SelectItem value="CAD">CAD (Canadian Dollar)</SelectItem>
+                <SelectItem value="USD">USD (for earnings conversion)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -254,7 +263,8 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   if (!stats || !data) return null;
 
   const quotaStatus = stats.progressPercent >= 100 ? "complete" : "active";
-  const taxOwed = calculateTaxOwed(data, trades);
+  const taxOwedCAD = calculateTaxOwed(data, trades, exchangeRate);
+  const taxOwedUSD = taxOwedCAD / exchangeRate;
 
   return (
     <div className="space-y-4">
@@ -401,7 +411,7 @@ export const Lifeline = ({ trades }: LifelineProps) => {
       </Card>
 
       {/* Tax Payment Card */}
-      {taxOwed > 0 && (
+      {taxOwedCAD > 0 && (
         <Card className="border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-orange-700 dark:text-orange-400">
@@ -412,19 +422,23 @@ export const Lifeline = ({ trades }: LifelineProps) => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Untaxed Earnings</span>
-                <span className="font-semibold">${(taxOwed / 0.30).toFixed(2)} USD</span>
+                <span className="text-sm text-muted-foreground">Untaxed Earnings (CAD)</span>
+                <span className="font-semibold">${(taxOwedCAD / 0.30).toFixed(2)} CAD</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Tax Amount (USD)</span>
-                <span className="font-semibold text-orange-600 dark:text-orange-400">
-                  ${taxOwed.toFixed(2)} USD
-                </span>
+                <span className="text-sm text-muted-foreground">Untaxed Earnings (USD)</span>
+                <span className="font-semibold">${((taxOwedCAD / 0.30) / exchangeRate).toFixed(2)} USD</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Tax Amount (CAD)</span>
                 <span className="font-semibold text-orange-600 dark:text-orange-400">
-                  ${(taxOwed * exchangeRate).toFixed(2)} CAD
+                  ${taxOwedCAD.toFixed(2)} CAD
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Tax Amount (USD)</span>
+                <span className="font-semibold text-orange-600 dark:text-orange-400">
+                  ${taxOwedUSD.toFixed(2)} USD
                 </span>
               </div>
             </div>
@@ -467,7 +481,9 @@ export const Lifeline = ({ trades }: LifelineProps) => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="transAmount">Amount</Label>
+              <Label htmlFor="transAmount">
+                Amount ({currency === "USD" && transType === "earning" ? "USD" : "CAD"})
+              </Label>
               <Input
                 id="transAmount"
                 type="number"
@@ -475,6 +491,11 @@ export const Lifeline = ({ trades }: LifelineProps) => {
                 value={transAmount}
                 onChange={(e) => setTransAmount(e.target.value)}
               />
+              {currency === "USD" && transType === "earning" && transAmount && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ ${(parseFloat(transAmount) * exchangeRate).toFixed(2)} CAD
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -485,7 +506,7 @@ export const Lifeline = ({ trades }: LifelineProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="earning">Earning</SelectItem>
+                  <SelectItem value="earning">Earning (USD)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
