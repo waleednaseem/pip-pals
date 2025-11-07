@@ -75,11 +75,14 @@ export const getUSDToCADRate = async (): Promise<number> => {
 export const calculateTaxOwed = (data: LifelineData, trades: TradeEntry[]): number => {
   const TAX_RATE = 0.30; // 30% Canadian tax
   
+  // Ensure taxPayments exists
+  const taxPayments = data.taxPayments || [];
+  
   // Get untaxed trade earnings
   const untaxedTradeEarnings = trades
     .filter(trade => {
       // Check if this trade has been taxed
-      const hasTaxPayment = data.taxPayments.some(payment => 
+      const hasTaxPayment = taxPayments.some(payment => 
         payment.earningsIds.includes(`trade-${trade.id}`)
       );
       return !hasTaxPayment && trade.profit.amount > 0;
@@ -101,6 +104,11 @@ export const payTax = async (
 ): Promise<void> => {
   const data = getLifelineData();
   if (!data) return;
+  
+  // Initialize taxPayments if it doesn't exist
+  if (!data.taxPayments) {
+    data.taxPayments = [];
+  }
   
   const taxAmount = calculateTaxOwed(data, trades);
   if (taxAmount <= 0) return;
