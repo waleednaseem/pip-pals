@@ -310,18 +310,32 @@ export default function CanadaFundCalculator() {
             </div>
           </div>
 
+          {toNum(yearlySalaryCad) === 0 && (
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                ℹ️ Please enter your Yearly Salary above to see conversions
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <div className="p-3 rounded-lg bg-muted/40">
               <div className="text-sm text-muted-foreground">Only Dirham (AED)</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(onlyDirham, "AED")}</div>
+              <div className="text-lg font-semibold font-mono-num">
+                {toNum(yearlySalaryCad) > 0 ? formatCurrency(onlyDirham, "AED") : "—"}
+              </div>
             </div>
             <div className="p-3 rounded-lg bg-muted/40">
               <div className="text-sm text-muted-foreground">Total PKR</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(totalPKR, "PKR")}</div>
+              <div className="text-lg font-semibold font-mono-num">
+                {toNum(yearlySalaryCad) > 0 ? formatCurrency(totalPKR, "PKR") : "—"}
+              </div>
             </div>
             <div className="p-3 rounded-lg bg-muted/40">
               <div className="text-sm text-muted-foreground">Total USD</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(totalUSD, "USD")}</div>
+              <div className="text-lg font-semibold font-mono-num">
+                {toNum(yearlySalaryCad) > 0 ? formatCurrency(totalUSD, "USD") : "—"}
+              </div>
             </div>
           </div>
         </CardContent>
