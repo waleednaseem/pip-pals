@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, ArrowRightLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const formatCurrency = (value: number, currency: string = "CAD") => {
   if (!isFinite(value)) return "-";
@@ -19,6 +20,8 @@ const toNum = (v: string | number) => {
 };
 
 export default function CanadaFundCalculator() {
+  const { toast } = useToast();
+  
   // Inputs
   const [yearlySalaryCad, setYearlySalaryCad] = useState<string>("");
   const [taxRate, setTaxRate] = useState<string>("22");
@@ -30,8 +33,40 @@ export default function CanadaFundCalculator() {
   const [trainerPerMonth, setTrainerPerMonth] = useState<string>("0");
 
   // Exchange rates
-  const [cadToAed, setCadToAed] = useState<string>("0"); // 1 CAD -> AED
-  const [aedToPkr, setAedToPkr] = useState<string>("0"); // 1 AED -> PKR
+  const [cadToAed, setCadToAed] = useState<string>("2.60"); // 1 CAD -> AED (default)
+  const [aedToPkr, setAedToPkr] = useState<string>("77.05"); // 1 AED -> PKR (default)
+  const [cadToUsd, setCadToUsd] = useState<string>("0.71"); // 1 CAD -> USD (default)
+
+  // Fetch exchange rates on mount
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      try {
+        const response = await fetch("https://api.exchangerate-api.com/v4/latest/CAD");
+        const data = await response.json();
+        
+        if (data.rates) {
+          setCadToAed(data.rates.AED.toFixed(4));
+          setCadToUsd(data.rates.USD.toFixed(4));
+          
+          // Fetch PKR rate from AED
+          const aedResponse = await fetch("https://api.exchangerate-api.com/v4/latest/AED");
+          const aedData = await aedResponse.json();
+          if (aedData.rates) {
+            setAedToPkr(aedData.rates.PKR.toFixed(4));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch exchange rates:", error);
+        toast({
+          title: "Exchange Rate Error",
+          description: "Using default rates. You can update them manually.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchExchangeRates();
+  }, [toast]);
 
   // Default monthly expenses (editable)
   const [ghar, setGhar] = useState<string>("2200");
@@ -71,7 +106,7 @@ export default function CanadaFundCalculator() {
     () => toNum(yearlySalaryCad) * (toNum(cadToAed) * toNum(aedToPkr)),
     [yearlySalaryCad, cadToAed, aedToPkr]
   );
-  const totalUSD = useMemo(() => toNum(yearlySalaryCad) / 1.4, [yearlySalaryCad]);
+  const totalUSD = useMemo(() => toNum(yearlySalaryCad) * toNum(cadToUsd), [yearlySalaryCad, cadToUsd]);
 
   return (
     <div className="space-y-6">
@@ -270,8 +305,8 @@ export default function CanadaFundCalculator() {
               <Input id="aedToPkr" type="number" step="any" value={aedToPkr} onChange={(e) => setAedToPkr(e.target.value)} className="font-mono-num" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="usdRate">CAD → USD (fixed)</Label>
-              <Input id="usdRate" type="text" value="÷ 1.4" readOnly className="font-mono-num bg-muted/30" />
+              <Label htmlFor="cadToUsd">Exchange: 1 CAD → USD</Label>
+              <Input id="cadToUsd" type="number" step="any" value={cadToUsd} onChange={(e) => setCadToUsd(e.target.value)} className="font-mono-num" />
             </div>
           </div>
 
