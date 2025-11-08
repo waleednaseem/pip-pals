@@ -412,39 +412,31 @@ export const Lifeline = ({ trades }: LifelineProps) => {
 
       {/* Tax Payment Card */}
       {taxOwedCAD > 0 && (
-        <Card className="border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-orange-700 dark:text-orange-400">
-              <AlertCircle className="h-5 w-5" />
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <AlertCircle className="h-5 w-5 text-destructive" />
               Canadian Tax Due (30%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="p-4 rounded-lg bg-muted/30 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Untaxed Earnings (CAD)</span>
-                <span className="font-semibold">${(taxOwedCAD / 0.30).toFixed(2)} CAD</span>
+                <span className="text-sm text-muted-foreground">Untaxed Earnings</span>
+                <span className="font-semibold text-lg">${(taxOwedCAD / 0.30).toFixed(2)} CAD</span>
               </div>
+              <div className="h-px bg-border" />
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Untaxed Earnings (USD)</span>
-                <span className="font-semibold">${((taxOwedCAD / 0.30) / exchangeRate).toFixed(2)} USD</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Tax Amount (CAD)</span>
-                <span className="font-semibold text-orange-600 dark:text-orange-400">
+                <span className="text-sm text-muted-foreground">Tax Amount (30%)</span>
+                <span className="font-bold text-xl text-destructive">
                   ${taxOwedCAD.toFixed(2)} CAD
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Tax Amount (USD)</span>
-                <span className="font-semibold text-orange-600 dark:text-orange-400">
-                  ${taxOwedUSD.toFixed(2)} USD
                 </span>
               </div>
             </div>
             <Button 
               onClick={handlePayTax} 
-              className="w-full bg-orange-600 hover:bg-orange-700"
+              className="w-full"
+              variant="destructive"
               disabled={isPaying}
             >
               {isPaying ? "Processing..." : "Pay Tax Now"}
