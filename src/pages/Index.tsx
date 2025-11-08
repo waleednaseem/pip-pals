@@ -20,6 +20,7 @@ import ActionButtons from "@/components/ActionButtons";
 import { Lifeline } from "@/components/Lifeline";
 import { TaxHistory } from "@/components/TaxHistory";
 import CanadaFundCalculator from "@/components/CanadaFundCalculator";
+import CurrencyConverter from "@/components/CurrencyConverter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronDown } from "lucide-react";
@@ -211,11 +212,12 @@ const Index = () => {
 
         {/* Tabs for Calculator and Lifeline */}
         <Tabs defaultValue="calculator" className="w-full">
-          <TabsList className="grid w-full max-w-3xl grid-cols-4">
+          <TabsList className="grid w-full max-w-4xl grid-cols-5">
             <TabsTrigger value="calculator">Forex Pip Calculator</TabsTrigger>
             <TabsTrigger value="lifeline">Setup Your Lifeline</TabsTrigger>
             <TabsTrigger value="tax">Tax History</TabsTrigger>
-            <TabsTrigger value="canada">Canada Fund Calculator</TabsTrigger>
+            <TabsTrigger value="canada">Canada Fund</TabsTrigger>
+            <TabsTrigger value="converter">Currency Converter</TabsTrigger>
           </TabsList>
 
           {/* Calculator Tab */}
@@ -253,6 +255,11 @@ const Index = () => {
           {/* Canada Fund Calculator Tab */}
           <TabsContent value="canada" className="space-y-6 mt-6">
             <CanadaFundCalculator />
+          </TabsContent>
+
+          {/* Currency Converter Tab */}
+          <TabsContent value="converter" className="space-y-6 mt-6">
+            <CurrencyConverter />
           </TabsContent>
         </Tabs>
       </div>
