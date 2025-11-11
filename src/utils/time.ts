@@ -4,6 +4,8 @@ export interface DurationDetails {
   value: number;
   unit: TimeUnit;
   totalMinutes: number;
+  months: number;
+  days: number;
   hours: number;
   minutes: number;
   formatted: string;
@@ -41,36 +43,65 @@ export const formatMinutesValue = (minutes: number): string => {
     .replace(/(\.\d*[1-9])0+$/, "$1");
 };
 
-export const formatDurationText = (hours: number, minutesText: string): string => {
-  const hourLabel = hours === 1 ? "hour" : "hours";
-  const minutesNumeric = Number(minutesText);
-  const minuteLabel = minutesNumeric === 1 ? "minute" : "minutes";
+export const formatDurationText = (
+  months: number,
+  days: number,
+  hours: number,
+  minutesText: string
+): string => {
+  const parts: string[] = [];
 
-  return `${hours} ${hourLabel} ${minutesText} ${minuteLabel}`;
+  if (months > 0) {
+    const monthLabel = months === 1 ? "month" : "months";
+    parts.push(`${months} ${monthLabel}`);
+  }
+
+  if (days > 0) {
+    const dayLabel = days === 1 ? "day" : "days";
+    parts.push(`${days} ${dayLabel}`);
+  }
+
+  if (hours > 0) {
+    const hourLabel = hours === 1 ? "hour" : "hours";
+    parts.push(`${hours} ${hourLabel}`);
+  }
+
+  const minutesNumeric = Number(minutesText);
+  if (minutesNumeric > 0) {
+    const minuteLabel = minutesNumeric === 1 ? "minute" : "minutes";
+    parts.push(`${minutesText} ${minuteLabel}`);
+  }
+
+  return parts.length > 0 ? parts.join(", ") : "0 minutes";
 };
 
 export const buildDurationDetails = (value: number, unit: TimeUnit): DurationDetails => {
   const totalMinutes = convertToMinutes(value, unit);
 
-  const baseHours = Math.floor(totalMinutes / 60);
-  const remainingMinutesRaw = totalMinutes - baseHours * 60;
+  // Calculate months (assuming 30 days per month)
+  const totalHours = totalMinutes / 60;
+  const totalDays = totalHours / 24;
+  
+  const months = Math.floor(totalDays / 30);
+  const remainingDaysAfterMonths = totalDays - months * 30;
+  
+  const days = Math.floor(remainingDaysAfterMonths);
+  const remainingHoursAfterDays = (remainingDaysAfterMonths - days) * 24;
+  
+  const hours = Math.floor(remainingHoursAfterDays);
+  const remainingMinutesRaw = (remainingHoursAfterDays - hours) * 60;
 
   let roundedMinutes = Math.round(remainingMinutesRaw * 100) / 100;
-  let hours = baseHours;
-
-  if (roundedMinutes >= 60) {
-    const extraHours = Math.floor(roundedMinutes / 60);
-    hours += extraHours;
-    roundedMinutes = Math.round((roundedMinutes - extraHours * 60) * 100) / 100;
-  }
 
   const minutesText = formatMinutesValue(roundedMinutes);
-  const formatted = formatDurationText(hours, minutesText);
+  const formatted = formatDurationText(months, days, hours, minutesText);
 
   return {
     value,
     unit,
     totalMinutes,
+    months,
+    days,
     hours,
     minutes: parseFloat(minutesText),
     formatted,
