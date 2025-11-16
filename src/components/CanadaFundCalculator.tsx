@@ -287,59 +287,7 @@ export default function CanadaFundCalculator() {
       </Card>
 
       {/* Conversions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5" />
-            Conversions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cadToAed">Exchange: 1 CAD → AED</Label>
-              <Input id="cadToAed" type="number" step="any" value={cadToAed} onChange={(e) => setCadToAed(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="aedToPkr">Exchange: 1 AED → PKR</Label>
-              <Input id="aedToPkr" type="number" step="any" value={aedToPkr} onChange={(e) => setAedToPkr(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cadToUsd">Exchange: 1 CAD → USD</Label>
-              <Input id="cadToUsd" type="number" step="any" value={cadToUsd} onChange={(e) => setCadToUsd(e.target.value)} className="font-mono-num" />
-            </div>
-          </div>
-
-          {toNum(yearlySalaryCad) === 0 && (
-            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                ℹ️ Please enter your Yearly Salary above to see conversions
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Only Dirham (AED)</div>
-              <div className="text-lg font-semibold font-mono-num">
-                {toNum(yearlySalaryCad) > 0 ? formatCurrency(onlyDirham, "AED") : "—"}
-              </div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Total PKR</div>
-              <div className="text-lg font-semibold font-mono-num">
-                {toNum(yearlySalaryCad) > 0 ? formatCurrency(totalPKR, "PKR") : "—"}
-              </div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Total USD</div>
-              <div className="text-lg font-semibold font-mono-num">
-                {toNum(yearlySalaryCad) > 0 ? formatCurrency(totalUSD, "USD") : "—"}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+     
 
       {/* 3-Month Summary */}
       <Card className="border-primary/20">
