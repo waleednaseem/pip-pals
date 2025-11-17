@@ -2,8 +2,15 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, ArrowRightLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface SubExpense {
+  id: string;
+  label: string;
+  amount: string;
+}
 
 const formatCurrency = (value: number, currency: string = "CAD") => {
   if (!isFinite(value)) return "-";
@@ -68,12 +75,22 @@ export default function CanadaFundCalculator() {
     fetchExchangeRates();
   }, [toast]);
 
-  // Default monthly expenses (editable)
-  const [ghar, setGhar] = useState<string>("2200");
-  const [ration, setRation] = useState<string>("1100");
-  const [utilityWash, setUtilityWash] = useState<string>("350");
-  const [transport, setTransport] = useState<string>("260");
-  const [bhejnaTransfer, setBhejnaTransfer] = useState<string>("500");
+  // Default monthly expenses with sub-expenses
+  const [gharSubs, setGharSubs] = useState<SubExpense[]>([
+    { id: "1", label: "Rent", amount: "2200" }
+  ]);
+  const [rationSubs, setRationSubs] = useState<SubExpense[]>([
+    { id: "1", label: "Groceries", amount: "1100" }
+  ]);
+  const [utilityWashSubs, setUtilityWashSubs] = useState<SubExpense[]>([
+    { id: "1", label: "Utilities", amount: "350" }
+  ]);
+  const [transportSubs, setTransportSubs] = useState<SubExpense[]>([
+    { id: "1", label: "Transport", amount: "260" }
+  ]);
+  const [bhejnaTransferSubs, setBhejnaTransferSubs] = useState<SubExpense[]>([
+    { id: "1", label: "Transfer", amount: "500" }
+  ]);
 
   // Tax Return (editable/static)
   const [taxReturn, setTaxReturn] = useState<string>("16051");
@@ -90,9 +107,89 @@ export default function CanadaFundCalculator() {
   );
   const gymYearly = useMemo(() => gymMonthly * 12, [gymMonthly]);
 
+  // Calculate totals from sub-expenses
+  const gharTotal = useMemo(() => gharSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0), [gharSubs]);
+  const rationTotal = useMemo(() => rationSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0), [rationSubs]);
+  const utilityWashTotal = useMemo(() => utilityWashSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0), [utilityWashSubs]);
+  const transportTotal = useMemo(() => transportSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0), [transportSubs]);
+  const bhejnaTransferTotal = useMemo(() => bhejnaTransferSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0), [bhejnaTransferSubs]);
+
   const totalMonthlyExpense = useMemo(
-    () => gymMonthly + toNum(ghar) + toNum(ration) + toNum(utilityWash) + toNum(transport) + toNum(bhejnaTransfer),
-    [gymMonthly, ghar, ration, utilityWash, transport, bhejnaTransfer]
+    () => gymMonthly + gharTotal + rationTotal + utilityWashTotal + transportTotal + bhejnaTransferTotal,
+    [gymMonthly, gharTotal, rationTotal, utilityWashTotal, transportTotal, bhejnaTransferTotal]
+  );
+
+  // Helper functions for managing sub-expenses
+  const addSubExpense = (setter: React.Dispatch<React.SetStateAction<SubExpense[]>>) => {
+    setter(prev => [...prev, { id: Date.now().toString(), label: "", amount: "0" }]);
+  };
+
+  const updateSubExpense = (
+    setter: React.Dispatch<React.SetStateAction<SubExpense[]>>,
+    id: string,
+    field: keyof SubExpense,
+    value: string
+  ) => {
+    setter(prev => prev.map(sub => sub.id === id ? { ...sub, [field]: value } : sub));
+  };
+
+  const removeSubExpense = (setter: React.Dispatch<React.SetStateAction<SubExpense[]>>, id: string) => {
+    setter(prev => prev.filter(sub => sub.id !== id));
+  };
+
+  const renderSubExpenses = (
+    subs: SubExpense[],
+    setter: React.Dispatch<React.SetStateAction<SubExpense[]>>,
+    title: string,
+    total: number
+  ) => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-semibold">{title}</Label>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => addSubExpense(setter)}
+          className="h-8 gap-1"
+        >
+          <Plus className="h-3 w-3" />
+          Add
+        </Button>
+      </div>
+      {subs.map((sub, index) => (
+        <div key={sub.id} className="flex gap-2 items-center">
+          <Input
+            placeholder="Label"
+            value={sub.label}
+            onChange={(e) => updateSubExpense(setter, sub.id, "label", e.target.value)}
+            className="flex-1"
+          />
+          <Input
+            type="number"
+            step="any"
+            value={sub.amount}
+            onChange={(e) => updateSubExpense(setter, sub.id, "amount", e.target.value)}
+            className="w-32 font-mono-num"
+          />
+          {subs.length > 1 && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => removeSubExpense(setter, sub.id)}
+              className="h-9 w-9 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ))}
+      <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+        <div className="text-sm text-muted-foreground">Total {title}</div>
+        <div className="text-lg font-semibold font-mono-num">{formatCurrency(total)}</div>
+      </div>
+    </div>
   );
 
   const yearlySavings = useMemo(
@@ -231,35 +328,29 @@ export default function CanadaFundCalculator() {
             Monthly Expenses
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ghar">🏠 Ghar</Label>
-              <Input id="ghar" type="number" step="any" value={ghar} onChange={(e) => setGhar(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ration">🛒 Ration</Label>
-              <Input id="ration" type="number" step="any" value={ration} onChange={(e) => setRation(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gym">💪 Gym (auto)</Label>
-              <Input id="gym" type="number" value={String(gymMonthly)} readOnly className="font-mono-num bg-muted/30" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="utilityWash">🧺 Utility/Wash</Label>
-              <Input id="utilityWash" type="number" step="any" value={utilityWash} onChange={(e) => setUtilityWash(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="transport">🚌 Transport</Label>
-              <Input id="transport" type="number" step="any" value={transport} onChange={(e) => setTransport(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bhejna">💸 Bhejna/Transfer</Label>
-              <Input id="bhejna" type="number" step="any" value={bhejnaTransfer} onChange={(e) => setBhejnaTransfer(e.target.value)} className="font-mono-num" />
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {renderSubExpenses(gharSubs, setGharSubs, "🏠 Ghar", gharTotal)}
+            {renderSubExpenses(rationSubs, setRationSubs, "🛒 Ration", rationTotal)}
+            {renderSubExpenses(utilityWashSubs, setUtilityWashSubs, "🧺 Utility/Wash", utilityWashTotal)}
+            {renderSubExpenses(transportSubs, setTransportSubs, "🚌 Transport", transportTotal)}
+            {renderSubExpenses(bhejnaTransferSubs, setBhejnaTransferSubs, "💸 Bhejna/Transfer", bhejnaTransferTotal)}
+            
+            {/* Gym (auto-calculated) */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">💪 Gym (auto)</Label>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <Input 
+                  type="number" 
+                  value={String(gymMonthly)} 
+                  readOnly 
+                  className="font-mono-num bg-transparent border-0 text-lg font-semibold p-0 h-auto" 
+                />
+              </div>
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-muted">
+          <div className="p-4 rounded-lg bg-muted border-2 border-primary/20">
             <div className="text-sm text-muted-foreground">Total Monthly Expense</div>
             <div className="text-2xl font-bold font-mono-num">{formatCurrency(totalMonthlyExpense)}</div>
           </div>
