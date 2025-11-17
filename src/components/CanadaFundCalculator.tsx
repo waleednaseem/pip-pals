@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, ArrowRightLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, ArrowRightLeft, Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const formatCurrency = (value: number, currency: string = "CAD") => {
@@ -19,6 +20,19 @@ const toNum = (v: string | number) => {
   return isNaN(n) ? 0 : n;
 };
 
+interface SubExpense {
+  id: string;
+  name: string;
+  amount: string;
+}
+
+interface ExpenseCategory {
+  id: string;
+  name: string;
+  emoji: string;
+  subExpenses: SubExpense[];
+}
+
 export default function CanadaFundCalculator() {
   const { toast } = useToast();
   
@@ -31,6 +45,40 @@ export default function CanadaFundCalculator() {
   const [gymGirl, setGymGirl] = useState<string>("0");
   const [nutrition, setNutrition] = useState<string>("0");
   const [trainerPerMonth, setTrainerPerMonth] = useState<string>("0");
+
+  // Dynamic expense categories with sub-expenses
+  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([
+    {
+      id: "ghar",
+      name: "Ghar",
+      emoji: "🏠",
+      subExpenses: [{ id: "ghar-1", name: "Rent", amount: "2200" }],
+    },
+    {
+      id: "ration",
+      name: "Ration",
+      emoji: "🛒",
+      subExpenses: [{ id: "ration-1", name: "Groceries", amount: "1100" }],
+    },
+    {
+      id: "utility",
+      name: "Utility/Wash",
+      emoji: "🧺",
+      subExpenses: [{ id: "utility-1", name: "Utilities", amount: "350" }],
+    },
+    {
+      id: "transport",
+      name: "Transport",
+      emoji: "🚌",
+      subExpenses: [{ id: "transport-1", name: "Transit", amount: "260" }],
+    },
+    {
+      id: "bhejna",
+      name: "Bhejna/Transfer",
+      emoji: "💸",
+      subExpenses: [{ id: "bhejna-1", name: "Transfer", amount: "500" }],
+    },
+  ]);
 
   // Exchange rates
   const [cadToAed, setCadToAed] = useState<string>("2.60"); // 1 CAD -> AED (default)
@@ -68,15 +116,69 @@ export default function CanadaFundCalculator() {
     fetchExchangeRates();
   }, [toast]);
 
-  // Default monthly expenses (editable)
-  const [ghar, setGhar] = useState<string>("2200");
-  const [ration, setRation] = useState<string>("1100");
-  const [utilityWash, setUtilityWash] = useState<string>("350");
-  const [transport, setTransport] = useState<string>("260");
-  const [bhejnaTransfer, setBhejnaTransfer] = useState<string>("500");
-
   // Tax Return (editable/static)
   const [taxReturn, setTaxReturn] = useState<string>("16051");
+
+  // Functions to manage sub-expenses
+  const addSubExpense = (categoryId: string) => {
+    setExpenseCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === categoryId
+          ? {
+              ...cat,
+              subExpenses: [
+                ...cat.subExpenses,
+                {
+                  id: `${categoryId}-${Date.now()}`,
+                  name: "",
+                  amount: "0",
+                },
+              ],
+            }
+          : cat
+      )
+    );
+  };
+
+  const removeSubExpense = (categoryId: string, subExpenseId: string) => {
+    setExpenseCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === categoryId
+          ? {
+              ...cat,
+              subExpenses: cat.subExpenses.filter((sub) => sub.id !== subExpenseId),
+            }
+          : cat
+      )
+    );
+  };
+
+  const updateSubExpense = (
+    categoryId: string,
+    subExpenseId: string,
+    field: "name" | "amount",
+    value: string
+  ) => {
+    setExpenseCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === categoryId
+          ? {
+              ...cat,
+              subExpenses: cat.subExpenses.map((sub) =>
+                sub.id === subExpenseId ? { ...sub, [field]: value } : sub
+              ),
+            }
+          : cat
+      )
+    );
+  };
+
+  // Calculate totals for each category
+  const getCategoryTotal = (categoryId: string) => {
+    const category = expenseCategories.find((cat) => cat.id === categoryId);
+    if (!category) return 0;
+    return category.subExpenses.reduce((sum, sub) => sum + toNum(sub.amount), 0);
+  };
 
   // Derived values
   const monthlySalary = useMemo(() => toNum(yearlySalaryCad) / 12, [yearlySalaryCad]);
@@ -90,10 +192,13 @@ export default function CanadaFundCalculator() {
   );
   const gymYearly = useMemo(() => gymMonthly * 12, [gymMonthly]);
 
-  const totalMonthlyExpense = useMemo(
-    () => gymMonthly + toNum(ghar) + toNum(ration) + toNum(utilityWash) + toNum(transport) + toNum(bhejnaTransfer),
-    [gymMonthly, ghar, ration, utilityWash, transport, bhejnaTransfer]
-  );
+  const totalMonthlyExpense = useMemo(() => {
+    const categoriesTotal = expenseCategories.reduce(
+      (sum, cat) => sum + getCategoryTotal(cat.id),
+      0
+    );
+    return gymMonthly + categoriesTotal;
+  }, [gymMonthly, expenseCategories]);
 
   const yearlySavings = useMemo(
     () => (afterTaxPerMonth - totalMonthlyExpense) * 12,
@@ -231,35 +336,87 @@ export default function CanadaFundCalculator() {
             Monthly Expenses
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ghar">🏠 Ghar</Label>
-              <Input id="ghar" type="number" step="any" value={ghar} onChange={(e) => setGhar(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ration">🛒 Ration</Label>
-              <Input id="ration" type="number" step="any" value={ration} onChange={(e) => setRation(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gym">💪 Gym (auto)</Label>
-              <Input id="gym" type="number" value={String(gymMonthly)} readOnly className="font-mono-num bg-muted/30" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="utilityWash">🧺 Utility/Wash</Label>
-              <Input id="utilityWash" type="number" step="any" value={utilityWash} onChange={(e) => setUtilityWash(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="transport">🚌 Transport</Label>
-              <Input id="transport" type="number" step="any" value={transport} onChange={(e) => setTransport(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bhejna">💸 Bhejna/Transfer</Label>
-              <Input id="bhejna" type="number" step="any" value={bhejnaTransfer} onChange={(e) => setBhejnaTransfer(e.target.value)} className="font-mono-num" />
+        <CardContent className="space-y-6">
+          {/* Gym - Auto calculated */}
+          <div className="p-4 rounded-lg border bg-muted/20">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-base font-semibold">💪 Gym (auto-calculated)</Label>
+              <div className="text-lg font-semibold font-mono-num">{formatCurrency(gymMonthly)}</div>
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-muted">
+          {/* Dynamic Expense Categories */}
+          {expenseCategories.map((category) => {
+            const categoryTotal = getCategoryTotal(category.id);
+            return (
+              <div key={category.id} className="p-4 rounded-lg border bg-card">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-base font-semibold">
+                    {category.emoji} {category.name}
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="text-lg font-semibold font-mono-num">
+                      {formatCurrency(categoryTotal)}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addSubExpense(category.id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {category.subExpenses.map((subExpense, index) => (
+                    <div key={subExpense.id} className="flex items-center gap-2">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Sub-expense name"
+                          value={subExpense.name}
+                          onChange={(e) =>
+                            updateSubExpense(category.id, subExpense.id, "name", e.target.value)
+                          }
+                          className="text-sm"
+                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            +
+                          </span>
+                          <Input
+                            type="number"
+                            step="any"
+                            placeholder="0"
+                            value={subExpense.amount}
+                            onChange={(e) =>
+                              updateSubExpense(category.id, subExpense.id, "amount", e.target.value)
+                            }
+                            className="font-mono-num pl-7"
+                          />
+                        </div>
+                      </div>
+                      {category.subExpenses.length > 1 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeSubExpense(category.id, subExpense.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
             <div className="text-sm text-muted-foreground">Total Monthly Expense</div>
             <div className="text-2xl font-bold font-mono-num">{formatCurrency(totalMonthlyExpense)}</div>
           </div>
