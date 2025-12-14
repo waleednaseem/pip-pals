@@ -188,7 +188,10 @@ export default function CanadaFundCalculator() {
       return (
         <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
           <div className="flex items-center justify-between">
-            <Label className="text-base font-semibold">{icon} {label}</Label>
+            <div className="flex items-center gap-3">
+              <Label className="text-base font-semibold">{icon} {label}</Label>
+              <span className="text-lg font-bold font-mono-num text-primary">{formatCurrency(total)}</span>
+            </div>
             <Button
               type="button"
               size="sm"
@@ -228,10 +231,6 @@ export default function CanadaFundCalculator() {
               )}
             </div>
           ))}
-          <div className="p-3 rounded-lg bg-background/50">
-            <div className="text-sm text-muted-foreground">Total</div>
-            <div className="text-lg font-semibold font-mono-num">{formatCurrency(total)}</div>
-          </div>
         </div>
       );
     }
