@@ -136,7 +136,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background p-4 md:p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          <Tabs defaultValue="pair" className="w-full">
+          <Tabs defaultValue="canada" className="w-full">
             <TabsList className="grid w-full max-w-md grid-cols-3">
               <TabsTrigger value="pair">Select Pair</TabsTrigger>
               <TabsTrigger value="canada">Canada Fund</TabsTrigger>
