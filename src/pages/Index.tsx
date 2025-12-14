@@ -134,8 +134,28 @@ const Index = () => {
 
   if (!selectedPair) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+      <div className="min-h-screen bg-background p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Tabs defaultValue="pair" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="pair">Select Pair</TabsTrigger>
+              <TabsTrigger value="canada">Canada Fund</TabsTrigger>
+              <TabsTrigger value="converter">Currency Converter</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pair" className="mt-6">
+              <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+            </TabsContent>
+
+            <TabsContent value="canada" className="mt-6">
+              <CanadaFundCalculator />
+            </TabsContent>
+
+            <TabsContent value="converter" className="mt-6">
+              <CurrencyConverter />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     );
   }
