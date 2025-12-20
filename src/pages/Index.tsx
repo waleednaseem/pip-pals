@@ -36,12 +36,13 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import {
   Collapsible,
   CollapsibleContent,
@@ -243,21 +244,82 @@ const Index = () => {
 
         {/* Tabs for Calculator and Lifeline */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="mb-6">
-            <Select value={activeTab} onValueChange={setActiveTab}>
-              <SelectTrigger className="w-full sm:max-w-xs md:max-w-md bg-background">
-                <SelectValue placeholder="Select tool" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="calculator">Forex Pip Calculator</SelectItem>
-                <SelectItem value="lifeline">Setup Your Lifeline</SelectItem>
-                <SelectItem value="tax">Tax History</SelectItem>
-                <SelectItem value="canada">Canada Fund</SelectItem>
-                <SelectItem value="converter">Currency Converter</SelectItem>
-                <SelectItem value="salary">Salary Calculator</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12">
+                <span>
+                  {activeTab === "calculator" && "Forex Pip Calculator"}
+                  {activeTab === "lifeline" && "Setup Your Lifeline"}
+                  {activeTab === "tax" && "Tax History"}
+                  {activeTab === "canada" && "Canada Fund"}
+                  {activeTab === "converter" && "Currency Converter"}
+                  {activeTab === "salary" && "Salary Calculator"}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="max-h-[85vh]">
+              <DrawerHeader>
+                <DrawerTitle>Select Tool</DrawerTitle>
+              </DrawerHeader>
+              <div className="p-4 space-y-2">
+                <DrawerClose asChild>
+                  <Button 
+                    variant={activeTab === "calculator" ? "default" : "ghost"} 
+                    className="w-full justify-start h-14 text-lg"
+                    onClick={() => setActiveTab("calculator")}
+                  >
+                    Forex Pip Calculator
+                  </Button>
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button 
+                    variant={activeTab === "lifeline" ? "default" : "ghost"} 
+                    className="w-full justify-start h-14 text-lg"
+                    onClick={() => setActiveTab("lifeline")}
+                  >
+                    Setup Your Lifeline
+                  </Button>
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button 
+                    variant={activeTab === "tax" ? "default" : "ghost"} 
+                    className="w-full justify-start h-14 text-lg"
+                    onClick={() => setActiveTab("tax")}
+                  >
+                    Tax History
+                  </Button>
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button 
+                    variant={activeTab === "canada" ? "default" : "ghost"} 
+                    className="w-full justify-start h-14 text-lg"
+                    onClick={() => setActiveTab("canada")}
+                  >
+                    Canada Fund
+                  </Button>
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button 
+                    variant={activeTab === "converter" ? "default" : "ghost"} 
+                    className="w-full justify-start h-14 text-lg"
+                    onClick={() => setActiveTab("converter")}
+                  >
+                    Currency Converter
+                  </Button>
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button 
+                    variant={activeTab === "salary" ? "default" : "ghost"} 
+                    className="w-full justify-start h-14 text-lg"
+                    onClick={() => setActiveTab("salary")}
+                  >
+                    Salary Calculator
+                  </Button>
+                </DrawerClose>
+              </div>
+            </DrawerContent>
+          </Drawer>
 
           {/* Calculator Tab */}
           <TabsContent value="calculator" className="space-y-6 mt-6">
