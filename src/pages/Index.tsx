@@ -36,6 +36,13 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -43,6 +50,7 @@ import {
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
+  const [activeTab, setActiveTab] = useState("calculator");
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
@@ -234,15 +242,22 @@ const Index = () => {
         </div>
 
         {/* Tabs for Calculator and Lifeline */}
-        <Tabs defaultValue="calculator" className="w-full">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
-            <TabsTrigger value="calculator">Forex Pip Calculator</TabsTrigger>
-            <TabsTrigger value="lifeline">Setup Your Lifeline</TabsTrigger>
-            <TabsTrigger value="tax">Tax History</TabsTrigger>
-            <TabsTrigger value="canada">Canada Fund</TabsTrigger>
-            <TabsTrigger value="converter">Currency Converter</TabsTrigger>
-            <TabsTrigger value="salary">Salary Calculator</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="mb-6">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full sm:max-w-xs md:max-w-md bg-background">
+                <SelectValue placeholder="Select tool" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="calculator">Forex Pip Calculator</SelectItem>
+                <SelectItem value="lifeline">Setup Your Lifeline</SelectItem>
+                <SelectItem value="tax">Tax History</SelectItem>
+                <SelectItem value="canada">Canada Fund</SelectItem>
+                <SelectItem value="converter">Currency Converter</SelectItem>
+                <SelectItem value="salary">Salary Calculator</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Calculator Tab */}
           <TabsContent value="calculator" className="space-y-6 mt-6">
