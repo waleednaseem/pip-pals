@@ -251,7 +251,7 @@ const Index = () => {
 
           {/* Lifeline Tab */}
           <TabsContent value="lifeline" className="mt-6">
-            <Lifeline trades={trades} />
+            <Lifeline />
           </TabsContent>
 
           {/* Tax History Tab */}
@@ -300,10 +300,17 @@ const SalaryCalculator = () => {
     name: string;
     amount: number;
     color: string;
+    subExpenses: { id: string; name: string; amount: number }[];
+    allowSubExpenses: boolean;
   }[]>([]);
   const [adding, setAdding] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>("");
   const [newAmount, setNewAmount] = useState<string>("");
+  
+  // Sub-expense states
+  const [addingSubFor, setAddingSubFor] = useState<string | null>(null);
+  const [newSubName, setNewSubName] = useState<string>("");
+  const [newSubAmount, setNewSubAmount] = useState<string>("");
 
   const colors = [
     "bg-emerald-500",
@@ -322,11 +329,21 @@ const SalaryCalculator = () => {
 
   const addExpense = () => {
     const amountNum = parseFloat(newAmount);
-    if (!newName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+    if (!newName.trim() || isNaN(amountNum) || amountNum < 0) return;
+    
+    const allowSubExpenses = amountNum === 0;
     const color = colors[expenses.length % colors.length];
+    
     setExpenses((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), name: newName.trim(), amount: amountNum, color },
+      { 
+        id: crypto.randomUUID(), 
+        name: newName.trim(), 
+        amount: amountNum, 
+        color,
+        subExpenses: [],
+        allowSubExpenses
+      },
     ]);
     setNewName("");
     setNewAmount("");
@@ -335,6 +352,36 @@ const SalaryCalculator = () => {
 
   const removeExpense = (id: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const addSubExpense = (expenseId: string) => {
+    const amountNum = parseFloat(newSubAmount);
+    if (!newSubName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+
+    setExpenses((prev) => prev.map(e => {
+      if (e.id === expenseId) {
+        const newSub = { id: crypto.randomUUID(), name: newSubName.trim(), amount: amountNum };
+        const updatedSubExpenses = [...e.subExpenses, newSub];
+        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
+        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
+      }
+      return e;
+    }));
+    
+    setNewSubName("");
+    setNewSubAmount("");
+    setAddingSubFor(null);
+  };
+
+  const removeSubExpense = (expenseId: string, subId: string) => {
+    setExpenses((prev) => prev.map(e => {
+      if (e.id === expenseId) {
+        const updatedSubExpenses = e.subExpenses.filter(s => s.id !== subId);
+        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
+        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
+      }
+      return e;
+    }));
   };
 
   let offset = 0;
@@ -406,7 +453,7 @@ const SalaryCalculator = () => {
               type="number"
               value={newAmount}
               onChange={(e) => setNewAmount(e.target.value)}
-              placeholder="Amount"
+              placeholder="Amount (0 for sub-expenses)"
             />
             <Button onClick={addExpense}>Add</Button>
           </div>
@@ -414,18 +461,74 @@ const SalaryCalculator = () => {
 
         <div className="space-y-2">
           {expenses.map((e) => (
-            <div key={e.id} className="flex items-center justify-between rounded-md border p-3">
-              <div className="flex items-center gap-3">
-                <span className={`h-3 w-3 rounded-full ${e.color}`} />
-                <div className="font-medium">{e.name}</div>
+            <div key={e.id} className="rounded-md border p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`h-3 w-3 rounded-full ${e.color}`} />
+                  <div className="font-medium">{e.name}</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
+                  <div className="font-semibold">{e.amount.toLocaleString()}</div>
+                  <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
-                <div className="font-semibold">{e.amount.toLocaleString()}</div>
-                <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
+
+              {e.allowSubExpenses && (
+                <div className="pl-6 space-y-2">
+                  {e.subExpenses.map((sub) => (
+                    <div key={sub.id} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
+                      <span>{sub.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{sub.amount.toLocaleString()}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => removeSubExpense(e.id, sub.id)}
+                        >
+                          <Trash className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {addingSubFor === e.id ? (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        className="h-8 text-sm"
+                        value={newSubName}
+                        onChange={(ev) => setNewSubName(ev.target.value)}
+                        placeholder="Item name"
+                      />
+                      <Input
+                        className="h-8 text-sm w-24"
+                        type="number"
+                        value={newSubAmount}
+                        onChange={(ev) => setNewSubAmount(ev.target.value)}
+                        placeholder="Amount"
+                      />
+                      <Button size="sm" onClick={() => addSubExpense(e.id)}>Add</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="h-auto p-0 text-muted-foreground" 
+                      onClick={() => {
+                        setAddingSubFor(e.id);
+                        setNewSubName("");
+                        setNewSubAmount("");
+                      }}
+                    >
+                      + Add sub-expense
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

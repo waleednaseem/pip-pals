@@ -1,13 +1,14 @@
 export interface LifelineSettings {
-  monthlyExpense: number; // Monthly expense in CAD
-  currency: string; // Display currency (always CAD)
+  monthlyExpense: number; // Monthly expense in selected currency
+  currency: string; // Selected currency (e.g., CAD, PKR, EUR)
+  taxRate: number; // Tax rate percentage (e.g., 30 for 30%)
   startDate: string;
   periodMonths: number; // 1 for monthly, 6 for 6-month tracking
 }
 
 export interface Transaction {
   id: string;
-  amount: number; // Amount in CAD
+  amount: number; // Amount in selected currency
   amountUSD?: number; // Original USD amount if converted
   description: string;
   date: string;
@@ -18,8 +19,8 @@ export interface Transaction {
 
 export interface TaxPayment {
   id: string;
-  amount: number;
-  amountCAD: number;
+  amount: number; // Tax amount in USD (if applicable/tracked)
+  amountLocal: number; // Tax amount in local currency
   exchangeRate: number;
   date: string;
   earningsIds: string[]; // Track which earnings were taxed

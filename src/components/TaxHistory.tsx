@@ -27,7 +27,7 @@ export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
   }
 
   const totalTaxPaidUSD = taxPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const totalTaxPaidCAD = taxPayments.reduce((sum, payment) => sum + payment.amountCAD, 0);
+  const totalTaxPaidLocal = taxPayments.reduce((sum, payment) => sum + payment.amountLocal, 0);
 
   return (
     <div className="space-y-4">
@@ -48,9 +48,9 @@ export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
               </p>
             </div>
             <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-1">Total Tax Paid (CAD)</p>
+              <p className="text-sm text-muted-foreground mb-1">Total Tax Paid ({currency})</p>
               <p className="text-2xl font-bold text-primary">
-                ${totalTaxPaidCAD.toFixed(2)}
+                {currency} {totalTaxPaidLocal.toFixed(2)}
               </p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-sm">
-                        Tax Payment - 30% Canadian Tax
+                        Tax Payment
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(payment.date).toLocaleDateString()} at{" "}
@@ -90,9 +90,9 @@ export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">CAD Amount</p>
+                      <p className="text-muted-foreground text-xs">{currency} Amount</p>
                       <p className="font-semibold text-red-600 dark:text-red-400">
-                        ${payment.amountCAD.toFixed(2)}
+                        {currency} {payment.amountLocal.toFixed(2)}
                       </p>
                     </div>
                     <div>

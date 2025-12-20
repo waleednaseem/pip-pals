@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Plus, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle } from "lucide-react";
-import { TradeEntry } from "@/types/calculator";
+import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2 } from "lucide-react";
 import { LifelineData, Transaction, LifelineStats } from "@/types/lifeline";
 import {
   getLifelineData,
@@ -15,18 +14,16 @@ import {
   deleteTransaction,
   calculateLifelineStats,
   formatCurrency,
-  getUSDToCADRate,
+  getExchangeRate,
   calculateTaxOwed,
   payTax,
 } from "@/utils/lifeline";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 
-interface LifelineProps {
-  trades: TradeEntry[];
-}
+interface LifelineProps {}
 
-export const Lifeline = ({ trades }: LifelineProps) => {
+export const Lifeline = ({}: LifelineProps) => {
   const [data, setData] = useState<LifelineData | null>(null);
   const [stats, setStats] = useState<LifelineStats | null>(null);
   const [isSetup, setIsSetup] = useState(false);
@@ -39,6 +36,7 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   const [monthlyExpense, setMonthlyExpense] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [periodMonths, setPeriodMonths] = useState("1");
+  const [taxRate, setTaxRate] = useState("30");
 
   // Transaction form states
   const [transAmount, setTransAmount] = useState("");
@@ -47,13 +45,15 @@ export const Lifeline = ({ trades }: LifelineProps) => {
 
   useEffect(() => {
     loadData();
-    fetchExchangeRate();
-  }, [trades]);
+    // fetchExchangeRate(); // loadData handles this if data exists. If not, we don't need to fetch yet.
+  }, []);
 
   const fetchExchangeRate = async () => {
+    if (!data) return;
+
     setIsLoadingRate(true);
     try {
-      const rate = await getUSDToCADRate();
+      const rate = await getExchangeRate(data.settings.currency);
       setExchangeRate(rate);
     } catch (error) {
       console.error('Failed to fetch exchange rate:', error);
@@ -67,9 +67,9 @@ export const Lifeline = ({ trades }: LifelineProps) => {
     if (lifelineData) {
       setData(lifelineData);
       setIsSetup(true);
-      const rate = await getUSDToCADRate();
+      const rate = await getExchangeRate(lifelineData.settings.currency);
       setExchangeRate(rate);
-      const calculatedStats = calculateLifelineStats(lifelineData, trades, rate);
+      const calculatedStats = calculateLifelineStats(lifelineData, rate);
       setStats(calculatedStats);
     }
   };
@@ -86,9 +86,10 @@ export const Lifeline = ({ trades }: LifelineProps) => {
 
     const settings = {
       monthlyExpense: parseFloat(monthlyExpense),
-      currency: "CAD", // Always use CAD
+      currency: currency,
       startDate: new Date().toISOString(),
       periodMonths: parseInt(periodMonths),
+      taxRate: parseFloat(taxRate) || 30,
     };
 
     initializeLifeline(settings);
@@ -119,20 +120,26 @@ export const Lifeline = ({ trades }: LifelineProps) => {
       return;
     }
 
-    // For earnings in USD, convert to CAD
-    const amountUSD = transType === "earning" && currency === "USD" ? parseFloat(transAmount) : undefined;
-    const finalAmount = amountUSD ? amountUSD * exchangeRate : parseFloat(transAmount);
-    
+    if (!data) return;
+
+    // Input is always considered to be in the selected Local Currency
+    let finalAmount = parseFloat(transAmount);
+    let amountUSD: number | undefined = undefined;
+
+    if (data.settings.currency !== "USD") {
+      amountUSD = finalAmount / exchangeRate;
+    } else {
+      amountUSD = finalAmount;
+    }
+
     const transaction: Transaction = {
       id: uuidv4(),
-      amount: finalAmount, // Store in CAD
+      amount: finalAmount,
       amountUSD: amountUSD,
-      description: amountUSD 
-        ? `${transDescription} (USD $${amountUSD.toFixed(2)} @ ${exchangeRate.toFixed(4)})`
-        : transDescription,
+      description: transDescription,
       date: new Date().toISOString(),
       type: transType,
-      exchangeRate: amountUSD ? exchangeRate : undefined,
+      exchangeRate: data.settings.currency !== "USD" ? exchangeRate : undefined,
     };
 
     addTransaction(transaction);
@@ -160,8 +167,8 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   const handlePayTax = async () => {
     if (!data) return;
     
-    const taxOwedCAD = calculateTaxOwed(data, trades, exchangeRate);
-    if (taxOwedCAD <= 0) {
+    const taxOwedLocal = calculateTaxOwed(data, exchangeRate);
+    if (taxOwedLocal <= 0) {
       toast({
         title: "No Tax Owed",
         description: "You have no untaxed earnings at the moment",
@@ -171,13 +178,13 @@ export const Lifeline = ({ trades }: LifelineProps) => {
 
     setIsPaying(true);
     try {
-      await payTax(trades, exchangeRate);
+      await payTax(exchangeRate);
       loadData();
       
-      const taxOwedUSD = taxOwedCAD / exchangeRate;
+      const taxOwedUSD = taxOwedLocal / exchangeRate;
       toast({
         title: "Tax Paid Successfully",
-        description: `Paid $${taxOwedCAD.toFixed(2)} CAD (USD $${taxOwedUSD.toFixed(2)})`,
+        description: `Paid ${formatCurrency(taxOwedLocal, data.settings.currency)} (USD $${taxOwedUSD.toFixed(2)})`,
       });
     } catch (error) {
       toast({
@@ -199,46 +206,64 @@ export const Lifeline = ({ trades }: LifelineProps) => {
     
     toast({
       title: "Lifeline Reset",
-      description: "All lifeline data has been cleared",
+      description: "All data has been cleared",
     });
   };
 
-  if (!isSetup) {
+  if (!isSetup || !data) {
     return (
-      <Card>
+      <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+            <Settings2 className="h-6 w-6 text-primary" />
             Setup Your Lifeline
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="monthlyExpense">Monthly Expenses</Label>
+            <Label htmlFor="monthly-expense">Monthly Expense Target</Label>
             <Input
-              id="monthlyExpense"
+              id="monthly-expense"
               type="number"
-              placeholder="Enter your monthly expenses"
+              placeholder="e.g. 2000"
               value={monthlyExpense}
               onChange={(e) => setMonthlyExpense(e.target.value)}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CAD">CAD (Canadian Dollar)</SelectItem>
-                <SelectItem value="USD">USD (for earnings conversion)</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD - US Dollar</SelectItem>
+                  <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                  <SelectItem value="EUR">EUR - Euro</SelectItem>
+                  <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                  <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                  <SelectItem value="PKR">PKR - Pakistani Rupee</SelectItem>
+                  <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                  <SelectItem value="AED">AED - UAE Dirham</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tax Rate (%)</Label>
+              <Input
+                type="number"
+                placeholder="e.g. 30"
+                value={taxRate}
+                onChange={(e) => setTaxRate(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="period">Tracking Period</Label>
+            <Label>Tracking Period</Label>
             <Select value={periodMonths} onValueChange={setPeriodMonths}>
               <SelectTrigger>
                 <SelectValue />
@@ -247,13 +272,13 @@ export const Lifeline = ({ trades }: LifelineProps) => {
                 <SelectItem value="1">1 Month</SelectItem>
                 <SelectItem value="3">3 Months</SelectItem>
                 <SelectItem value="6">6 Months</SelectItem>
-                <SelectItem value="12">12 Months</SelectItem>
+                <SelectItem value="12">1 Year</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Button onClick={handleSetup} className="w-full">
-            Activate Lifeline
+            Start Tracking
           </Button>
         </CardContent>
       </Card>
@@ -263,41 +288,25 @@ export const Lifeline = ({ trades }: LifelineProps) => {
   if (!stats || !data) return null;
 
   const quotaStatus = stats.progressPercent >= 100 ? "complete" : "active";
-  const taxOwedCAD = calculateTaxOwed(data, trades, exchangeRate);
-  const taxOwedUSD = taxOwedCAD / exchangeRate;
+  const taxOwedLocal = calculateTaxOwed(data, exchangeRate);
+  const taxOwedUSD = taxOwedLocal / exchangeRate;
+
+  // Calculate USD to Local conversion display
+  const usdToLocalDisplay = `1 USD = ${exchangeRate.toFixed(2)} ${data.settings.currency}`;
 
   return (
-    <div className="space-y-4">
-      {/* Exchange Rate Display */}
-      <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-semibold">USD to CAD Exchange Rate</p>
-                <p className="text-xs text-muted-foreground">
-                  Updated {data.lastExchangeRateUpdate ? new Date(data.lastExchangeRateUpdate).toLocaleDateString() : 'today'}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-primary">
-                {isLoadingRate ? "..." : exchangeRate.toFixed(4)}
-              </p>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={fetchExchangeRate}
-                disabled={isLoadingRate}
-                className="text-xs h-auto py-1 px-2"
-              >
-                Refresh
-              </Button>
-            </div>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold text-primary">Your Lifeline</h2>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
+             {usdToLocalDisplay}
           </div>
-        </CardContent>
-      </Card>
+          <Button variant="outline" size="sm" onClick={handleReset}>
+            Reset
+          </Button>
+        </div>
+      </div>
 
       {/* Progress Card */}
       <Card>
@@ -392,44 +401,84 @@ export const Lifeline = ({ trades }: LifelineProps) => {
             </div>
           </div>
 
-          {/* Weekly Target */}
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-            <p className="text-sm text-muted-foreground mb-1">Weekly Target</p>
-            <p className="text-2xl font-bold text-primary">
-              {formatCurrency(stats.weeklyTarget, data.settings.currency)}
-            </p>
-          </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Weekly Target</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.weeklyTarget || 0, data.settings.currency)}</p>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Target</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.totalTarget || 0, data.settings.currency)}</p>
+              </div>
+            </div>
 
-          {/* Net Balance */}
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
-            <p className={`text-2xl font-bold ${stats.remaining >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {formatCurrency(stats.remaining, data.settings.currency)}
-            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <p className="text-sm text-green-600 dark:text-green-400">Total Earned</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {formatCurrency(stats.totalEarned || 0, data.settings.currency)}
+                </p>
+              </div>
+              <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+                <p className="text-sm text-red-600 dark:text-red-400">Total Spent</p>
+                <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                  {formatCurrency(stats.totalSpent || 0, data.settings.currency)}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <p className="text-sm text-primary font-semibold">Tax Payable ({data.settings.taxRate}%)</p>
+                  <p className="text-xs text-muted-foreground">Based on untaxed earnings</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency(taxOwedLocal, data.settings.currency)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ${taxOwedUSD.toFixed(2)} USD
+                  </p>
+                </div>
+              </div>
+              
+              {taxOwedLocal > 0 && (
+                <Button 
+                  onClick={handlePayTax} 
+                  disabled={isPaying}
+                  className="w-full mt-2"
+                  variant="default"
+                >
+                  {isPaying ? "Processing..." : `Pay Tax (${formatCurrency(taxOwedLocal, data.settings.currency)})`}
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Tax Payment Card */}
-      {taxOwedCAD > 0 && (
+      {taxOwedLocal > 0 && (
         <Card className="border-border bg-card">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              Canadian Tax Due (30%)
+              Tax Due ({data.settings.taxRate}%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg bg-muted/30 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Untaxed Earnings</span>
-                <span className="font-semibold text-lg">${(taxOwedCAD / 0.30).toFixed(2)} CAD</span>
+                <span className="font-semibold text-lg">{formatCurrency(taxOwedLocal / (data.settings.taxRate/100), data.settings.currency)}</span>
               </div>
               <div className="h-px bg-border" />
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Tax Amount (30%)</span>
+                <span className="text-sm text-muted-foreground">Tax Amount ({data.settings.taxRate}%)</span>
                 <span className="font-bold text-xl text-destructive">
-                  ${taxOwedCAD.toFixed(2)} CAD
+                  {formatCurrency(taxOwedLocal, data.settings.currency)}
                 </span>
               </div>
             </div>
@@ -465,55 +514,48 @@ export const Lifeline = ({ trades }: LifelineProps) => {
       {/* Add Transaction Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Plus className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2">
+            <PlusCircle className="h-5 w-5 text-primary" />
             Add Transaction
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="transAmount">
-                Amount ({currency === "USD" && transType === "earning" ? "USD" : "CAD"})
-              </Label>
+              <Label>Amount</Label>
               <Input
-                id="transAmount"
                 type="number"
                 placeholder="0.00"
                 value={transAmount}
                 onChange={(e) => setTransAmount(e.target.value)}
               />
-              {currency === "USD" && transType === "earning" && transAmount && (
+              {data.settings.currency !== "USD" && transAmount && (
                 <p className="text-xs text-muted-foreground">
-                  ≈ ${(parseFloat(transAmount) * exchangeRate).toFixed(2)} CAD
+                  ≈ ${(parseFloat(transAmount) / exchangeRate).toFixed(2)} USD
                 </p>
               )}
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="transType">Type</Label>
-              <Select value={transType} onValueChange={(value: "expense" | "earning") => setTransType(value)}>
+              <Label>Type</Label>
+              <Select value={transType} onValueChange={(v: any) => setTransType(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="earning">Earning (USD)</SelectItem>
+                  <SelectItem value="expense">Expense ({data.settings.currency})</SelectItem>
+                  <SelectItem value="earning">Earning {data.settings.currency !== "USD" ? "(USD Input)" : "(USD)"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="transDescription">Description</Label>
+            <Label>Description</Label>
             <Input
-              id="transDescription"
-              placeholder="What is this transaction for?"
+              placeholder="e.g. Freelance project, Groceries"
               value={transDescription}
               onChange={(e) => setTransDescription(e.target.value)}
             />
           </div>
-
           <Button onClick={handleAddTransaction} className="w-full">
             Add Transaction
           </Button>

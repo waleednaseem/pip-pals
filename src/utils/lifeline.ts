@@ -1,5 +1,4 @@
 import { LifelineSettings, Transaction, LifelineData, LifelineStats, TaxPayment } from "@/types/lifeline";
-import { TradeEntry } from "@/types/calculator";
 
 const LIFELINE_STORAGE_KEY = "forex-lifeline-data";
 
@@ -38,12 +37,14 @@ export const deleteTransaction = (id: string): void => {
   saveLifelineData(data);
 };
 
-export const getUSDToCADRate = async (): Promise<number> => {
+export const getExchangeRate = async (targetCurrency: string): Promise<number> => {
+  if (targetCurrency === "USD") return 1;
+
   const data = getLifelineData();
   const now = new Date();
   
-  // Check if we have a cached rate from today
-  if (data?.cachedExchangeRate && data.lastExchangeRateUpdate) {
+  // Check if we have a cached rate from today for this currency
+  if (data?.cachedExchangeRate && data.lastExchangeRateUpdate && data.settings.currency === targetCurrency) {
     const lastUpdate = new Date(data.lastExchangeRateUpdate);
     const isSameDay = lastUpdate.toDateString() === now.toDateString();
     if (isSameDay) {
@@ -53,53 +54,40 @@ export const getUSDToCADRate = async (): Promise<number> => {
   
   try {
     // Using a free exchange rate API
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const response = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
     const rates = await response.json();
-    const cadRate = rates.rates.CAD;
+    const rate = rates.rates[targetCurrency];
     
+    if (!rate) throw new Error(`Rate for ${targetCurrency} not found`);
+
     // Cache the rate
     if (data) {
-      data.cachedExchangeRate = cadRate;
+      data.cachedExchangeRate = rate;
       data.lastExchangeRateUpdate = now.toISOString();
       saveLifelineData(data);
     }
     
-    return cadRate;
+    return rate;
   } catch (error) {
     console.error('Failed to fetch exchange rate:', error);
-    // Fallback to a default rate if API fails
-    return data?.cachedExchangeRate || 1.35;
+    // Fallback to cached rate if available, otherwise 1
+    return data?.cachedExchangeRate || 1;
   }
 };
 
-export const calculateTaxOwed = (data: LifelineData, trades: TradeEntry[], exchangeRate: number): number => {
-  const TAX_RATE = 0.30; // 30% Canadian tax
+export const calculateTaxOwed = (data: LifelineData, exchangeRate: number): number => {
+  const TAX_RATE = (data.settings.taxRate || 30) / 100;
   
-  // Ensure taxPayments exists
-  const taxPayments = data.taxPayments || [];
-  
-  // Get untaxed trade earnings (trades are in USD, convert to CAD)
-  const untaxedTradeEarnings = trades
-    .filter(trade => {
-      // Check if this trade has been taxed
-      const hasTaxPayment = taxPayments.some(payment => 
-        payment.earningsIds.includes(`trade-${trade.id}`)
-      );
-      return !hasTaxPayment && trade.profit.amount > 0;
-    })
-    .reduce((sum, trade) => sum + (trade.profit.amount * exchangeRate), 0); // Convert USD to CAD
-  
-  // Get untaxed manual earnings (already in CAD)
+  // Get untaxed manual earnings (already in local currency)
   const untaxedManualEarnings = data.transactions
     .filter(t => t.type === "earning" && !t.taxed)
     .reduce((sum, t) => sum + t.amount, 0);
   
-  const totalUntaxedEarningsCAD = untaxedTradeEarnings + untaxedManualEarnings;
-  return totalUntaxedEarningsCAD * TAX_RATE;
+  const totalUntaxedEarningsLocal = untaxedManualEarnings;
+  return totalUntaxedEarningsLocal * TAX_RATE;
 };
 
 export const payTax = async (
-  trades: TradeEntry[],
   exchangeRate: number
 ): Promise<void> => {
   const data = getLifelineData();
@@ -110,23 +98,13 @@ export const payTax = async (
     data.taxPayments = [];
   }
   
-  const taxAmountCAD = calculateTaxOwed(data, trades, exchangeRate);
-  if (taxAmountCAD <= 0) return;
+  const taxAmountLocal = calculateTaxOwed(data, exchangeRate);
+  if (taxAmountLocal <= 0) return;
   
-  const taxAmountUSD = taxAmountCAD / exchangeRate;
+  const taxAmountUSD = taxAmountLocal / exchangeRate;
   
   // Get IDs of earnings being taxed
   const earningsIds: string[] = [];
-  
-  // Mark trades as taxed
-  trades.forEach(trade => {
-    const hasTaxPayment = data.taxPayments.some(payment => 
-      payment.earningsIds.includes(`trade-${trade.id}`)
-    );
-    if (!hasTaxPayment && trade.profit.amount > 0) {
-      earningsIds.push(`trade-${trade.id}`);
-    }
-  });
   
   // Mark manual earnings as taxed
   data.transactions = data.transactions.map(t => {
@@ -141,7 +119,7 @@ export const payTax = async (
   const taxPayment: TaxPayment = {
     id: crypto.randomUUID(),
     amount: taxAmountUSD,
-    amountCAD: taxAmountCAD,
+    amountLocal: taxAmountLocal,
     exchangeRate,
     date: new Date().toISOString(),
     earningsIds,
@@ -149,12 +127,12 @@ export const payTax = async (
   
   data.taxPayments.push(taxPayment);
   
-  // Add tax as expense transaction (in CAD)
+  // Add tax as expense transaction (in local currency)
   const taxTransaction: Transaction = {
     id: crypto.randomUUID(),
-    amount: taxAmountCAD,
+    amount: taxAmountLocal,
     amountUSD: taxAmountUSD,
-    description: `Tax Payment (30% Canadian Tax)`,
+    description: `Tax Payment (${data.settings.taxRate}% Tax)`,
     date: new Date().toISOString(),
     type: "tax",
     exchangeRate,
@@ -166,41 +144,38 @@ export const payTax = async (
 
 export const calculateLifelineStats = (
   data: LifelineData,
-  trades: TradeEntry[],
   exchangeRate: number
 ): LifelineStats => {
   const { settings, transactions } = data;
-  const { monthlyExpense, periodMonths, startDate } = settings;
+  const { monthlyExpense, periodMonths, startDate, taxRate } = settings;
+  const TAX_RATE = (taxRate || 30) / 100;
 
-  // Calculate total target for the period (in CAD)
+  // Calculate total target for the period (in local currency)
   const totalTarget = monthlyExpense * periodMonths;
   
   // Calculate weekly target
   const weeksInPeriod = (periodMonths * 30.44) / 7; // Average days per month / 7
   const weeklyTarget = totalTarget / weeksInPeriod;
 
-  // Calculate earnings from trades (convert USD to CAD)
-  const tradeEarnings = trades.reduce((sum, trade) => sum + (trade.profit.amount * exchangeRate), 0);
-  
-  // Calculate earnings from manual transactions (already in CAD)
+  // Calculate earnings from manual transactions (already in local currency)
   const manualEarnings = transactions
     .filter((t) => t.type === "earning")
     .reduce((sum, t) => sum + t.amount, 0);
   
-  const totalEarned = tradeEarnings + manualEarnings;
+  const totalEarned = manualEarnings;
 
-  // Calculate total spent (including tax) - in CAD
+  // Calculate total spent (including tax) - in local currency
   const totalSpent = transactions
     .filter((t) => t.type === "expense" || t.type === "tax")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Calculate total tax paid - in CAD
+  // Calculate total tax paid - in local currency
   const totalTaxPaid = transactions
     .filter((t) => t.type === "tax")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Calculate untaxed earnings in CAD
-  const untaxedEarnings = calculateTaxOwed(data, trades, exchangeRate) / 0.30; // Reverse the 30% to get base amount
+  // Calculate untaxed earnings in local currency
+  const untaxedEarnings = calculateTaxOwed(data, exchangeRate) / TAX_RATE; // Reverse the tax rate to get base amount
 
   // Calculate remaining quota
   const remaining = totalEarned - totalSpent;
