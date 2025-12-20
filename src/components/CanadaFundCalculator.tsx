@@ -254,31 +254,34 @@ export default function CanadaFundCalculator() {
             </Button>
           </div>
           {subs.map((sub) => (
-            <div key={sub.id} className="flex gap-2 items-center">
+            <div key={sub.id} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
               <Input
-                placeholder="Label"
+                placeholder="Item name"
                 value={sub.label}
                 onChange={(e) => updateSubExpense(setSubs, sub.id, "label", e.target.value)}
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
-              <Input
-                type="number"
-                step="any"
-                value={sub.amount}
-                onChange={(e) => updateSubExpense(setSubs, sub.id, "amount", e.target.value)}
-                className="w-32 font-mono-num"
-              />
-              {subs.length > 1 && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => removeSubExpense(setSubs, sub.id)}
-                  className="h-9 w-9 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="number"
+                  step="any"
+                  placeholder="Amount"
+                  value={sub.amount}
+                  onChange={(e) => updateSubExpense(setSubs, sub.id, "amount", e.target.value)}
+                  className="w-full sm:w-28 font-mono-num"
+                />
+                {subs.length > 1 && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeSubExpense(setSubs, sub.id)}
+                    className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
