@@ -3,8 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, Plus, Trash2 } from "lucide-react";
+import { Home, Dumbbell, Wallet, Coins, PiggyBank, Calculator, Plus, Trash2, Settings, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface SubExpense {
   id: string;
@@ -29,9 +35,75 @@ const toNum = (v: string | number) => {
 export default function CanadaFundCalculator() {
   const { toast } = useToast();
   
-  // Inputs
+  // --- Work Configuration ---
+  const [hoursPerDay, setHoursPerDay] = useState<string>("8");
+  const [daysPerWeek, setDaysPerWeek] = useState<string>("5");
+  const [weeksPerYear, setWeeksPerYear] = useState<string>("52");
+
+  // --- Salary Inputs (Bidirectional) ---
+  const [hourlyRate, setHourlyRate] = useState<string>("");
+  const [dailyRate, setDailyRate] = useState<string>("");
+  const [monthlySalary, setMonthlySalary] = useState<string>("");
   const [yearlySalaryCad, setYearlySalaryCad] = useState<string>("");
+
+  const updateSalaries = (type: 'hourly' | 'daily' | 'monthly' | 'yearly', value: string) => {
+    const val = parseFloat(value);
+    
+    if (value === "") {
+        setHourlyRate("");
+        setDailyRate("");
+        setMonthlySalary("");
+        setYearlySalaryCad("");
+        return;
+    }
+
+    if (isNaN(val)) {
+        // Allow typing negative or partial numbers without updating others yet
+        switch(type) {
+            case 'hourly': setHourlyRate(value); break;
+            case 'daily': setDailyRate(value); break;
+            case 'monthly': setMonthlySalary(value); break;
+            case 'yearly': setYearlySalaryCad(value); break;
+        }
+        return;
+    }
+
+    const h = parseFloat(hoursPerDay) || 8;
+    const d = parseFloat(daysPerWeek) || 5;
+    const w = parseFloat(weeksPerYear) || 52;
+
+    let yearly = 0;
+    // Calculate Yearly first as the base truth
+    switch (type) {
+        case 'hourly': yearly = val * h * d * w; break;
+        case 'daily': yearly = val * d * w; break;
+        case 'monthly': yearly = val * 12; break;
+        case 'yearly': yearly = val; break;
+    }
+
+    // Update all fields
+    // We use Math.round or toFixed to avoid ugly floating point errors, but keep precision
+    setYearlySalaryCad(type === 'yearly' ? value : yearly.toFixed(2).replace(/\.00$/, ''));
+    setMonthlySalary(type === 'monthly' ? value : (yearly / 12).toFixed(2).replace(/\.00$/, ''));
+    
+    const calculatedDaily = yearly / w / d;
+    setDailyRate(type === 'daily' ? value : calculatedDaily.toFixed(2).replace(/\.00$/, ''));
+    
+    const calculatedHourly = yearly / w / d / h;
+    setHourlyRate(type === 'hourly' ? value : calculatedHourly.toFixed(2).replace(/\.00$/, ''));
+  };
+
+  // Update when config changes
+  useEffect(() => {
+    if (yearlySalaryCad) {
+       updateSalaries('yearly', yearlySalaryCad);
+    }
+  }, [hoursPerDay, daysPerWeek, weeksPerYear]);
+
+
+  // --- Other Inputs ---
   const [taxRate, setTaxRate] = useState<string>("22");
+  const [taxReturn, setTaxReturn] = useState<string>("16051");
 
   // Gym / Health monthly inputs
   const [gymBoy, setGymBoy] = useState<string>("0");
@@ -92,13 +164,10 @@ export default function CanadaFundCalculator() {
   const [transportSubs, setTransportSubs] = useState<SubExpense[]>([]);
   const [bhejnaTransferSubs, setBhejnaTransferSubs] = useState<SubExpense[]>([]);
 
-  // Tax Return (editable/static)
-  const [taxReturn, setTaxReturn] = useState<string>("16051");
-
   // Derived values
-  const monthlySalary = useMemo(() => toNum(yearlySalaryCad) / 12, [yearlySalaryCad]);
-  const taxPerMonth = useMemo(() => monthlySalary * (toNum(taxRate) / 100), [monthlySalary, taxRate]);
-  const afterTaxPerMonth = useMemo(() => monthlySalary - taxPerMonth, [monthlySalary, taxPerMonth]);
+  const monthlySalaryNum = toNum(monthlySalary);
+  const taxPerMonth = useMemo(() => monthlySalaryNum * (toNum(taxRate) / 100), [monthlySalaryNum, taxRate]);
+  const afterTaxPerMonth = useMemo(() => monthlySalaryNum - taxPerMonth, [monthlySalaryNum, taxPerMonth]);
   const afterTaxPerYear = useMemo(() => afterTaxPerMonth * 12, [afterTaxPerMonth]);
 
   const gymMonthly = useMemo(
@@ -108,40 +177,21 @@ export default function CanadaFundCalculator() {
   const gymYearly = useMemo(() => gymMonthly * 12, [gymMonthly]);
 
   // Calculate totals - use sub-expenses if expanded, otherwise use simple value
-  const gharTotal = useMemo(() => 
-    expandedExpenses.has("ghar") 
-      ? gharSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0)
-      : toNum(ghar),
-    [expandedExpenses, gharSubs, ghar]
-  );
+  const calculateExpenseTotal = (
+    baseValue: string, 
+    subs: SubExpense[], 
+    isExpanded: boolean
+  ) => {
+    return isExpanded 
+      ? subs.reduce((sum, sub) => sum + toNum(sub.amount), 0)
+      : toNum(baseValue);
+  };
 
-  const rationTotal = useMemo(() => 
-    expandedExpenses.has("ration")
-      ? rationSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0)
-      : toNum(ration),
-    [expandedExpenses, rationSubs, ration]
-  );
-
-  const utilityWashTotal = useMemo(() => 
-    expandedExpenses.has("utilityWash")
-      ? utilityWashSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0)
-      : toNum(utilityWash),
-    [expandedExpenses, utilityWashSubs, utilityWash]
-  );
-
-  const transportTotal = useMemo(() => 
-    expandedExpenses.has("transport")
-      ? transportSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0)
-      : toNum(transport),
-    [expandedExpenses, transportSubs, transport]
-  );
-
-  const bhejnaTransferTotal = useMemo(() => 
-    expandedExpenses.has("bhejnaTransfer")
-      ? bhejnaTransferSubs.reduce((sum, sub) => sum + toNum(sub.amount), 0)
-      : toNum(bhejnaTransfer),
-    [expandedExpenses, bhejnaTransferSubs, bhejnaTransfer]
-  );
+  const gharTotal = useMemo(() => calculateExpenseTotal(ghar, gharSubs, expandedExpenses.has("ghar")), [ghar, gharSubs, expandedExpenses]);
+  const rationTotal = useMemo(() => calculateExpenseTotal(ration, rationSubs, expandedExpenses.has("ration")), [ration, rationSubs, expandedExpenses]);
+  const utilityWashTotal = useMemo(() => calculateExpenseTotal(utilityWash, utilityWashSubs, expandedExpenses.has("utilityWash")), [utilityWash, utilityWashSubs, expandedExpenses]);
+  const transportTotal = useMemo(() => calculateExpenseTotal(transport, transportSubs, expandedExpenses.has("transport")), [transport, transportSubs, expandedExpenses]);
+  const bhejnaTransferTotal = useMemo(() => calculateExpenseTotal(bhejnaTransfer, bhejnaTransferSubs, expandedExpenses.has("bhejnaTransfer")), [bhejnaTransfer, bhejnaTransferSubs, expandedExpenses]);
 
   const totalMonthlyExpense = useMemo(
     () => gymMonthly + gharTotal + rationTotal + utilityWashTotal + transportTotal + bhejnaTransferTotal,
@@ -171,7 +221,7 @@ export default function CanadaFundCalculator() {
     setter(prev => prev.filter(sub => sub.id !== id));
   };
 
-  // Render expense field (either simple input or sub-expenses)
+  // Render expense field
   const renderExpenseField = (
     expenseKey: string,
     icon: string,
@@ -275,241 +325,271 @@ export default function CanadaFundCalculator() {
 
   return (
     <div className="space-y-6">
-      {/* Salary Calculations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Canada Fund — Salary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="yearly">Yearly Salary (CAD)</Label>
-              <Input
-                id="yearly"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                placeholder="e.g., 72000"
-                value={yearlySalaryCad}
-                onChange={(e) => setYearlySalaryCad(e.target.value)}
-                className="font-mono-num"
-              />
+      {/* Income & Tax Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Income Settings
+              </div>
+              <Accordion type="single" collapsible className="w-full max-w-[150px]">
+                <AccordionItem value="settings" className="border-none">
+                  <AccordionTrigger className="py-0 text-sm hover:no-underline text-muted-foreground">
+                    <Settings className="h-4 w-4 mr-1" /> Config
+                  </AccordionTrigger>
+                  <AccordionContent className="absolute bg-background border p-4 rounded-lg shadow-lg z-10 mt-2 w-[250px] right-4">
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Hours / Day</Label>
+                        <Input value={hoursPerDay} onChange={(e) => setHoursPerDay(e.target.value)} className="h-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Days / Week</Label>
+                        <Input value={daysPerWeek} onChange={(e) => setDaysPerWeek(e.target.value)} className="h-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Weeks / Year</Label>
+                        <Input value={weeksPerYear} onChange={(e) => setWeeksPerYear(e.target.value)} className="h-8" />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="hourly">Hourly Rate</Label>
+                <Input
+                  id="hourly"
+                  type="number"
+                  placeholder="0.00"
+                  value={hourlyRate}
+                  onChange={(e) => updateSalaries('hourly', e.target.value)}
+                  className="font-mono-num"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="daily">Daily Income</Label>
+                <Input
+                  id="daily"
+                  type="number"
+                  placeholder="0.00"
+                  value={dailyRate}
+                  onChange={(e) => updateSalaries('daily', e.target.value)}
+                  className="font-mono-num"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="monthly">Monthly Salary</Label>
+                <Input
+                  id="monthly"
+                  type="number"
+                  placeholder="0.00"
+                  value={monthlySalary}
+                  onChange={(e) => updateSalaries('monthly', e.target.value)}
+                  className="font-mono-num"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="yearly">Yearly Salary</Label>
+                <Input
+                  id="yearly"
+                  type="number"
+                  placeholder="0.00"
+                  value={yearlySalaryCad}
+                  onChange={(e) => updateSalaries('yearly', e.target.value)}
+                  className="font-mono-num font-bold"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
-              <Input
-                id="taxRate"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                min="0"
-                max="100"
-                value={taxRate}
-                onChange={(e) => setTaxRate(e.target.value)}
-                className="font-mono-num"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="taxReturn">Tax Return (CAD)</Label>
-              <Input
-                id="taxReturn"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                value={taxReturn}
-                onChange={(e) => setTaxReturn(e.target.value)}
-                className="font-mono-num"
-              />
-            </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Monthly Salary</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(monthlySalary)}</div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              Tax & Net Income
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                <Input
+                  id="taxRate"
+                  type="number"
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(e.target.value)}
+                  className="font-mono-num"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="taxReturn">Est. Tax Return (Yearly)</Label>
+                <Input
+                  id="taxReturn"
+                  type="number"
+                  value={taxReturn}
+                  onChange={(e) => setTaxReturn(e.target.value)}
+                  className="font-mono-num"
+                />
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Tax per Month</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(taxPerMonth)}</div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">After-Tax per Month</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(afterTaxPerMonth)}</div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">After-Tax per Year</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(afterTaxPerYear)}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Gym / Health */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Dumbbell className="h-5 w-5" />
-            Gym & Health
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="gymBoy">Gym Boy / Month</Label>
-              <Input id="gymBoy" type="number" step="any" value={gymBoy} onChange={(e) => setGymBoy(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gymGirl">Gym Girl / Month</Label>
-              <Input id="gymGirl" type="number" step="any" value={gymGirl} onChange={(e) => setGymGirl(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="nutrition">Nutrition / Month</Label>
-              <Input id="nutrition" type="number" step="any" value={nutrition} onChange={(e) => setNutrition(e.target.value)} className="font-mono-num" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="trainer">Trainer / Month</Label>
-              <Input id="trainer" type="number" step="any" value={trainerPerMonth} onChange={(e) => setTrainerPerMonth(e.target.value)} className="font-mono-num" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Gym per Month</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(gymMonthly)}</div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Gym per Year</div>
-              <div className="text-lg font-semibold font-mono-num">{formatCurrency(gymYearly)}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Monthly Expenses */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Home className="h-5 w-5" />
-            Monthly Expenses
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderExpenseField("ghar", "🏠", "Ghar", ghar, setGhar, gharSubs, setGharSubs, gharTotal)}
-            {renderExpenseField("ration", "🛒", "Ration", ration, setRation, rationSubs, setRationSubs, rationTotal)}
-            {renderExpenseField("utilityWash", "🧺", "Utility/Wash", utilityWash, setUtilityWash, utilityWashSubs, setUtilityWashSubs, utilityWashTotal)}
-            {renderExpenseField("transport", "🚌", "Transport", transport, setTransport, transportSubs, setTransportSubs, transportTotal)}
-            {renderExpenseField("bhejnaTransfer", "💸", "Bhejna/Transfer", bhejnaTransfer, setBhejnaTransfer, bhejnaTransferSubs, setBhejnaTransferSubs, bhejnaTransferTotal)}
             
-            {/* Gym (auto-calculated) */}
-            <div className="space-y-2">
-              <Label>💪 Gym (auto)</Label>
-              <Input 
-                type="number" 
-                value={String(gymMonthly)} 
-                readOnly 
-                className="font-mono-num bg-muted/30" 
-              />
+            <div className="pt-2 space-y-3">
+              <div className="flex justify-between items-center p-2 rounded bg-muted/40">
+                <span className="text-sm text-muted-foreground">Tax per Month</span>
+                <span className="font-mono-num font-medium text-destructive">{formatCurrency(taxPerMonth)}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 rounded bg-primary/10 border border-primary/20">
+                <span className="text-sm font-medium">Net Pay per Month</span>
+                <span className="font-mono-num font-bold text-lg text-primary">{formatCurrency(afterTaxPerMonth)}</span>
+              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          <div className="p-4 rounded-lg bg-muted border-2 border-primary/20">
-            <div className="text-sm text-muted-foreground">Total Monthly Expense</div>
-            <div className="text-2xl font-bold font-mono-num">{formatCurrency(totalMonthlyExpense)}</div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Expenses Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly Expenses */}
+        <Card className="lg:row-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5" />
+              Living Expenses
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {renderExpenseField("ghar", "🏠", "Ghar (Rent)", ghar, setGhar, gharSubs, setGharSubs, gharTotal)}
+            {renderExpenseField("ration", "🛒", "Ration (Groceries)", ration, setRation, rationSubs, setRationSubs, rationTotal)}
+            {renderExpenseField("utilityWash", "🧺", "Utilities / Wash", utilityWash, setUtilityWash, utilityWashSubs, setUtilityWashSubs, utilityWashTotal)}
+            {renderExpenseField("transport", "🚌", "Transport", transport, setTransport, transportSubs, setTransportSubs, transportTotal)}
+            {renderExpenseField("bhejnaTransfer", "💸", "Family Support", bhejnaTransfer, setBhejnaTransfer, bhejnaTransferSubs, setBhejnaTransferSubs, bhejnaTransferTotal)}
+            
+            <div className="pt-4 border-t mt-4">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Living Total</span>
+                <span className="font-mono-num font-bold">{formatCurrency(gharTotal + rationTotal + utilityWashTotal + transportTotal + bhejnaTransferTotal)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Savings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PiggyBank className="h-5 w-5" />
-            Savings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg bg-muted/40">
-            <div className="text-sm text-muted-foreground">Yearly Savings</div>
-            <div className="text-xl font-semibold font-mono-num">{formatCurrency(yearlySavings)}</div>
-          </div>
-          <div className="p-4 rounded-lg bg-muted/40">
-            <div className="text-sm text-muted-foreground">Half-Year Savings</div>
-            <div className="text-xl font-semibold font-mono-num">{formatCurrency(halfYearSavings)}</div>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Gym & Health */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Dumbbell className="h-5 w-5" />
+              Gym & Health
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="gymBoy">Gym (Self)</Label>
+                <Input id="gymBoy" type="number" value={gymBoy} onChange={(e) => setGymBoy(e.target.value)} className="font-mono-num" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gymGirl">Gym (Partner)</Label>
+                <Input id="gymGirl" type="number" value={gymGirl} onChange={(e) => setGymGirl(e.target.value)} className="font-mono-num" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nutrition">Nutrition</Label>
+                <Input id="nutrition" type="number" value={nutrition} onChange={(e) => setNutrition(e.target.value)} className="font-mono-num" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trainer">Trainer</Label>
+                <Input id="trainer" type="number" value={trainerPerMonth} onChange={(e) => setTrainerPerMonth(e.target.value)} className="font-mono-num" />
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-sm text-muted-foreground">Total Health</span>
+              <span className="font-mono-num font-bold">{formatCurrency(gymMonthly)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Savings Summary */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PiggyBank className="h-5 w-5" />
+              Savings Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Total Expenses</span>
+              <span className="font-mono-num font-medium text-destructive">-{formatCurrency(totalMonthlyExpense)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-primary/20">
+              <span className="font-semibold text-lg">Monthly Savings</span>
+              <span className={`font-mono-num font-bold text-lg ${afterTaxPerMonth - totalMonthlyExpense >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {formatCurrency(afterTaxPerMonth - totalMonthlyExpense)}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+               <div className="p-2 rounded bg-background/50 text-center">
+                 <div className="text-xs text-muted-foreground">Yearly Savings</div>
+                 <div className="font-mono-num font-semibold">{formatCurrency(yearlySavings)}</div>
+               </div>
+               <div className="p-2 rounded bg-background/50 text-center">
+                 <div className="text-xs text-muted-foreground">Half-Year</div>
+                 <div className="font-mono-num font-semibold">{formatCurrency(halfYearSavings)}</div>
+               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Conversions */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Coins className="h-5 w-5" />
-            Conversions
+            Currency Conversions
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cadToAed">Exchange: 1 CAD → AED</Label>
+              <Label htmlFor="cadToAed">1 CAD → AED</Label>
               <Input id="cadToAed" type="number" step="any" value={cadToAed} onChange={(e) => setCadToAed(e.target.value)} className="font-mono-num" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="aedToPkr">Exchange: 1 AED → PKR</Label>
+              <Label htmlFor="aedToPkr">1 AED → PKR</Label>
               <Input id="aedToPkr" type="number" step="any" value={aedToPkr} onChange={(e) => setAedToPkr(e.target.value)} className="font-mono-num" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cadToUsd">Exchange: 1 CAD → USD</Label>
+              <Label htmlFor="cadToUsd">1 CAD → USD</Label>
               <Input id="cadToUsd" type="number" step="any" value={cadToUsd} onChange={(e) => setCadToUsd(e.target.value)} className="font-mono-num" />
             </div>
           </div>
 
-          {toNum(yearlySalaryCad) === 0 && (
-            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                ℹ️ Please enter your Yearly Salary above to see conversions
-              </p>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Only Dirham (AED)</div>
+              <div className="text-sm text-muted-foreground">Yearly in AED</div>
               <div className="text-lg font-semibold font-mono-num">
                 {toNum(yearlySalaryCad) > 0 ? formatCurrency(onlyDirham, "AED") : "—"}
               </div>
             </div>
             <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Total PKR</div>
+              <div className="text-sm text-muted-foreground">Yearly in PKR</div>
               <div className="text-lg font-semibold font-mono-num">
                 {toNum(yearlySalaryCad) > 0 ? formatCurrency(totalPKR, "PKR") : "—"}
               </div>
             </div>
             <div className="p-3 rounded-lg bg-muted/40">
-              <div className="text-sm text-muted-foreground">Total USD</div>
+              <div className="text-sm text-muted-foreground">Yearly in USD</div>
               <div className="text-lg font-semibold font-mono-num">
                 {toNum(yearlySalaryCad) > 0 ? formatCurrency(totalUSD, "USD") : "—"}
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 3-Month Summary */}
-      <Card className="border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            3-Month Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="p-5 rounded-lg bg-primary/10">
-            <div className="text-sm text-muted-foreground">Three-Month Expense</div>
-            <div className="text-3xl font-bold font-mono-num">{formatCurrency(totalMonthlyExpense * 3)}</div>
           </div>
         </CardContent>
       </Card>
