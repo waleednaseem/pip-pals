@@ -464,6 +464,30 @@ const SalaryCalculator = () => {
     }));
   };
 
+  // Update single expense amount (only for non-sub-expense expenses)
+  const updateExpenseAmount = (expenseId: string, newAmount: number) => {
+    setExpenses((prev) => prev.map(e => {
+      if (e.id === expenseId && !e.allowSubExpenses) {
+        return { ...e, amount: newAmount };
+      }
+      return e;
+    }));
+  };
+
+  // Update sub-expense amount
+  const updateSubExpenseAmount = (expenseId: string, subId: string, newAmount: number) => {
+    setExpenses((prev) => prev.map(e => {
+      if (e.id === expenseId) {
+        const updatedSubExpenses = e.subExpenses.map(s => 
+          s.id === subId ? { ...s, amount: newAmount } : s
+        );
+        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
+        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
+      }
+      return e;
+    }));
+  };
+
   let offset = 0;
 
   return (
@@ -547,9 +571,18 @@ const SalaryCalculator = () => {
                   <span className={`h-3 w-3 rounded-full ${e.color}`} />
                   <div className="font-medium">{e.name}</div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
-                  <div className="font-semibold">{e.amount.toLocaleString()}</div>
+                  {e.allowSubExpenses ? (
+                    <div className="font-semibold">{e.amount.toLocaleString()}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      value={e.amount || ""}
+                      onChange={(ev) => updateExpenseAmount(e.id, parseFloat(ev.target.value) || 0)}
+                      className="w-24 h-8 text-right font-semibold"
+                    />
+                  )}
                   <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
                     <Trash className="h-4 w-4" />
                   </Button>
@@ -562,7 +595,12 @@ const SalaryCalculator = () => {
                     <div key={sub.id} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
                       <span>{sub.name}</span>
                       <div className="flex items-center gap-2">
-                        <span>{sub.amount.toLocaleString()}</span>
+                        <Input
+                          type="number"
+                          value={sub.amount || ""}
+                          onChange={(ev) => updateSubExpenseAmount(e.id, sub.id, parseFloat(ev.target.value) || 0)}
+                          className="w-20 h-7 text-right text-sm"
+                        />
                         <Button 
                           variant="ghost" 
                           size="icon" 
