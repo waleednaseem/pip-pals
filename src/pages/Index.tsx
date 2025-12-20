@@ -23,6 +23,9 @@ import CanadaFundCalculator from "@/components/CanadaFundCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Menu, ChevronDown, Plus, Trash } from "lucide-react";
 import {
   Sheet,
@@ -32,20 +35,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<
-    "calculator" | "lifeline" | "tax" | "canada" | "converter" | "salary"
-  >("calculator");
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -141,8 +137,28 @@ const Index = () => {
 
   if (!selectedPair) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+      <div className="min-h-screen bg-background p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Tabs defaultValue="canada" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="pair">Select Pair</TabsTrigger>
+              <TabsTrigger value="canada">Canada Fund</TabsTrigger>
+              <TabsTrigger value="converter">Currency Converter</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pair" className="mt-6">
+              <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+            </TabsContent>
+
+            <TabsContent value="canada" className="mt-6">
+              <CanadaFundCalculator />
+            </TabsContent>
+
+            <TabsContent value="converter" className="mt-6">
+              <CurrencyConverter />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     );
   }
@@ -218,29 +234,14 @@ const Index = () => {
         </div>
 
         {/* Tabs for Calculator and Lifeline */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "calculator" | "lifeline" | "tax" | "canada" | "converter" | "salary")} className="w-full">
-          <div className="md:hidden">
-            <Select value={activeTab} onValueChange={(v) => setActiveTab(v as "calculator" | "lifeline" | "tax" | "canada" | "converter" | "salary")}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select tool" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value="calculator">Forex Pip Calculator</SelectItem>
-                <SelectItem value="lifeline">Setup Your Lifeline</SelectItem>
-                <SelectItem value="tax">Tax History</SelectItem>
-                <SelectItem value="canada">Canada Fund</SelectItem>
-                <SelectItem value="converter">Currency Converter</SelectItem>
-                <SelectItem value="salary">Salary Calculator</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <TabsList className="hidden md:inline-flex w-full max-w-full md:overflow-x-auto whitespace-nowrap gap-1">
-            <TabsTrigger className="flex-shrink-0" value="calculator">Forex Pip Calculator</TabsTrigger>
-            <TabsTrigger className="flex-shrink-0" value="lifeline">Setup Your Lifeline</TabsTrigger>
-            <TabsTrigger className="flex-shrink-0" value="tax">Tax History</TabsTrigger>
-            <TabsTrigger className="flex-shrink-0" value="canada">Canada Fund</TabsTrigger>
-            <TabsTrigger className="flex-shrink-0" value="converter">Currency Converter</TabsTrigger>
-            <TabsTrigger className="flex-shrink-0" value="salary">Salary Calculator</TabsTrigger>
+        <Tabs defaultValue="calculator" className="w-full">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+            <TabsTrigger value="calculator">Forex Pip Calculator</TabsTrigger>
+            <TabsTrigger value="lifeline">Setup Your Lifeline</TabsTrigger>
+            <TabsTrigger value="tax">Tax History</TabsTrigger>
+            <TabsTrigger value="canada">Canada Fund</TabsTrigger>
+            <TabsTrigger value="converter">Currency Converter</TabsTrigger>
+            <TabsTrigger value="salary">Salary Calculator</TabsTrigger>
           </TabsList>
 
           {/* Calculator Tab */}
@@ -284,6 +285,8 @@ const Index = () => {
           <TabsContent value="converter" className="space-y-6 mt-6">
             <CurrencyConverter />
           </TabsContent>
+
+          {/* Salary Calculator Tab */}
           <TabsContent value="salary" className="space-y-6 mt-6">
             <SalaryCalculator />
           </TabsContent>
