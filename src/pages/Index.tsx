@@ -576,22 +576,24 @@ const SalaryCalculator = () => {
                   ))}
                   
                   {addingSubFor === e.id ? (
-                    <div className="flex gap-2 mt-2">
+                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
                       <Input
-                        className="h-8 text-sm"
+                        className="h-9 text-sm flex-1 min-w-0"
                         value={newSubName}
                         onChange={(ev) => setNewSubName(ev.target.value)}
                         placeholder="Item name"
                       />
-                      <Input
-                        className="h-8 text-sm w-24"
-                        type="number"
-                        value={newSubAmount}
-                        onChange={(ev) => setNewSubAmount(ev.target.value)}
-                        placeholder="Amount"
-                      />
-                      <Button size="sm" onClick={() => addSubExpense(e.id)}>Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
+                      <div className="flex gap-2">
+                        <Input
+                          className="h-9 text-sm flex-1 sm:w-28"
+                          type="number"
+                          value={newSubAmount}
+                          onChange={(ev) => setNewSubAmount(ev.target.value)}
+                          placeholder="Amount"
+                        />
+                        <Button size="sm" className="h-9" onClick={() => addSubExpense(e.id)}>Add</Button>
+                        <Button size="sm" className="h-9" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
+                      </div>
                     </div>
                   ) : (
                     <Button 
