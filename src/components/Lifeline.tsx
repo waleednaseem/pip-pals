@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2 } from "lucide-react";
+import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download } from "lucide-react";
+import jsPDF from "jspdf";
 import { LifelineData, Transaction, LifelineStats } from "@/types/lifeline";
 import {
   getLifelineData,
@@ -210,6 +211,268 @@ export const Lifeline = ({}: LifelineProps) => {
     });
   };
 
+  // Export to PDF
+  const exportToPDF = () => {
+    if (!data || !stats) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = now.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let y = 20;
+
+    // Header
+    doc.setFillColor(30, 41, 59); // slate-800
+    doc.rect(0, 0, pageWidth, 40, "F");
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("FINANCIAL STATEMENT", pageWidth / 2, 18, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${dateStr} at ${timeStr}`, pageWidth / 2, 30, { align: "center" });
+
+    y = 55;
+
+    // Account Summary Box
+    doc.setTextColor(30, 41, 59);
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.roundedRect(15, y - 5, pageWidth - 30, 50, 3, 3, "F");
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("ACCOUNT SUMMARY", 20, y + 5);
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, y + 10, pageWidth - 20, y + 10);
+
+    y += 20;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Left column
+    doc.text(`Currency: ${data.settings.currency}`, 20, y);
+    doc.text(`Period: ${data.settings.periodMonths} Month(s)`, 20, y + 8);
+    doc.text(`Tax Rate: ${data.settings.taxRate}%`, 20, y + 16);
+    
+    // Right column
+    doc.text(`Exchange Rate: 1 USD = ${exchangeRate.toFixed(2)} ${data.settings.currency}`, 110, y);
+    doc.text(`Days Remaining: ${stats.daysRemaining}`, 110, y + 8);
+    doc.text(`Progress: ${stats.progressPercent.toFixed(1)}%`, 110, y + 16);
+
+    y += 45;
+
+    // Financial Overview
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("FINANCIAL OVERVIEW", 20, y);
+    y += 8;
+
+    // Stats boxes
+    const boxWidth = (pageWidth - 50) / 3;
+    
+    // Total Earned (Green)
+    doc.setFillColor(220, 252, 231); // green-100
+    doc.roundedRect(15, y, boxWidth, 30, 2, 2, "F");
+    doc.setTextColor(22, 101, 52); // green-800
+    doc.setFontSize(9);
+    doc.text("TOTAL EARNED (CREDIT)", 20, y + 10);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`+ ${formatCurrency(stats.totalEarned, data.settings.currency)}`, 20, y + 22);
+
+    // Total Spent (Red)
+    doc.setFillColor(254, 226, 226); // red-100
+    doc.roundedRect(20 + boxWidth, y, boxWidth, 30, 2, 2, "F");
+    doc.setTextColor(153, 27, 27); // red-800
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("TOTAL SPENT (DEBIT)", 25 + boxWidth, y + 10);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`- ${formatCurrency(stats.totalSpent, data.settings.currency)}`, 25 + boxWidth, y + 22);
+
+    // Balance
+    doc.setFillColor(224, 231, 255); // indigo-100
+    doc.roundedRect(25 + boxWidth * 2, y, boxWidth, 30, 2, 2, "F");
+    doc.setTextColor(55, 48, 163); // indigo-700
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("BALANCE", 30 + boxWidth * 2, y + 10);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatCurrency(stats.remaining, data.settings.currency), 30 + boxWidth * 2, y + 22);
+
+    y += 45;
+
+    // Tax Section
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TAX SUMMARY", 20, y);
+    y += 8;
+
+    const taxOwedLocal = calculateTaxOwed(data, exchangeRate);
+    const taxOwedUSD = taxOwedLocal / exchangeRate;
+
+    // Tax Status Box
+    if (taxOwedLocal > 0) {
+      doc.setFillColor(254, 243, 199); // amber-100
+      doc.roundedRect(15, y, pageWidth - 30, 25, 2, 2, "F");
+      doc.setTextColor(180, 83, 9); // amber-700
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("TAX UNPAID", 20, y + 10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Amount Due: ${formatCurrency(taxOwedLocal, data.settings.currency)} (USD $${taxOwedUSD.toFixed(2)})`, 20, y + 18);
+    } else {
+      doc.setFillColor(220, 252, 231); // green-100
+      doc.roundedRect(15, y, pageWidth - 30, 25, 2, 2, "F");
+      doc.setTextColor(22, 101, 52); // green-800
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("TAX PAID", 20, y + 10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total Tax Paid: ${formatCurrency(stats.totalTaxPaid, data.settings.currency)}`, 20, y + 18);
+    }
+
+    y += 35;
+
+    // Transaction History Table
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TRANSACTION HISTORY", 20, y);
+    y += 8;
+
+    // Table header
+    doc.setFillColor(241, 245, 249); // slate-100
+    doc.rect(15, y, pageWidth - 30, 10, "F");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(71, 85, 105); // slate-600
+    doc.text("DATE", 20, y + 7);
+    doc.text("DESCRIPTION", 55, y + 7);
+    doc.text("TYPE", 120, y + 7);
+    doc.text("STATUS", 145, y + 7);
+    doc.text("AMOUNT", 175, y + 7);
+
+    y += 12;
+
+    // Sort transactions by date (newest first)
+    const sortedTransactions = [...data.transactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    sortedTransactions.forEach((transaction, index) => {
+      // Check for page overflow
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+        
+        // Add table header on new page
+        doc.setFillColor(241, 245, 249);
+        doc.rect(15, y, pageWidth - 30, 10, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(71, 85, 105);
+        doc.text("DATE", 20, y + 7);
+        doc.text("DESCRIPTION", 55, y + 7);
+        doc.text("TYPE", 120, y + 7);
+        doc.text("STATUS", 145, y + 7);
+        doc.text("AMOUNT", 175, y + 7);
+        y += 12;
+      }
+
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(15, y - 3, pageWidth - 30, 10, "F");
+      }
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      // Date
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.text(new Date(transaction.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }), 20, y + 4);
+      
+      // Description (truncate if too long)
+      doc.setTextColor(30, 41, 59);
+      const desc = transaction.description.length > 25 
+        ? transaction.description.substring(0, 25) + "..." 
+        : transaction.description;
+      doc.text(desc, 55, y + 4);
+      
+      // Type with styling
+      if (transaction.type === "earning") {
+        doc.setTextColor(22, 101, 52); // green-800
+        doc.text("CREDIT", 120, y + 4);
+      } else if (transaction.type === "tax") {
+        doc.setTextColor(180, 83, 9); // amber-700
+        doc.text("TAX", 120, y + 4);
+      } else {
+        doc.setTextColor(153, 27, 27); // red-800
+        doc.text("DEBIT", 120, y + 4);
+      }
+      
+      // Tax Status
+      if (transaction.type === "earning") {
+        if (transaction.taxed) {
+          doc.setTextColor(22, 101, 52); // green-800
+          doc.text("TAXED", 145, y + 4);
+        } else {
+          doc.setTextColor(180, 83, 9); // amber-700
+          doc.text("UNTAXED", 145, y + 4);
+        }
+      } else {
+        doc.setTextColor(100, 116, 139);
+        doc.text("-", 145, y + 4);
+      }
+      
+      // Amount with color
+      if (transaction.type === "earning") {
+        doc.setTextColor(22, 101, 52);
+        doc.text(`+${formatCurrency(transaction.amount, data.settings.currency)}`, 175, y + 4);
+      } else {
+        doc.setTextColor(153, 27, 27);
+        doc.text(`-${formatCurrency(transaction.amount, data.settings.currency)}`, 175, y + 4);
+      }
+
+      y += 10;
+    });
+
+    // Footer
+    y = doc.internal.pageSize.getHeight() - 20;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, y - 5, pageWidth - 15, y - 5);
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("This is a computer-generated statement. No signature is required.", pageWidth / 2, y, { align: "center" });
+    doc.text(`Page 1 of ${doc.getNumberOfPages()}`, pageWidth / 2, y + 5, { align: "center" });
+
+    // Save the PDF
+    const fileName = `lifeline-statement-${now.toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+
+    toast({
+      title: "Statement Exported",
+      description: `Saved as ${fileName}`,
+    });
+  };
+
   if (!isSetup || !data) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
@@ -302,6 +565,9 @@ export const Lifeline = ({}: LifelineProps) => {
           <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
              {usdToLocalDisplay}
           </div>
+          <Button variant="outline" size="icon" onClick={exportToPDF} title="Export PDF">
+            <Download className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="sm" onClick={handleReset}>
             Reset
           </Button>
