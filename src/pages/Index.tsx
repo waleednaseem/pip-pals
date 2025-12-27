@@ -26,7 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Menu, ChevronDown, Plus, Trash } from "lucide-react";
+import { Menu, ChevronDown, Plus, Trash, Download } from "lucide-react";
+import jsPDF from "jspdf";
 import {
   Sheet,
   SheetContent,
@@ -374,6 +375,7 @@ const Index = () => {
 };
 
 const SalaryCalculator = () => {
+  const { toast } = useToast();
   const [salary, setSalary] = useState<number>(0);
   const [expenses, setExpenses] = useState<{
     id: string;
@@ -488,6 +490,88 @@ const SalaryCalculator = () => {
     }));
   };
 
+  // Export to PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = now.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Salary Calculator Report", pageWidth / 2, y, { align: "center" });
+    y += 10;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${dateStr} at ${timeStr}`, pageWidth / 2, y, { align: "center" });
+    y += 15;
+
+    // Summary Section
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Summary", 20, y);
+    y += 8;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total Salary: ${salary.toLocaleString()}`, 20, y);
+    y += 6;
+    doc.text(`Total Used: ${totalUsed.toLocaleString()} (${salary > 0 ? Math.round((totalUsed / salary) * 100) : 0}%)`, 20, y);
+    y += 6;
+    doc.text(`Remaining: ${remaining.toLocaleString()} (${salary > 0 ? Math.round((remaining / salary) * 100) : 0}%)`, 20, y);
+    y += 12;
+
+    // Expenses Section
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Expenses Breakdown", 20, y);
+    y += 8;
+
+    expenses.forEach((expense) => {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${expense.name}: ${expense.amount.toLocaleString()} (${Math.round(pct(expense.amount))}%)`, 20, y);
+      y += 6;
+
+      if (expense.allowSubExpenses && expense.subExpenses.length > 0) {
+        doc.setFont("helvetica", "normal");
+        expense.subExpenses.forEach((sub) => {
+          doc.text(`  - ${sub.name}: ${sub.amount.toLocaleString()}`, 25, y);
+          y += 5;
+        });
+      }
+      y += 2;
+
+      // Check for page overflow
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    // Save the PDF
+    const fileName = `salary-report-${now.toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+
+    toast({
+      title: "PDF Exported",
+      description: `Report saved as ${fileName}`,
+    });
+  };
+
   let offset = 0;
 
   return (
@@ -495,6 +579,9 @@ const SalaryCalculator = () => {
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Salary Calculator</CardTitle>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={exportToPDF} title="Export PDF">
+            <Download className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={() => setAdding((v) => !v)}>
             <Plus className="h-4 w-4" />
           </Button>
