@@ -364,10 +364,10 @@ export const Lifeline = ({}: LifelineProps) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(71, 85, 105); // slate-600
     doc.text("DATE", 20, y + 7);
-    doc.text("DESCRIPTION", 55, y + 7);
-    doc.text("TYPE", 120, y + 7);
-    doc.text("STATUS", 145, y + 7);
-    doc.text("AMOUNT", 175, y + 7);
+    doc.text("DESCRIPTION", 45, y + 7);
+    doc.text("STATUS", 105, y + 7);
+    doc.text("CREDIT", 135, y + 7);
+    doc.text("DEBIT", 165, y + 7);
 
     y += 12;
 
@@ -389,10 +389,10 @@ export const Lifeline = ({}: LifelineProps) => {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(71, 85, 105);
         doc.text("DATE", 20, y + 7);
-        doc.text("DESCRIPTION", 55, y + 7);
-        doc.text("TYPE", 120, y + 7);
-        doc.text("STATUS", 145, y + 7);
-        doc.text("AMOUNT", 175, y + 7);
+        doc.text("DESCRIPTION", 45, y + 7);
+        doc.text("STATUS", 105, y + 7);
+        doc.text("CREDIT", 135, y + 7);
+        doc.text("DEBIT", 165, y + 7);
         y += 12;
       }
 
@@ -411,44 +411,44 @@ export const Lifeline = ({}: LifelineProps) => {
       
       // Description (truncate if too long)
       doc.setTextColor(30, 41, 59);
-      const desc = transaction.description.length > 25 
-        ? transaction.description.substring(0, 25) + "..." 
+      const desc = transaction.description.length > 30 
+        ? transaction.description.substring(0, 30) + "..." 
         : transaction.description;
-      doc.text(desc, 55, y + 4);
-      
-      // Type with styling
-      if (transaction.type === "earning") {
-        doc.setTextColor(22, 101, 52); // green-800
-        doc.text("CREDIT", 120, y + 4);
-      } else if (transaction.type === "tax") {
-        doc.setTextColor(180, 83, 9); // amber-700
-        doc.text("TAX", 120, y + 4);
-      } else {
-        doc.setTextColor(153, 27, 27); // red-800
-        doc.text("DEBIT", 120, y + 4);
-      }
+      doc.text(desc, 45, y + 4);
       
       // Tax Status
       if (transaction.type === "earning") {
         if (transaction.taxed) {
           doc.setTextColor(22, 101, 52); // green-800
-          doc.text("TAXED", 145, y + 4);
+          doc.text("TAXED", 105, y + 4);
         } else {
           doc.setTextColor(180, 83, 9); // amber-700
-          doc.text("UNTAXED", 145, y + 4);
+          doc.text("UNTAXED", 105, y + 4);
         }
+      } else if (transaction.type === "tax") {
+        doc.setTextColor(180, 83, 9); // amber-700
+        doc.text("TAX PAID", 105, y + 4);
       } else {
         doc.setTextColor(100, 116, 139);
-        doc.text("-", 145, y + 4);
+        doc.text("-", 105, y + 4);
       }
       
-      // Amount with color
+      // Credit column (only for earnings)
       if (transaction.type === "earning") {
-        doc.setTextColor(22, 101, 52);
-        doc.text(`+${formatCurrency(transaction.amount, data.settings.currency)}`, 175, y + 4);
+        doc.setTextColor(22, 101, 52); // green-800
+        doc.text(formatCurrency(transaction.amount, data.settings.currency), 135, y + 4);
       } else {
-        doc.setTextColor(153, 27, 27);
-        doc.text(`-${formatCurrency(transaction.amount, data.settings.currency)}`, 175, y + 4);
+        doc.setTextColor(100, 116, 139);
+        doc.text("-", 135, y + 4);
+      }
+      
+      // Debit column (for expenses and tax)
+      if (transaction.type === "expense" || transaction.type === "tax") {
+        doc.setTextColor(153, 27, 27); // red-800
+        doc.text(formatCurrency(transaction.amount, data.settings.currency), 165, y + 4);
+      } else {
+        doc.setTextColor(100, 116, 139);
+        doc.text("-", 165, y + 4);
       }
 
       y += 10;
