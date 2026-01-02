@@ -475,76 +475,159 @@ export const Lifeline = ({}: LifelineProps) => {
 
   if (!isSetup || !data) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings2 className="h-6 w-6 text-primary" />
+      <div className="w-full max-w-2xl mx-auto space-y-6">
+        {/* Hero Section */}
+        <div className="text-center space-y-3 py-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass-card glow-primary mb-4">
+            <Activity className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
             Setup Your Lifeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="monthly-expense">Monthly Expense Target</Label>
-            <Input
-              id="monthly-expense"
-              type="number"
-              placeholder="e.g. 2000"
-              value={monthlyExpense}
-              onChange={(e) => setMonthlyExpense(e.target.value)}
-            />
-          </div>
+          </h1>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Define your financial goals and let us calculate your earning targets automatically
+          </p>
+        </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD - US Dollar</SelectItem>
-                  <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-                  <SelectItem value="EUR">EUR - Euro</SelectItem>
-                  <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                  <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
-                  <SelectItem value="PKR">PKR - Pakistani Rupee</SelectItem>
-                  <SelectItem value="INR">INR - Indian Rupee</SelectItem>
-                  <SelectItem value="AED">AED - UAE Dirham</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Setup Form Card */}
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-border/30 pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                <Settings2 className="h-5 w-5 text-primary" />
+              </div>
+              Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            {/* Monthly Expense - Featured Input */}
+            <div className="space-y-3">
+              <Label htmlFor="monthly-expense" className="text-base font-medium flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Monthly Expense Target
+              </Label>
+              <div className="relative">
+                <Input
+                  id="monthly-expense"
+                  type="number"
+                  placeholder="Enter your monthly expenses..."
+                  value={monthlyExpense}
+                  onChange={(e) => setMonthlyExpense(e.target.value)}
+                  className="h-14 text-lg pl-4 pr-16"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  {currency}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This is the amount you need to cover every month
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Tax Rate (%)</Label>
-              <Input
-                type="number"
-                placeholder="e.g. 30"
-                value={taxRate}
-                onChange={(e) => setTaxRate(e.target.value)}
-              />
+            {/* Two Column Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Currency Selection */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <span className="text-lg">💱</span>
+                  Currency
+                </Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">🇺🇸 USD - US Dollar</SelectItem>
+                    <SelectItem value="CAD">🇨🇦 CAD - Canadian Dollar</SelectItem>
+                    <SelectItem value="EUR">🇪🇺 EUR - Euro</SelectItem>
+                    <SelectItem value="GBP">🇬🇧 GBP - British Pound</SelectItem>
+                    <SelectItem value="AUD">🇦🇺 AUD - Australian Dollar</SelectItem>
+                    <SelectItem value="PKR">🇵🇰 PKR - Pakistani Rupee</SelectItem>
+                    <SelectItem value="INR">🇮🇳 INR - Indian Rupee</SelectItem>
+                    <SelectItem value="AED">🇦🇪 AED - UAE Dirham</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tax Rate */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  Tax Rate
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    placeholder="30"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                    className="h-12 pr-10"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                    %
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>Tracking Period</Label>
-            <Select value={periodMonths} onValueChange={setPeriodMonths}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 Month</SelectItem>
-                <SelectItem value="3">3 Months</SelectItem>
-                <SelectItem value="6">6 Months</SelectItem>
-                <SelectItem value="12">1 Year</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Tracking Period */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Tracking Period
+              </Label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: "1", label: "1 Month" },
+                  { value: "3", label: "3 Months" },
+                  { value: "6", label: "6 Months" },
+                  { value: "12", label: "1 Year" },
+                ].map((period) => (
+                  <Button
+                    key={period.value}
+                    type="button"
+                    variant={periodMonths === period.value ? "default" : "outline"}
+                    onClick={() => setPeriodMonths(period.value)}
+                    className="h-12 text-sm"
+                  >
+                    {period.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-          <Button onClick={handleSetup} className="w-full">
-            Start Tracking
-          </Button>
-        </CardContent>
-      </Card>
+            {/* Preview Box */}
+            {monthlyExpense && parseFloat(monthlyExpense) > 0 && (
+              <div className="p-4 rounded-xl glass-subtle border border-primary/20 space-y-3">
+                <h4 className="font-medium text-sm text-primary flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Your Targets Preview
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Target</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency(parseFloat(monthlyExpense) * parseInt(periodMonths), currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Weekly Target</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency((parseFloat(monthlyExpense) * parseInt(periodMonths)) / (parseInt(periodMonths) * 4.35), currency)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <Button onClick={handleSetup} className="w-full h-14 text-lg font-semibold gap-2">
+              <Activity className="h-5 w-5" />
+              Start Tracking
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
