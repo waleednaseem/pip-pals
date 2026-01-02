@@ -145,19 +145,96 @@ const Index = () => {
     };
   };
 
+  // Define available tabs based on whether pair is selected
+  const availableTabs = selectedPair 
+    ? [{ value: "calculator", label: "Forex Pip Calculator" }]
+    : [
+        { value: "lifeline", label: "Setup Your Lifeline" },
+        { value: "tax", label: "Tax History" },
+        { value: "canada", label: "Canada Fund" },
+        { value: "converter", label: "Currency Converter" },
+        { value: "salary", label: "Salary Calculator" },
+        { value: "pair", label: "Select Trading Pair" },
+      ];
+
+  // Set default tab based on pair selection
+  useEffect(() => {
+    if (!selectedPair && activeTab === "calculator") {
+      setActiveTab("canada");
+    } else if (selectedPair && activeTab !== "calculator") {
+      setActiveTab("calculator");
+    }
+  }, [selectedPair]);
+
+  const getCurrentTabLabel = () => {
+    const tab = availableTabs.find(t => t.value === activeTab);
+    return tab?.label || availableTabs[0]?.label;
+  };
+
+  const totals = calculateTotals();
+
+  // If no pair selected, show simpler layout without sidebar/header
   if (!selectedPair) {
     return (
       <div className="min-h-screen bg-background p-4 md:p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          <Tabs defaultValue="canada" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-3">
-              <TabsTrigger value="pair">Select Pair</TabsTrigger>
-              <TabsTrigger value="canada">Canada Fund</TabsTrigger>
-              <TabsTrigger value="converter">Currency Converter</TabsTrigger>
-            </TabsList>
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold">Forex Trading Tools</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your financial goals and track expenses
+            </p>
+          </div>
 
-            <TabsContent value="pair" className="mt-6">
-              <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12">
+                  <span>{getCurrentTabLabel()}</span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader>
+                  <DrawerTitle>Select Tool</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 space-y-2">
+                  {availableTabs.map((tab) => (
+                    <DrawerClose key={tab.value} asChild>
+                      <Button 
+                        variant={activeTab === tab.value ? "default" : "ghost"} 
+                        className="w-full justify-start h-14 text-lg"
+                        onClick={() => setActiveTab(tab.value)}
+                      >
+                        {tab.label}
+                      </Button>
+                    </DrawerClose>
+                  ))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            <TabsContent value="lifeline" className="mt-6">
+              <Lifeline />
+            </TabsContent>
+
+            <TabsContent value="tax" className="mt-6">
+              {(() => {
+                const lifelineData = localStorage.getItem("forex-lifeline-data");
+                if (!lifelineData) {
+                  return (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Please setup your Lifeline first to track tax payments
+                    </div>
+                  );
+                }
+                const data = JSON.parse(lifelineData);
+                return (
+                  <TaxHistory 
+                    taxPayments={data.taxPayments || []} 
+                    currency={data.settings?.currency || "USD"} 
+                  />
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="canada" className="mt-6">
@@ -167,13 +244,19 @@ const Index = () => {
             <TabsContent value="converter" className="mt-6">
               <CurrencyConverter />
             </TabsContent>
+
+            <TabsContent value="salary" className="mt-6">
+              <SalaryCalculator />
+            </TabsContent>
+
+            <TabsContent value="pair" className="mt-6">
+              <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
     );
   }
-
-  const totals = calculateTotals();
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
@@ -231,7 +314,7 @@ const Index = () => {
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">Forex Trading Tools</h1>
               <p className="text-muted-foreground mt-1">
-                Calculate trades and manage your financial goals
+                Calculate trades for {selectedPair}
               </p>
             </div>
           </div>
@@ -243,19 +326,12 @@ const Index = () => {
           />
         </div>
 
-        {/* Tabs for Calculator and Lifeline */}
+        {/* Tabs for Calculator - Only Forex Pip Calculator when pair is selected */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <Drawer>
             <DrawerTrigger asChild>
               <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12">
-                <span>
-                  {activeTab === "calculator" && "Forex Pip Calculator"}
-                  {activeTab === "lifeline" && "Setup Your Lifeline"}
-                  {activeTab === "tax" && "Tax History"}
-                  {activeTab === "canada" && "Canada Fund"}
-                  {activeTab === "converter" && "Currency Converter"}
-                  {activeTab === "salary" && "Salary Calculator"}
-                </span>
+                <span>{getCurrentTabLabel()}</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DrawerTrigger>
@@ -264,60 +340,17 @@ const Index = () => {
                 <DrawerTitle>Select Tool</DrawerTitle>
               </DrawerHeader>
               <div className="p-4 space-y-2">
-                <DrawerClose asChild>
-                  <Button 
-                    variant={activeTab === "calculator" ? "default" : "ghost"} 
-                    className="w-full justify-start h-14 text-lg"
-                    onClick={() => setActiveTab("calculator")}
-                  >
-                    Forex Pip Calculator
-                  </Button>
-                </DrawerClose>
-                <DrawerClose asChild>
-                  <Button 
-                    variant={activeTab === "lifeline" ? "default" : "ghost"} 
-                    className="w-full justify-start h-14 text-lg"
-                    onClick={() => setActiveTab("lifeline")}
-                  >
-                    Setup Your Lifeline
-                  </Button>
-                </DrawerClose>
-                <DrawerClose asChild>
-                  <Button 
-                    variant={activeTab === "tax" ? "default" : "ghost"} 
-                    className="w-full justify-start h-14 text-lg"
-                    onClick={() => setActiveTab("tax")}
-                  >
-                    Tax History
-                  </Button>
-                </DrawerClose>
-                <DrawerClose asChild>
-                  <Button 
-                    variant={activeTab === "canada" ? "default" : "ghost"} 
-                    className="w-full justify-start h-14 text-lg"
-                    onClick={() => setActiveTab("canada")}
-                  >
-                    Canada Fund
-                  </Button>
-                </DrawerClose>
-                <DrawerClose asChild>
-                  <Button 
-                    variant={activeTab === "converter" ? "default" : "ghost"} 
-                    className="w-full justify-start h-14 text-lg"
-                    onClick={() => setActiveTab("converter")}
-                  >
-                    Currency Converter
-                  </Button>
-                </DrawerClose>
-                <DrawerClose asChild>
-                  <Button 
-                    variant={activeTab === "salary" ? "default" : "ghost"} 
-                    className="w-full justify-start h-14 text-lg"
-                    onClick={() => setActiveTab("salary")}
-                  >
-                    Salary Calculator
-                  </Button>
-                </DrawerClose>
+                {availableTabs.map((tab) => (
+                  <DrawerClose key={tab.value} asChild>
+                    <Button 
+                      variant={activeTab === tab.value ? "default" : "ghost"} 
+                      className="w-full justify-start h-14 text-lg"
+                      onClick={() => setActiveTab(tab.value)}
+                    >
+                      {tab.label}
+                    </Button>
+                  </DrawerClose>
+                ))}
               </div>
             </DrawerContent>
           </Drawer>
@@ -326,47 +359,6 @@ const Index = () => {
           <TabsContent value="calculator" className="space-y-6 mt-6">
             <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
             <TradeHistory trades={trades} />
-          </TabsContent>
-
-          {/* Lifeline Tab */}
-          <TabsContent value="lifeline" className="mt-6">
-            <Lifeline />
-          </TabsContent>
-
-          {/* Tax History Tab */}
-          <TabsContent value="tax" className="mt-6">
-            {(() => {
-              const lifelineData = localStorage.getItem("forex-lifeline-data");
-              if (!lifelineData) {
-                return (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Please setup your Lifeline first to track tax payments
-                  </div>
-                );
-              }
-              const data = JSON.parse(lifelineData);
-              return (
-                <TaxHistory 
-                  taxPayments={data.taxPayments || []} 
-                  currency={data.settings?.currency || "USD"} 
-                />
-              );
-            })()}
-          </TabsContent>
-
-          {/* Canada Fund Calculator Tab */}
-          <TabsContent value="canada" className="space-y-6 mt-6">
-            <CanadaFundCalculator />
-          </TabsContent>
-
-          {/* Currency Converter Tab */}
-          <TabsContent value="converter" className="space-y-6 mt-6">
-            <CurrencyConverter />
-          </TabsContent>
-
-          {/* Salary Calculator Tab */}
-          <TabsContent value="salary" className="space-y-6 mt-6">
-            <SalaryCalculator />
           </TabsContent>
         </Tabs>
       </div>
