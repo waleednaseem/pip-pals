@@ -8,53 +8,53 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 30% 6%;
+    --background: 225 35% 12%;
     --foreground: 210 40% 98%;
 
-    --card: 220 25% 12%;
+    --card: 225 30% 18%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 220 25% 10%;
+    --popover: 225 30% 16%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 195 100% 50%;
-    --primary-foreground: 220 25% 8%;
+    --primary: 175 85% 45%;
+    --primary-foreground: 225 35% 10%;
 
-    --secondary: 220 20% 18%;
+    --secondary: 225 25% 22%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 225 20% 25%;
+    --muted-foreground: 215 25% 65%;
 
-    --accent: 195 100% 45%;
-    --accent-foreground: 220 25% 8%;
+    --accent: 175 80% 40%;
+    --accent-foreground: 225 35% 10%;
 
-    --success: 145 80% 45%;
-    --success-foreground: 220 25% 8%;
+    --success: 155 75% 45%;
+    --success-foreground: 225 35% 10%;
 
-    --profit: 145 70% 50%;
-    --loss: 0 85% 60%;
+    --profit: 155 70% 50%;
+    --loss: 0 80% 60%;
 
-    --destructive: 0 85% 60%;
+    --destructive: 0 80% 55%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 20% 22%;
-    --input: 220 20% 16%;
-    --ring: 195 100% 50%;
+    --border: 225 25% 30%;
+    --input: 225 25% 20%;
+    --ring: 175 85% 45%;
 
     --radius: 1rem;
 
-    --chart-1: 195 100% 50%;
-    --chart-2: 145 70% 50%;
-    --chart-3: 280 80% 60%;
-    --chart-4: 45 90% 55%;
-    --chart-5: 0 85% 60%;
+    --chart-1: 175 85% 45%;
+    --chart-2: 155 70% 50%;
+    --chart-3: 280 75% 60%;
+    --chart-4: 45 85% 55%;
+    --chart-5: 0 80% 55%;
 
-    /* Glass effect variables */
-    --glass-bg: 220 25% 15%;
-    --glass-border: 220 20% 30%;
-    --glass-shadow: 220 50% 5%;
-    --glass-highlight: 210 40% 98%;
+    /* Glass effect variables - enhanced for visibility */
+    --glass-bg: 225 35% 20%;
+    --glass-border: 175 60% 50%;
+    --glass-shadow: 225 50% 5%;
+    --glass-highlight: 175 80% 70%;
   }
 }
 
@@ -64,11 +64,12 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
     background: 
-      radial-gradient(ellipse at 20% 0%, hsl(195 100% 50% / 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 100%, hsl(280 80% 60% / 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, hsl(220 30% 8%) 0%, hsl(220 30% 4%) 100%);
+      radial-gradient(ellipse at 0% 0%, hsl(175 85% 45% / 0.15) 0%, transparent 40%),
+      radial-gradient(ellipse at 100% 0%, hsl(280 75% 60% / 0.1) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 100%, hsl(175 85% 45% / 0.08) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(225 35% 10%) 0%, hsl(225 40% 8%) 100%);
     background-attachment: fixed;
     min-height: 100vh;
   }
@@ -90,89 +91,113 @@ All colors MUST be HSL.
     font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
   }
 
-  /* Glass morphism utilities */
+  /* Glass morphism utilities - enhanced */
   .glass {
-    background: hsl(var(--glass-bg) / 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid hsl(var(--glass-border) / 0.3);
+    background: linear-gradient(
+      135deg,
+      hsl(var(--glass-bg) / 0.7) 0%,
+      hsl(var(--glass-bg) / 0.4) 100%
+    );
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border: 1px solid hsl(var(--glass-border) / 0.25);
     box-shadow: 
-      0 8px 32px hsl(var(--glass-shadow) / 0.4),
-      inset 0 1px 0 hsl(var(--glass-highlight) / 0.05);
+      0 8px 32px hsl(var(--glass-shadow) / 0.5),
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.1),
+      inset 0 -1px 0 hsl(var(--glass-shadow) / 0.2);
   }
 
   .glass-subtle {
-    background: hsl(var(--glass-bg) / 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--glass-border) / 0.2);
+    background: linear-gradient(
+      145deg,
+      hsl(var(--glass-bg) / 0.5) 0%,
+      hsl(var(--glass-bg) / 0.3) 100%
+    );
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border: 1px solid hsl(var(--glass-border) / 0.15);
     box-shadow: 
-      0 4px 16px hsl(var(--glass-shadow) / 0.3),
-      inset 0 1px 0 hsl(var(--glass-highlight) / 0.03);
+      0 4px 20px hsl(var(--glass-shadow) / 0.4),
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.08);
   }
 
   .glass-strong {
-    background: hsl(var(--glass-bg) / 0.75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid hsl(var(--glass-border) / 0.4);
+    background: linear-gradient(
+      145deg,
+      hsl(var(--glass-bg) / 0.85) 0%,
+      hsl(var(--glass-bg) / 0.65) 100%
+    );
+    backdrop-filter: blur(32px) saturate(1.8);
+    -webkit-backdrop-filter: blur(32px) saturate(1.8);
+    border: 1px solid hsl(var(--glass-border) / 0.35);
     box-shadow: 
-      0 12px 48px hsl(var(--glass-shadow) / 0.5),
-      inset 0 1px 0 hsl(var(--glass-highlight) / 0.08);
+      0 16px 48px hsl(var(--glass-shadow) / 0.6),
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.15),
+      inset 0 -1px 0 hsl(var(--glass-shadow) / 0.15);
   }
 
   .glass-card {
     background: linear-gradient(
-      145deg,
-      hsl(var(--glass-bg) / 0.7) 0%,
-      hsl(var(--glass-bg) / 0.5) 100%
+      160deg,
+      hsl(var(--glass-bg) / 0.75) 0%,
+      hsl(var(--glass-bg) / 0.55) 50%,
+      hsl(var(--glass-bg) / 0.45) 100%
     );
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid hsl(var(--glass-border) / 0.25);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+    border: 1px solid hsl(var(--glass-border) / 0.2);
     box-shadow: 
-      0 8px 32px hsl(var(--glass-shadow) / 0.35),
-      inset 0 1px 0 hsl(var(--glass-highlight) / 0.06),
+      0 8px 40px hsl(var(--glass-shadow) / 0.45),
+      0 0 0 1px hsl(var(--glass-highlight) / 0.03),
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.12),
       inset 0 -1px 0 hsl(var(--glass-shadow) / 0.1);
   }
 
   .glass-input {
-    background: hsl(var(--glass-bg) / 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid hsl(var(--glass-border) / 0.25);
-    box-shadow: inset 0 2px 4px hsl(var(--glass-shadow) / 0.2);
+    background: linear-gradient(
+      180deg,
+      hsl(var(--glass-bg) / 0.6) 0%,
+      hsl(var(--glass-bg) / 0.4) 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--glass-border) / 0.2);
+    box-shadow: 
+      inset 0 2px 6px hsl(var(--glass-shadow) / 0.25),
+      inset 0 0 0 1px hsl(var(--glass-highlight) / 0.03);
   }
 
   .glass-button {
     background: linear-gradient(
       135deg,
-      hsl(var(--primary) / 0.9) 0%,
-      hsl(var(--primary) / 0.7) 100%
+      hsl(var(--primary) / 0.95) 0%,
+      hsl(var(--primary) / 0.75) 100%
     );
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--primary) / 0.4);
+    border: 1px solid hsl(var(--primary) / 0.5);
     box-shadow: 
-      0 4px 16px hsl(var(--primary) / 0.3),
-      inset 0 1px 0 hsl(var(--glass-highlight) / 0.2);
+      0 4px 20px hsl(var(--primary) / 0.35),
+      0 0 30px hsl(var(--primary) / 0.15),
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.3);
     transition: all 0.3s ease;
   }
 
   .glass-button:hover {
     box-shadow: 
-      0 6px 24px hsl(var(--primary) / 0.4),
-      inset 0 1px 0 hsl(var(--glass-highlight) / 0.3);
-    transform: translateY(-1px);
+      0 6px 28px hsl(var(--primary) / 0.5),
+      0 0 40px hsl(var(--primary) / 0.25),
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.4);
+    transform: translateY(-2px);
   }
 
   /* Soft glow effects */
   .glow-primary {
-    box-shadow: 0 0 30px hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.3);
   }
 
   .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--accent) / 0.15);
+    box-shadow: 0 0 30px hsl(var(--accent) / 0.25);
   }
 
   /* Smooth transitions */
