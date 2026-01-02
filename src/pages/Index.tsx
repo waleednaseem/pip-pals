@@ -176,11 +176,13 @@ const Index = () => {
   // If no pair selected, show simpler layout without sidebar/header
   if (!selectedPair) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="min-h-screen p-4 md:p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold">Forex Trading Tools</h1>
-            <p className="text-muted-foreground mt-1">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+              Forex Trading Tools
+            </h1>
+            <p className="text-muted-foreground mt-2">
               Manage your financial goals and track expenses
             </p>
           </div>
@@ -259,7 +261,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
+    <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -278,7 +280,7 @@ const Index = () => {
                 <div className="mt-6 space-y-6 pb-6">
                   {/* Collapsible Dynamic Calculator */}
                   <Collapsible defaultOpen>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 glass-subtle rounded-xl hover:bg-muted/30 transition-all duration-300">
                       <span className="font-semibold">Dynamic Calculator</span>
                       <ChevronDown className="h-4 w-4" />
                     </CollapsibleTrigger>
@@ -289,7 +291,7 @@ const Index = () => {
 
                   {/* Collapsible Totals Summary */}
                   <Collapsible defaultOpen>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 glass-subtle rounded-xl hover:bg-muted/30 transition-all duration-300">
                       <span className="font-semibold">Totals Summary</span>
                       <ChevronDown className="h-4 w-4" />
                     </CollapsibleTrigger>
@@ -300,7 +302,7 @@ const Index = () => {
 
                   {/* Collapsible Time Conversion */}
                   <Collapsible>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 glass-subtle rounded-xl hover:bg-muted/30 transition-all duration-300">
                       <span className="font-semibold">Time Conversion</span>
                       <ChevronDown className="h-4 w-4" />
                     </CollapsibleTrigger>
@@ -312,7 +314,9 @@ const Index = () => {
               </SheetContent>
             </Sheet>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">Forex Trading Tools</h1>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                Forex Trading Tools
+              </h1>
               <p className="text-muted-foreground mt-1">
                 Calculate trades for {selectedPair}
               </p>
