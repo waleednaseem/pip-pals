@@ -426,18 +426,18 @@ export default function CanadaFundCalculator() {
                 </div>
 
                 {/* Conversion Results */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/30 text-center">
-                    <div className="text-xs text-muted-foreground">AED</div>
-                    <div className="font-mono font-semibold">{formatCurrency(yearlyAed, "AED")}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-lg bg-muted/30">
+                    <div className="text-xs text-muted-foreground mb-1">AED (Yearly)</div>
+                    <div className="font-mono font-semibold text-sm break-all">{formatCurrency(yearlyAed, "AED")}</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/30 text-center">
-                    <div className="text-xs text-muted-foreground">PKR</div>
-                    <div className="font-mono font-semibold">{formatCurrency(yearlyPkr, "PKR")}</div>
+                  <div className="p-4 rounded-lg bg-muted/30">
+                    <div className="text-xs text-muted-foreground mb-1">PKR (Yearly)</div>
+                    <div className="font-mono font-semibold text-sm break-all">{formatCurrency(yearlyPkr, "PKR")}</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/30 text-center">
-                    <div className="text-xs text-muted-foreground">USD</div>
-                    <div className="font-mono font-semibold">{formatCurrency(yearlyUsd, "USD")}</div>
+                  <div className="p-4 rounded-lg bg-muted/30">
+                    <div className="text-xs text-muted-foreground mb-1">USD (Yearly)</div>
+                    <div className="font-mono font-semibold text-sm break-all">{formatCurrency(yearlyUsd, "USD")}</div>
                   </div>
                 </div>
               </CardContent>
