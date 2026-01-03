@@ -6,10 +6,21 @@ import {
   DollarSign, 
   Wallet, 
   Home, 
-  Dumbbell, 
   PiggyBank, 
   TrendingUp,
-  ChevronDown
+  ChevronDown,
+  Plus,
+  X,
+  Dumbbell,
+  Stethoscope,
+  Wifi,
+  ShoppingBag,
+  GraduationCap,
+  Plane,
+  Gift,
+  Gamepad2,
+  Baby,
+  PawPrint
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -24,6 +35,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 const formatCurrency = (value: number, currency: string = "CAD") => {
   if (!isFinite(value)) return "-";
@@ -38,6 +55,21 @@ const toNum = (v: string | number) => {
   const n = typeof v === "number" ? v : parseFloat(v as string);
   return isNaN(n) ? 0 : n;
 };
+
+// Addon expense categories
+const ADDON_OPTIONS = [
+  { id: "gym", label: "Gym", icon: Dumbbell, emoji: "🏋️" },
+  { id: "nutrition", label: "Nutrition", icon: Stethoscope, emoji: "🥗" },
+  { id: "medical", label: "Medical", icon: Stethoscope, emoji: "🏥" },
+  { id: "internet", label: "Internet/Phone", icon: Wifi, emoji: "📱" },
+  { id: "shopping", label: "Shopping", icon: ShoppingBag, emoji: "🛍️" },
+  { id: "education", label: "Education", icon: GraduationCap, emoji: "📚" },
+  { id: "travel", label: "Travel", icon: Plane, emoji: "✈️" },
+  { id: "gifts", label: "Gifts", icon: Gift, emoji: "🎁" },
+  { id: "entertainment", label: "Entertainment", icon: Gamepad2, emoji: "🎮" },
+  { id: "childcare", label: "Childcare", icon: Baby, emoji: "👶" },
+  { id: "pets", label: "Pets", icon: PawPrint, emoji: "🐾" },
+];
 
 export default function CanadaFundCalculator() {
   const { toast } = useToast();
@@ -61,9 +93,10 @@ export default function CanadaFundCalculator() {
   const [transport, setTransport] = useState<string>("260");
   const [familySupport, setFamilySupport] = useState<string>("500");
 
-  // Health
-  const [gym, setGym] = useState<string>("0");
-  const [nutrition, setNutrition] = useState<string>("0");
+  // Addon expenses
+  const [activeAddons, setActiveAddons] = useState<string[]>([]);
+  const [addonValues, setAddonValues] = useState<Record<string, string>>({});
+  const [addonPopoverOpen, setAddonPopoverOpen] = useState(false);
 
   // Exchange rates
   const [cadToAed, setCadToAed] = useState<string>("2.60");
@@ -73,6 +106,25 @@ export default function CanadaFundCalculator() {
   // Collapsible states
   const [showWorkConfig, setShowWorkConfig] = useState(false);
   const [showRates, setShowRates] = useState(false);
+
+  const addAddon = (id: string) => {
+    if (!activeAddons.includes(id)) {
+      setActiveAddons([...activeAddons, id]);
+      setAddonValues({ ...addonValues, [id]: "0" });
+    }
+    setAddonPopoverOpen(false);
+  };
+
+  const removeAddon = (id: string) => {
+    setActiveAddons(activeAddons.filter(a => a !== id));
+    const newValues = { ...addonValues };
+    delete newValues[id];
+    setAddonValues(newValues);
+  };
+
+  const updateAddonValue = (id: string, value: string) => {
+    setAddonValues({ ...addonValues, [id]: value });
+  };
 
   // Fetch exchange rates
   useEffect(() => {
@@ -123,9 +175,13 @@ export default function CanadaFundCalculator() {
   const netYearly = netMonthly * 12;
 
   // Expenses
+  const addonTotal = useMemo(() => {
+    return activeAddons.reduce((sum, id) => sum + toNum(addonValues[id] || 0), 0);
+  }, [activeAddons, addonValues]);
+
   const totalExpenses = useMemo(() => {
-    return toNum(rent) + toNum(groceries) + toNum(utilities) + toNum(transport) + toNum(familySupport) + toNum(gym) + toNum(nutrition);
-  }, [rent, groceries, utilities, transport, familySupport, gym, nutrition]);
+    return toNum(rent) + toNum(groceries) + toNum(utilities) + toNum(transport) + toNum(familySupport) + addonTotal;
+  }, [rent, groceries, utilities, transport, familySupport, addonTotal]);
 
   const monthlySavings = netMonthly - totalExpenses;
   const yearlySavings = monthlySavings * 12;
@@ -335,22 +391,71 @@ export default function CanadaFundCalculator() {
             </div>
           </div>
 
-          {/* Health Section */}
+          {/* Addons Section */}
           <div className="pt-4 border-t border-border/50">
-            <div className="flex items-center gap-2 mb-3">
-              <Dumbbell className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Health & Fitness</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">🏋️ Gym</Label>
-                <Input type="number" value={gym} onChange={(e) => setGym(e.target.value)} className="glass-input font-mono" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Additional Expenses</span>
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">🥗 Nutrition</Label>
-                <Input type="number" value={nutrition} onChange={(e) => setNutrition(e.target.value)} className="glass-input font-mono" />
-              </div>
+              <Popover open={addonPopoverOpen} onOpenChange={setAddonPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1 text-xs glass-button">
+                    <Plus className="w-3 h-3" />
+                    Add
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2 bg-background border border-border" align="end">
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {ADDON_OPTIONS.filter(opt => !activeAddons.includes(opt.id)).map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => addAddon(opt.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <span>{opt.emoji}</span>
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                    {ADDON_OPTIONS.filter(opt => !activeAddons.includes(opt.id)).length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-2">All addons added</p>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
+
+            {activeAddons.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {activeAddons.map(id => {
+                  const addon = ADDON_OPTIONS.find(o => o.id === id);
+                  if (!addon) return null;
+                  return (
+                    <div key={id} className="space-y-1 relative group">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">{addon.emoji} {addon.label}</Label>
+                        <button
+                          onClick={() => removeAddon(id)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/20 transition-all"
+                        >
+                          <X className="w-3 h-3 text-destructive" />
+                        </button>
+                      </div>
+                      <Input
+                        type="number"
+                        value={addonValues[id] || "0"}
+                        onChange={(e) => updateAddonValue(id, e.target.value)}
+                        className="glass-input font-mono h-9"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-3 bg-muted/20 rounded-lg">
+                Click "Add" to include optional expenses like Gym, Medical, Shopping, etc.
+              </p>
+            )}
           </div>
 
           <div className="flex justify-between items-center pt-4 border-t border-border/50">
