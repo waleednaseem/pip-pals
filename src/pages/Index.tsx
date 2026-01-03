@@ -151,7 +151,7 @@ const Index = () => {
     : [
         { value: "lifeline", label: "Setup Your Lifeline" },
         { value: "tax", label: "Tax History" },
-        { value: "canada", label: "Canada Fund" },
+        { value: "canada", label: "Financial Plan" },
         { value: "converter", label: "Currency Converter" },
         { value: "salary", label: "Salary Calculator" },
         { value: "pair", label: "Select Trading Pair" },
