@@ -20,7 +20,8 @@ import {
   Gift,
   Gamepad2,
   Baby,
-  PawPrint
+  PawPrint,
+  Globe
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -56,6 +57,70 @@ const toNum = (v: string | number) => {
   return isNaN(n) ? 0 : n;
 };
 
+// Country tax configurations
+const COUNTRY_TAX_CONFIG = {
+  canada: {
+    name: "Canada",
+    flag: "🇨🇦",
+    currency: "CAD",
+    brackets: [
+      { min: 0, max: 55867, rate: 15, label: "15% (Up to $55,867)" },
+      { min: 55867, max: 111733, rate: 20.5, label: "20.5% ($55,867 - $111,733)" },
+      { min: 111733, max: 173205, rate: 26, label: "26% ($111,733 - $173,205)" },
+      { min: 173205, max: 246752, rate: 29, label: "29% ($173,205 - $246,752)" },
+      { min: 246752, max: Infinity, rate: 33, label: "33% (Above $246,752)" },
+    ],
+    description: "Federal income tax brackets (2024). Provincial taxes may apply additionally.",
+  },
+  usa: {
+    name: "United States",
+    flag: "🇺🇸",
+    currency: "USD",
+    brackets: [
+      { min: 0, max: 11600, rate: 10, label: "10% (Up to $11,600)" },
+      { min: 11600, max: 47150, rate: 12, label: "12% ($11,600 - $47,150)" },
+      { min: 47150, max: 100525, rate: 22, label: "22% ($47,150 - $100,525)" },
+      { min: 100525, max: 191950, rate: 24, label: "24% ($100,525 - $191,950)" },
+      { min: 191950, max: 243725, rate: 32, label: "32% ($191,950 - $243,725)" },
+      { min: 243725, max: 609350, rate: 35, label: "35% ($243,725 - $609,350)" },
+      { min: 609350, max: Infinity, rate: 37, label: "37% (Above $609,350)" },
+    ],
+    description: "Federal income tax brackets (2024). State taxes may apply additionally.",
+  },
+  pakistan: {
+    name: "Pakistan",
+    flag: "🇵🇰",
+    currency: "PKR",
+    brackets: [
+      { min: 0, max: 600000, rate: 0, label: "0% (Up to PKR 600,000)" },
+      { min: 600000, max: 1200000, rate: 2.5, label: "2.5% (PKR 600,000 - 1,200,000)" },
+      { min: 1200000, max: 2400000, rate: 12.5, label: "12.5% (PKR 1,200,000 - 2,400,000)" },
+      { min: 2400000, max: 3600000, rate: 22.5, label: "22.5% (PKR 2,400,000 - 3,600,000)" },
+      { min: 3600000, max: 6000000, rate: 27.5, label: "27.5% (PKR 3,600,000 - 6,000,000)" },
+      { min: 6000000, max: Infinity, rate: 35, label: "35% (Above PKR 6,000,000)" },
+    ],
+    description: "Pakistan Income Tax rates for salaried individuals (FY 2024-25).",
+  },
+  uae: {
+    name: "UAE",
+    flag: "🇦🇪",
+    currency: "AED",
+    brackets: [
+      { min: 0, max: Infinity, rate: 0, label: "0% - No Personal Income Tax" },
+    ],
+    description: "UAE has no personal income tax. Corporate tax of 9% applies for businesses earning above AED 375,000.",
+  },
+  ksa: {
+    name: "Saudi Arabia",
+    flag: "🇸🇦",
+    currency: "SAR",
+    brackets: [
+      { min: 0, max: Infinity, rate: 0, label: "0% - No Personal Income Tax" },
+    ],
+    description: "Saudi Arabia has no personal income tax for individuals. Zakat (2.5%) applies to Saudi nationals and GCC citizens on certain assets.",
+  },
+};
+
 // Addon expense categories
 const ADDON_OPTIONS = [
   { id: "gym", label: "Gym", icon: Dumbbell, emoji: "🏋️" },
@@ -79,7 +144,8 @@ export default function CanadaFundCalculator() {
   const [daysPerWeek, setDaysPerWeek] = useState<string>("5");
   const [weeksPerYear, setWeeksPerYear] = useState<string>("52");
 
-  // Salary
+  // Country & Salary
+  const [selectedCountry, setSelectedCountry] = useState<keyof typeof COUNTRY_TAX_CONFIG>("canada");
   const [salaryType, setSalaryType] = useState<string>("yearly");
   const [salaryAmount, setSalaryAmount] = useState<string>("");
 
@@ -169,10 +235,23 @@ export default function CanadaFundCalculator() {
     }
   }, [salaryAmount, salaryType, hoursPerDay, daysPerWeek, weeksPerYear]);
 
+  // Get tax rate based on country and income
+  const countryConfig = COUNTRY_TAX_CONFIG[selectedCountry];
+  const applicableBracket = useMemo(() => {
+    return countryConfig.brackets.find(b => yearlySalary >= b.min && yearlySalary < b.max) || countryConfig.brackets[0];
+  }, [yearlySalary, countryConfig]);
+
+  const effectiveTaxRate = toNum(taxRate) || applicableBracket.rate;
+
   const monthlySalary = yearlySalary / 12;
-  const taxPerMonth = monthlySalary * (toNum(taxRate) / 100);
+  const taxPerMonth = monthlySalary * (effectiveTaxRate / 100);
   const netMonthly = monthlySalary - taxPerMonth;
   const netYearly = netMonthly * 12;
+
+  // Auto-update tax rate when country or salary changes
+  useEffect(() => {
+    setTaxRate(applicableBracket.rate.toString());
+  }, [applicableBracket]);
 
   // Expenses
   const addonTotal = useMemo(() => {
@@ -310,40 +389,64 @@ export default function CanadaFundCalculator() {
         </CardContent>
       </Card>
 
-      {/* Tax Section */}
+      {/* Country & Tax Section */}
       <Card className="glass-card overflow-hidden">
         <div className="p-5 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <Wallet className="w-5 h-5 text-amber-500" />
+              <Globe className="w-5 h-5 text-amber-500" />
             </div>
             <div>
-              <h2 className="font-semibold">Tax & Net Income</h2>
-              <p className="text-xs text-muted-foreground">Calculate your take-home pay</p>
+              <h2 className="font-semibold">Country & Tax</h2>
+              <p className="text-xs text-muted-foreground">Tax rates auto-adjust by country</p>
             </div>
           </div>
         </div>
         <CardContent className="p-5 space-y-4">
-          <div className="space-y-2">
-            <Label>Tax Rate</Label>
-            <Select value={taxRate} onValueChange={setTaxRate}>
-              <SelectTrigger className="glass-input">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background border border-border">
-                <SelectItem value="15">15% - Low Income</SelectItem>
-                <SelectItem value="20">20% - Lower Middle</SelectItem>
-                <SelectItem value="22">22% - Average</SelectItem>
-                <SelectItem value="26">26% - Middle Income</SelectItem>
-                <SelectItem value="29">29% - Upper Middle</SelectItem>
-                <SelectItem value="33">33% - High Income</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Country</Label>
+              <Select value={selectedCountry} onValueChange={(val) => setSelectedCountry(val as keyof typeof COUNTRY_TAX_CONFIG)}>
+                <SelectTrigger className="glass-input">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border">
+                  {Object.entries(COUNTRY_TAX_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <span className="flex items-center gap-2">
+                        <span>{config.flag}</span>
+                        <span>{config.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tax Bracket</Label>
+              <Select value={taxRate} onValueChange={setTaxRate}>
+                <SelectTrigger className="glass-input">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border max-h-60">
+                  {countryConfig.brackets.map((bracket, idx) => (
+                    <SelectItem key={idx} value={bracket.rate.toString()}>
+                      {bracket.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Country Tax Info */}
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-xs text-muted-foreground">{countryConfig.description}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-              <div className="text-xs text-muted-foreground mb-1">Monthly Tax</div>
+              <div className="text-xs text-muted-foreground mb-1">Monthly Tax ({effectiveTaxRate}%)</div>
               <div className="font-mono font-bold text-destructive">{formatCurrency(taxPerMonth)}</div>
             </div>
             <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
