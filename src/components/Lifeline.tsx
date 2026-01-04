@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download } from "lucide-react";
+import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download, Globe } from "lucide-react";
 import jsPDF from "jspdf";
 import { LifelineData, Transaction, LifelineStats } from "@/types/lifeline";
 import {
@@ -22,6 +22,72 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 
+// Country tax configurations
+const COUNTRY_TAX_CONFIG = {
+  canada: {
+    name: "Canada",
+    flag: "🇨🇦",
+    currency: "CAD",
+    brackets: [
+      { min: 0, max: 57375, rate: 15, label: "15% (Up to $57,375)" },
+      { min: 57375, max: 114750, rate: 20.5, label: "20.5% ($57,375 - $114,750)" },
+      { min: 114750, max: 177882, rate: 26, label: "26% ($114,750 - $177,882)" },
+      { min: 177882, max: 253414, rate: 29, label: "29% ($177,882 - $253,414)" },
+      { min: 253414, max: Infinity, rate: 33, label: "33% (Above $253,414)" },
+    ],
+    description: "Federal income tax brackets (2025). Provincial taxes may apply additionally.",
+  },
+  usa: {
+    name: "United States",
+    flag: "🇺🇸",
+    currency: "USD",
+    brackets: [
+      { min: 0, max: 11600, rate: 10, label: "10% (Up to $11,600)" },
+      { min: 11600, max: 47150, rate: 12, label: "12% ($11,600 - $47,150)" },
+      { min: 47150, max: 100525, rate: 22, label: "22% ($47,150 - $100,525)" },
+      { min: 100525, max: 191950, rate: 24, label: "24% ($100,525 - $191,950)" },
+      { min: 191950, max: 243725, rate: 32, label: "32% ($191,950 - $243,725)" },
+      { min: 243725, max: 609350, rate: 35, label: "35% ($243,725 - $609,350)" },
+      { min: 609350, max: Infinity, rate: 37, label: "37% (Above $609,350)" },
+    ],
+    description: "Federal income tax brackets (2024). State taxes may apply additionally.",
+  },
+  pakistan: {
+    name: "Pakistan",
+    flag: "🇵🇰",
+    currency: "PKR",
+    brackets: [
+      { min: 0, max: 600000, rate: 0, label: "0% (Up to PKR 600,000)" },
+      { min: 600000, max: 1200000, rate: 2.5, label: "2.5% (PKR 600,000 - 1,200,000)" },
+      { min: 1200000, max: 2400000, rate: 12.5, label: "12.5% (PKR 1,200,000 - 2,400,000)" },
+      { min: 2400000, max: 3600000, rate: 22.5, label: "22.5% (PKR 2,400,000 - 3,600,000)" },
+      { min: 3600000, max: 6000000, rate: 27.5, label: "27.5% (PKR 3,600,000 - 6,000,000)" },
+      { min: 6000000, max: Infinity, rate: 35, label: "35% (Above PKR 6,000,000)" },
+    ],
+    description: "Pakistan Income Tax rates for salaried individuals (FY 2024-25).",
+  },
+  uae: {
+    name: "UAE",
+    flag: "🇦🇪",
+    currency: "AED",
+    brackets: [
+      { min: 0, max: Infinity, rate: 0, label: "0% - No Personal Income Tax" },
+    ],
+    description: "UAE has no personal income tax. Corporate tax of 9% applies for businesses earning above AED 375,000.",
+  },
+  ksa: {
+    name: "Saudi Arabia",
+    flag: "🇸🇦",
+    currency: "SAR",
+    brackets: [
+      { min: 0, max: Infinity, rate: 0, label: "0% - No Personal Income Tax" },
+    ],
+    description: "Saudi Arabia has no personal income tax for individuals. Zakat (2.5%) applies to Saudi nationals and GCC citizens on certain assets.",
+  },
+};
+
+type CountryKey = keyof typeof COUNTRY_TAX_CONFIG;
+
 interface LifelineProps {}
 
 export const Lifeline = ({}: LifelineProps) => {
@@ -35,14 +101,28 @@ export const Lifeline = ({}: LifelineProps) => {
 
   // Setup form states
   const [monthlyExpense, setMonthlyExpense] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [selectedCountry, setSelectedCountry] = useState<CountryKey>("canada");
   const [periodMonths, setPeriodMonths] = useState("1");
-  const [taxRate, setTaxRate] = useState("30");
 
   // Transaction form states
   const [transAmount, setTransAmount] = useState("");
   const [transDescription, setTransDescription] = useState("");
   const [transType, setTransType] = useState<"expense" | "earning">("expense");
+
+  // Derived values
+  const countryConfig = COUNTRY_TAX_CONFIG[selectedCountry];
+  const currency = countryConfig.currency;
+
+  // Calculate effective tax rate based on yearly income and country
+  const calculatedTaxRate = useMemo(() => {
+    if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) return 0;
+    const yearlyExpense = parseFloat(monthlyExpense) * 12;
+    const brackets = countryConfig.brackets;
+    
+    // Find the applicable bracket
+    const bracket = brackets.find(b => yearlyExpense >= b.min && yearlyExpense < b.max);
+    return bracket ? bracket.rate : brackets[brackets.length - 1].rate;
+  }, [monthlyExpense, selectedCountry, countryConfig]);
 
   useEffect(() => {
     loadData();
@@ -88,9 +168,10 @@ export const Lifeline = ({}: LifelineProps) => {
     const settings = {
       monthlyExpense: parseFloat(monthlyExpense),
       currency: currency,
+      country: selectedCountry,
       startDate: new Date().toISOString(),
       periodMonths: parseInt(periodMonths),
-      taxRate: parseFloat(taxRate) || 30,
+      taxRate: calculatedTaxRate,
     };
 
     initializeLifeline(settings);
@@ -524,50 +605,43 @@ export const Lifeline = ({}: LifelineProps) => {
               </p>
             </div>
 
-            {/* Two Column Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Currency Selection */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <span className="text-lg">💱</span>
-                  Currency
-                </Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">🇺🇸 USD - US Dollar</SelectItem>
-                    <SelectItem value="CAD">🇨🇦 CAD - Canadian Dollar</SelectItem>
-                    <SelectItem value="EUR">🇪🇺 EUR - Euro</SelectItem>
-                    <SelectItem value="GBP">🇬🇧 GBP - British Pound</SelectItem>
-                    <SelectItem value="AUD">🇦🇺 AUD - Australian Dollar</SelectItem>
-                    <SelectItem value="PKR">🇵🇰 PKR - Pakistani Rupee</SelectItem>
-                    <SelectItem value="INR">🇮🇳 INR - Indian Rupee</SelectItem>
-                    <SelectItem value="AED">🇦🇪 AED - UAE Dirham</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Country Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Globe className="h-4 w-4 text-primary" />
+                Country
+              </Label>
+              <Select value={selectedCountry} onValueChange={(val) => setSelectedCountry(val as CountryKey)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(COUNTRY_TAX_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.flag} {config.name} ({config.currency})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {countryConfig.description}
+              </p>
+            </div>
 
-              {/* Tax Rate */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-2">
+            {/* Tax Rate Display (Auto-calculated) */}
+            <div className="p-4 rounded-xl glass-subtle border border-primary/20 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-2">
                   <span className="text-lg">📊</span>
-                  Tax Rate
-                </Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    placeholder="30"
-                    value={taxRate}
-                    onChange={(e) => setTaxRate(e.target.value)}
-                    className="h-12 pr-10"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                    %
-                  </div>
-                </div>
+                  Auto-detected Tax Rate
+                </span>
+                <span className="text-xl font-bold text-primary">{calculatedTaxRate}%</span>
               </div>
+              {monthlyExpense && parseFloat(monthlyExpense) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Based on yearly income of {formatCurrency(parseFloat(monthlyExpense) * 12, currency)} in {countryConfig.name}
+                </p>
+              )}
             </div>
 
             {/* Tracking Period */}
@@ -638,15 +712,24 @@ export const Lifeline = ({}: LifelineProps) => {
   const taxOwedUSD = taxOwedLocal / exchangeRate;
 
   // Calculate USD to Local conversion display
+  // Get country config for display
+  const savedCountryConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey] || COUNTRY_TAX_CONFIG.canada;
   const usdToLocalDisplay = `1 USD = ${exchangeRate.toFixed(2)} ${data.settings.currency}`;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-4">
         <h2 className="text-3xl font-bold text-primary">Your Lifeline</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full flex items-center gap-1.5">
+            <span>{savedCountryConfig.flag}</span>
+            <span>{savedCountryConfig.name}</span>
+          </div>
           <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-             {usdToLocalDisplay}
+            Tax: {data.settings.taxRate}%
+          </div>
+          <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
+            {usdToLocalDisplay}
           </div>
           <Button variant="outline" size="icon" onClick={exportToPDF} title="Export PDF">
             <Download className="h-4 w-4" />
