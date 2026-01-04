@@ -1,6 +1,7 @@
 export interface LifelineSettings {
   monthlyExpense: number; // Monthly expense in selected currency
   currency: string; // Selected currency (e.g., CAD, PKR, EUR)
+  country: string; // Selected country (e.g., canada, usa, pakistan)
   taxRate: number; // Tax rate percentage (e.g., 30 for 30%)
   startDate: string;
   periodMonths: number; // 1 for monthly, 6 for 6-month tracking
