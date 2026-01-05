@@ -114,15 +114,27 @@ export const Lifeline = ({}: LifelineProps) => {
   const currency = countryConfig.currency;
 
   // Calculate effective tax rate based on yearly income and country
-  const calculatedTaxRate = useMemo(() => {
-    if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) return 0;
-    const yearlyExpense = parseFloat(monthlyExpense) * 12;
+  const { calculatedTaxRate, applicableBracket } = useMemo(() => {
+    if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) {
+      return { calculatedTaxRate: 0, applicableBracket: null };
+    }
+    const yearlyIncome = parseFloat(monthlyExpense) * 12;
     const brackets = countryConfig.brackets;
     
     // Find the applicable bracket
-    const bracket = brackets.find(b => yearlyExpense >= b.min && yearlyExpense < b.max);
-    return bracket ? bracket.rate : brackets[brackets.length - 1].rate;
+    const bracket = brackets.find(b => yearlyIncome >= b.min && yearlyIncome < b.max);
+    const rate = bracket ? bracket.rate : brackets[brackets.length - 1].rate;
+    return { 
+      calculatedTaxRate: rate, 
+      applicableBracket: bracket || brackets[brackets.length - 1]
+    };
   }, [monthlyExpense, selectedCountry, countryConfig]);
+
+  // Calculate yearly income for display
+  const yearlyIncome = useMemo(() => {
+    if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) return 0;
+    return parseFloat(monthlyExpense) * 12;
+  }, [monthlyExpense]);
 
   useEffect(() => {
     loadData();
@@ -629,7 +641,7 @@ export const Lifeline = ({}: LifelineProps) => {
             </div>
 
             {/* Tax Rate Display (Auto-calculated) */}
-            <div className="p-4 rounded-xl glass-subtle border border-primary/20 space-y-2">
+            <div className="p-4 rounded-xl glass-subtle border border-primary/20 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium flex items-center gap-2">
                   <span className="text-lg">📊</span>
@@ -637,11 +649,31 @@ export const Lifeline = ({}: LifelineProps) => {
                 </span>
                 <span className="text-xl font-bold text-primary">{calculatedTaxRate}%</span>
               </div>
+              
               {monthlyExpense && parseFloat(monthlyExpense) > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Based on yearly income of {formatCurrency(parseFloat(monthlyExpense) * 12, currency)} in {countryConfig.name}
-                </p>
+                <div className="space-y-2 pt-2 border-t border-border/30">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Yearly Income</span>
+                    <span className="font-semibold">{formatCurrency(yearlyIncome, currency)}</span>
+                  </div>
+                  {applicableBracket && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tax Bracket</span>
+                      <span className="font-medium text-primary">{applicableBracket.label}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Estimated Yearly Tax</span>
+                    <span className="font-semibold text-destructive">
+                      {formatCurrency(yearlyIncome * (calculatedTaxRate / 100), currency)}
+                    </span>
+                  </div>
+                </div>
               )}
+              
+              <p className="text-xs text-muted-foreground">
+                {countryConfig.description}
+              </p>
             </div>
 
             {/* Tracking Period */}
