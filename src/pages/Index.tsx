@@ -147,7 +147,10 @@ const Index = () => {
 
   // Define available tabs based on whether pair is selected
   const availableTabs = selectedPair 
-    ? [{ value: "calculator", label: "Forex Pip Calculator" }]
+    ? [
+        { value: "calculator", label: "Forex Pip Calculator" },
+        { value: "converter", label: "Currency Converter" },
+      ]
     : [
         { value: "lifeline", label: "Setup Your Lifeline" },
         { value: "tax", label: "Tax History" },
@@ -363,6 +366,11 @@ const Index = () => {
           <TabsContent value="calculator" className="space-y-6 mt-6">
             <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
             <TradeHistory trades={trades} />
+          </TabsContent>
+
+          {/* Currency Converter Tab */}
+          <TabsContent value="converter" className="mt-6">
+            <CurrencyConverter />
           </TabsContent>
         </Tabs>
       </div>
