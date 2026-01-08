@@ -5,6 +5,7 @@ export interface LifelineSettings {
   taxRate: number; // Tax rate percentage (e.g., 30 for 30%)
   startDate: string;
   periodMonths: number; // 1 for monthly, 6 for 6-month tracking
+  externalCountries?: string[]; // Additional countries for expense tracking (e.g., ["pakistan", "uae"])
 }
 
 export interface Transaction {
@@ -16,6 +17,7 @@ export interface Transaction {
   type: "expense" | "earning" | "tax";
   taxed?: boolean; // For earnings, tracks if tax has been paid
   exchangeRate?: number; // Exchange rate used for conversion
+  country?: string; // Country for this transaction (main or external)
 }
 
 export interface TaxPayment {
@@ -27,12 +29,20 @@ export interface TaxPayment {
   earningsIds: string[]; // Track which earnings were taxed
 }
 
+export interface ExternalCountryData {
+  country: string;
+  currency: string;
+  transactions: Transaction[];
+  exchangeRate: number; // Rate from main currency to this currency
+}
+
 export interface LifelineData {
   settings: LifelineSettings;
   transactions: Transaction[];
   taxPayments: TaxPayment[];
   lastExchangeRateUpdate?: string;
   cachedExchangeRate?: number;
+  externalCountryData?: ExternalCountryData[];
 }
 
 export interface LifelineStats {
