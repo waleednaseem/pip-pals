@@ -94,6 +94,19 @@ type CountryKey = keyof typeof COUNTRY_TAX_CONFIG;
 // Pie chart colors
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
+// Helper function to calculate tax bracket based on income
+const calculateTaxBracket = (yearlyIncome: number, countryKey: CountryKey) => {
+  const countryConfig = COUNTRY_TAX_CONFIG[countryKey];
+  const brackets = countryConfig.brackets;
+  
+  const bracket = brackets.find(b => yearlyIncome >= b.min && yearlyIncome < b.max);
+  const rate = bracket ? bracket.rate : brackets[brackets.length - 1].rate;
+  return { 
+    rate, 
+    bracket: bracket || brackets[brackets.length - 1]
+  };
+};
+
 interface LifelineProps {}
 
 export const Lifeline = ({}: LifelineProps) => {
@@ -134,36 +147,77 @@ export const Lifeline = ({}: LifelineProps) => {
       .map(([key, config]) => ({ key: key as CountryKey, ...config }));
   }, [selectedCountry]);
 
-  // Calculate effective tax rate based on yearly income and country
+  // Calculate effective tax rate based on yearly income and country (for setup)
   const { calculatedTaxRate, applicableBracket } = useMemo(() => {
     if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) {
       return { calculatedTaxRate: 0, applicableBracket: null };
     }
     const yearlyIncome = parseFloat(monthlyExpense) * 12;
-    const brackets = countryConfig.brackets;
-    
-    // Find the applicable bracket
-    const bracket = brackets.find(b => yearlyIncome >= b.min && yearlyIncome < b.max);
-    const rate = bracket ? bracket.rate : brackets[brackets.length - 1].rate;
+    const { rate, bracket } = calculateTaxBracket(yearlyIncome, selectedCountry);
     return { 
       calculatedTaxRate: rate, 
-      applicableBracket: bracket || brackets[brackets.length - 1]
+      applicableBracket: bracket
     };
-  }, [monthlyExpense, selectedCountry, countryConfig]);
+  }, [monthlyExpense, selectedCountry]);
 
-  // Calculate yearly income for display
+  // Calculate yearly income for display in setup
   const yearlyIncome = useMemo(() => {
     if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) return 0;
     return parseFloat(monthlyExpense) * 12;
   }, [monthlyExpense]);
 
-  // Calculate expense distribution by country for pie chart
+  // Calculate LIVE tax bracket based on actual earnings (for dashboard)
+  const liveTaxInfo = useMemo(() => {
+    if (!data || !stats) return null;
+    
+    const countryKey = data.settings.country as CountryKey;
+    const config = COUNTRY_TAX_CONFIG[countryKey];
+    
+    // Total earnings so far
+    const totalEarnings = stats.totalEarned;
+    
+    // Annualize based on period
+    const daysElapsed = Math.max(stats.daysElapsed, 1);
+    const projectedYearlyIncome = (totalEarnings / daysElapsed) * 365;
+    
+    // Current tax bracket based on actual earnings
+    const { rate: currentRate, bracket: currentBracket } = calculateTaxBracket(totalEarnings, countryKey);
+    
+    // Projected tax bracket based on annualized income
+    const { rate: projectedRate, bracket: projectedBracket } = calculateTaxBracket(projectedYearlyIncome, countryKey);
+    
+    // Untaxed earnings and taxed earnings
+    const untaxedEarnings = data.transactions
+      .filter(t => t.type === "earning" && !t.taxed && (!t.country || t.country === countryKey))
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const taxedEarnings = data.transactions
+      .filter(t => t.type === "earning" && t.taxed && (!t.country || t.country === countryKey))
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    // Calculate tax on untaxed earnings using current bracket rate
+    const taxOwed = untaxedEarnings * (currentRate / 100);
+    
+    return {
+      totalEarnings,
+      projectedYearlyIncome,
+      currentRate,
+      currentBracket,
+      projectedRate,
+      projectedBracket,
+      untaxedEarnings,
+      taxedEarnings,
+      taxOwed,
+    };
+  }, [data, stats]);
+
+  // Calculate expense distribution by country for pie chart - ALL IN MAIN CURRENCY
   const expenseDistribution = useMemo(() => {
     if (!data) return [];
 
-    const distribution: { name: string; value: number; flag: string; currency: string }[] = [];
+    const distribution: { name: string; value: number; flag: string }[] = [];
     
-    // Main country expenses
+    // Main country expenses (already in main currency)
     const mainCountryKey = data.settings.country as CountryKey;
     const mainConfig = COUNTRY_TAX_CONFIG[mainCountryKey] || COUNTRY_TAX_CONFIG.canada;
     const mainExpenses = data.transactions
@@ -175,11 +229,10 @@ export const Lifeline = ({}: LifelineProps) => {
         name: mainConfig.name,
         value: mainExpenses,
         flag: mainConfig.flag,
-        currency: mainConfig.currency,
       });
     }
 
-    // External country expenses (convert to main currency for comparison)
+    // External country expenses - convert to main currency
     if (data.externalCountryData) {
       data.externalCountryData.forEach(extData => {
         const extConfig = COUNTRY_TAX_CONFIG[extData.country as CountryKey];
@@ -190,16 +243,15 @@ export const Lifeline = ({}: LifelineProps) => {
           .reduce((sum, t) => sum + t.amount, 0);
         
         if (extExpenses > 0) {
-          // Convert to main currency for chart comparison
-          const mainCurrencyRate = externalRates[extConfig.currency] || 1;
-          const exchangeRateToMain = exchangeRate / mainCurrencyRate;
-          const expenseInMainCurrency = extExpenses / exchangeRateToMain;
+          // Convert to main currency
+          const extRate = externalRates[extConfig.currency] || 1;
+          const mainRate = exchangeRate;
+          const expenseInMainCurrency = (extExpenses / extRate) * mainRate;
           
           distribution.push({
             name: extConfig.name,
             value: expenseInMainCurrency,
             flag: extConfig.flag,
-            currency: extConfig.currency,
           });
         }
       });
@@ -208,13 +260,13 @@ export const Lifeline = ({}: LifelineProps) => {
     return distribution;
   }, [data, exchangeRate, externalRates]);
 
-  // Calculate earnings by country
+  // Calculate earnings by country - show in main currency for comparison
   const earningsDistribution = useMemo(() => {
     if (!data) return [];
 
-    const distribution: { name: string; value: number; flag: string; currency: string }[] = [];
+    const distribution: { name: string; value: number; flag: string; originalValue?: number; originalCurrency?: string }[] = [];
     
-    // Main country earnings
+    // Main country earnings (already in main currency)
     const mainCountryKey = data.settings.country as CountryKey;
     const mainConfig = COUNTRY_TAX_CONFIG[mainCountryKey] || COUNTRY_TAX_CONFIG.canada;
     const mainEarnings = data.transactions
@@ -226,11 +278,10 @@ export const Lifeline = ({}: LifelineProps) => {
         name: mainConfig.name,
         value: mainEarnings,
         flag: mainConfig.flag,
-        currency: mainConfig.currency,
       });
     }
 
-    // External country earnings (local only - not added to main)
+    // External country earnings - convert to main currency for comparison
     if (data.externalCountryData) {
       data.externalCountryData.forEach(extData => {
         const extConfig = COUNTRY_TAX_CONFIG[extData.country as CountryKey];
@@ -241,18 +292,24 @@ export const Lifeline = ({}: LifelineProps) => {
           .reduce((sum, t) => sum + t.amount, 0);
         
         if (extEarnings > 0) {
+          // Convert to main currency for comparison
+          const extRate = externalRates[extConfig.currency] || 1;
+          const mainRate = exchangeRate;
+          const earningsInMainCurrency = (extEarnings / extRate) * mainRate;
+          
           distribution.push({
             name: extConfig.name,
-            value: extEarnings,
+            value: earningsInMainCurrency,
             flag: extConfig.flag,
-            currency: extConfig.currency,
+            originalValue: extEarnings,
+            originalCurrency: extConfig.currency,
           });
         }
       });
     }
 
     return distribution;
-  }, [data]);
+  }, [data, exchangeRate, externalRates]);
 
   useEffect(() => {
     loadData();
@@ -506,10 +563,9 @@ export const Lifeline = ({}: LifelineProps) => {
   };
 
   const handlePayTax = async () => {
-    if (!data) return;
+    if (!data || !liveTaxInfo) return;
     
-    const taxOwedLocal = calculateTaxOwed(data, exchangeRate);
-    if (taxOwedLocal <= 0) {
+    if (liveTaxInfo.taxOwed <= 0) {
       toast({
         title: "No Tax Owed",
         description: "You have no untaxed earnings at the moment",
@@ -522,10 +578,10 @@ export const Lifeline = ({}: LifelineProps) => {
       await payTax(exchangeRate);
       loadData();
       
-      const taxOwedUSD = taxOwedLocal / exchangeRate;
+      const taxOwedUSD = liveTaxInfo.taxOwed / exchangeRate;
       toast({
         title: "Tax Paid Successfully",
-        description: `Paid ${formatCurrency(taxOwedLocal, data.settings.currency)} (USD $${taxOwedUSD.toFixed(2)})`,
+        description: `Paid ${formatCurrency(liveTaxInfo.taxOwed, data.settings.currency)} (USD $${taxOwedUSD.toFixed(2)})`,
       });
     } catch (error) {
       toast({
@@ -560,9 +616,9 @@ export const Lifeline = ({}: LifelineProps) => {
     );
   };
 
-  // Export to PDF
+  // Export to PDF for main country
   const exportToPDF = () => {
-    if (!data || !stats) return;
+    if (!data || !stats || !liveTaxInfo) return;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -598,7 +654,7 @@ export const Lifeline = ({}: LifelineProps) => {
     // Account Summary
     doc.setTextColor(30, 41, 59);
     doc.setFillColor(248, 250, 252);
-    doc.roundedRect(15, y - 5, pageWidth - 30, 50, 3, 3, "F");
+    doc.roundedRect(15, y - 5, pageWidth - 30, 60, 3, 3, "F");
     
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
@@ -613,13 +669,15 @@ export const Lifeline = ({}: LifelineProps) => {
     
     doc.text(`Currency: ${data.settings.currency}`, 20, y);
     doc.text(`Period: ${data.settings.periodMonths} Month(s)`, 20, y + 8);
-    doc.text(`Tax Rate: ${data.settings.taxRate}%`, 20, y + 16);
+    doc.text(`Current Tax Bracket: ${liveTaxInfo.currentRate}%`, 20, y + 16);
+    doc.text(`Projected Yearly Income: ${formatCurrency(liveTaxInfo.projectedYearlyIncome, data.settings.currency)}`, 20, y + 24);
     
     doc.text(`Exchange Rate: 1 USD = ${exchangeRate.toFixed(2)} ${data.settings.currency}`, 110, y);
     doc.text(`Days Remaining: ${stats.daysRemaining}`, 110, y + 8);
     doc.text(`Progress: ${stats.progressPercent.toFixed(1)}%`, 110, y + 16);
+    doc.text(`Total Earnings: ${formatCurrency(liveTaxInfo.totalEarnings, data.settings.currency)}`, 110, y + 24);
 
-    y += 45;
+    y += 55;
 
     // Financial Overview boxes
     doc.setFontSize(12);
@@ -667,18 +725,17 @@ export const Lifeline = ({}: LifelineProps) => {
     doc.text("TAX SUMMARY", 20, y);
     y += 8;
 
-    const taxOwedLocal = calculateTaxOwed(data, exchangeRate);
-    const taxOwedUSD = taxOwedLocal / exchangeRate;
-
-    if (taxOwedLocal > 0) {
+    if (liveTaxInfo.taxOwed > 0) {
       doc.setFillColor(254, 243, 199);
-      doc.roundedRect(15, y, pageWidth - 30, 25, 2, 2, "F");
+      doc.roundedRect(15, y, pageWidth - 30, 35, 2, 2, "F");
       doc.setTextColor(180, 83, 9);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.text("TAX UNPAID", 20, y + 10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Amount Due: ${formatCurrency(taxOwedLocal, data.settings.currency)} (USD $${taxOwedUSD.toFixed(2)})`, 20, y + 18);
+      doc.text(`Untaxed Earnings: ${formatCurrency(liveTaxInfo.untaxedEarnings, data.settings.currency)}`, 20, y + 18);
+      doc.text(`Tax Due (${liveTaxInfo.currentRate}%): ${formatCurrency(liveTaxInfo.taxOwed, data.settings.currency)}`, 20, y + 26);
+      y += 45;
     } else {
       doc.setFillColor(220, 252, 231);
       doc.roundedRect(15, y, pageWidth - 30, 25, 2, 2, "F");
@@ -688,9 +745,8 @@ export const Lifeline = ({}: LifelineProps) => {
       doc.text("TAX PAID", 20, y + 10);
       doc.setFont("helvetica", "normal");
       doc.text(`Total Tax Paid: ${formatCurrency(stats.totalTaxPaid, data.settings.currency)}`, 20, y + 18);
+      y += 35;
     }
-
-    y += 35;
 
     // Transaction History
     doc.setTextColor(30, 41, 59);
@@ -804,6 +860,231 @@ export const Lifeline = ({}: LifelineProps) => {
     });
   };
 
+  // Export External Country PDF
+  const exportExternalCountryPDF = (extCountry: string) => {
+    if (!data) return;
+
+    const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
+    const extData = data.externalCountryData?.find(e => e.country === extCountry);
+    if (!extConfig || !extData) return;
+
+    const mainConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey];
+    const extRate = externalRates[extConfig.currency] || 1;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = now.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let y = 20;
+
+    // Header
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageWidth, 40, "F");
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${extConfig.flag} ${extConfig.name.toUpperCase()} STATEMENT`, pageWidth / 2, 18, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${dateStr} at ${timeStr}`, pageWidth / 2, 30, { align: "center" });
+
+    y = 55;
+
+    // Account Info
+    doc.setTextColor(30, 41, 59);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(15, y - 5, pageWidth - 30, 40, 3, 3, "F");
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("ACCOUNT INFORMATION", 20, y + 5);
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, y + 10, pageWidth - 20, y + 10);
+
+    y += 20;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    doc.text(`Local Currency: ${extConfig.currency}`, 20, y);
+    doc.text(`Main Country: ${mainConfig.flag} ${mainConfig.name} (${mainConfig.currency})`, 20, y + 8);
+    doc.text(`Exchange Rate: 1 USD = ${extRate.toFixed(2)} ${extConfig.currency}`, 110, y);
+    doc.text(`Tax Applicable: No (External Country)`, 110, y + 8);
+
+    y += 40;
+
+    // Calculate totals
+    // Credits: Expenses from main country (money coming IN to this country) + Local earnings
+    const creditsFromMain = extData.transactions
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const localEarnings = extData.transactions
+      .filter(t => t.type === "earning")
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalCredits = creditsFromMain + localEarnings;
+    
+    // Debits: Only local expenses that stay in this country (we don't have this concept yet, 
+    // but for now expenses are "from main" so they're credits here)
+    // For now, debits are 0 since all expenses are funded from main
+    const totalDebits = 0;
+    const balance = totalCredits - totalDebits;
+
+    // Summary boxes
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("FINANCIAL SUMMARY", 20, y);
+    y += 8;
+
+    const boxWidth = (pageWidth - 50) / 3;
+    
+    doc.setFillColor(220, 252, 231);
+    doc.roundedRect(15, y, boxWidth, 35, 2, 2, "F");
+    doc.setTextColor(22, 101, 52);
+    doc.setFontSize(9);
+    doc.text("TOTAL CREDITS", 20, y + 10);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`+ ${formatCurrency(totalCredits, extConfig.currency)}`, 20, y + 22);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(`From ${mainConfig.currency}: ${formatCurrency(creditsFromMain, extConfig.currency)}`, 20, y + 30);
+
+    doc.setFillColor(254, 226, 226);
+    doc.roundedRect(20 + boxWidth, y, boxWidth, 35, 2, 2, "F");
+    doc.setTextColor(153, 27, 27);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("TOTAL DEBITS", 25 + boxWidth, y + 10);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`- ${formatCurrency(totalDebits, extConfig.currency)}`, 25 + boxWidth, y + 22);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("Local expenses only", 25 + boxWidth, y + 30);
+
+    doc.setFillColor(224, 231, 255);
+    doc.roundedRect(25 + boxWidth * 2, y, boxWidth, 35, 2, 2, "F");
+    doc.setTextColor(55, 48, 163);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("BALANCE", 30 + boxWidth * 2, y + 10);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatCurrency(balance, extConfig.currency), 30 + boxWidth * 2, y + 22);
+
+    y += 50;
+
+    // Transaction History
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("TRANSACTION HISTORY", 20, y);
+    y += 8;
+
+    doc.setFillColor(241, 245, 249);
+    doc.rect(15, y, pageWidth - 30, 10, "F");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(71, 85, 105);
+    doc.text("DATE", 20, y + 7);
+    doc.text("DESCRIPTION", 50, y + 7);
+    doc.text("SOURCE", 110, y + 7);
+    doc.text("CREDIT", 145, y + 7);
+    doc.text("DEBIT", 175, y + 7);
+
+    y += 12;
+
+    const sortedExtTransactions = [...extData.transactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    sortedExtTransactions.forEach((transaction, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+        
+        doc.setFillColor(241, 245, 249);
+        doc.rect(15, y, pageWidth - 30, 10, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(71, 85, 105);
+        doc.text("DATE", 20, y + 7);
+        doc.text("DESCRIPTION", 50, y + 7);
+        doc.text("SOURCE", 110, y + 7);
+        doc.text("CREDIT", 145, y + 7);
+        doc.text("DEBIT", 175, y + 7);
+        y += 12;
+      }
+
+      if (index % 2 === 0) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(15, y - 3, pageWidth - 30, 10, "F");
+      }
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      doc.setTextColor(100, 116, 139);
+      doc.text(new Date(transaction.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }), 20, y + 4);
+      
+      doc.setTextColor(30, 41, 59);
+      const desc = transaction.description.length > 28 
+        ? transaction.description.substring(0, 28) + "..." 
+        : transaction.description;
+      doc.text(desc, 50, y + 4);
+      
+      // Source
+      if (transaction.type === "expense") {
+        doc.setTextColor(55, 48, 163);
+        doc.text(`From ${mainConfig.currency}`, 110, y + 4);
+      } else {
+        doc.setTextColor(22, 101, 52);
+        doc.text("Local", 110, y + 4);
+      }
+      
+      // Credits - both expenses (from main) and local earnings are credits here
+      doc.setTextColor(22, 101, 52);
+      doc.text(formatCurrency(transaction.amount, extConfig.currency), 145, y + 4);
+      
+      // Debits - none for now
+      doc.setTextColor(100, 116, 139);
+      doc.text("-", 175, y + 4);
+
+      y += 10;
+    });
+
+    // Footer
+    y = doc.internal.pageSize.getHeight() - 20;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, y - 5, pageWidth - 15, y - 5);
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("This is a computer-generated statement. No signature is required.", pageWidth / 2, y, { align: "center" });
+    doc.text(`External Country Statement - No Tax Applied`, pageWidth / 2, y + 5, { align: "center" });
+
+    const fileName = `${extCountry}-statement-${now.toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+
+    toast({
+      title: "Statement Exported",
+      description: `Saved as ${fileName}`,
+    });
+  };
+
   // Render external country section
   const renderExternalCountrySection = (extCountry: string) => {
     const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
@@ -812,14 +1093,34 @@ export const Lifeline = ({}: LifelineProps) => {
     const extData = data.externalCountryData?.find(e => e.country === extCountry);
     const extRate = externalRates[extConfig.currency] || 1;
     const mainRate = exchangeRate;
+    const mainConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey];
 
     // Calculate stats for this external country
     const extEarnings = extData?.transactions.filter(t => t.type === "earning").reduce((sum, t) => sum + t.amount, 0) || 0;
-    const extExpenses = extData?.transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) || 0;
-    const extBalance = extEarnings - extExpenses;
+    const extExpensesFromMain = extData?.transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) || 0;
+    
+    // Credits = money coming in (from main + local earnings)
+    const totalCredits = extExpensesFromMain + extEarnings;
+    // Local balance (no debits concept yet)
+    const localBalance = totalCredits;
 
     return (
       <div className="space-y-4">
+        {/* External Country Header with Export */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{extConfig.flag}</span>
+            <div>
+              <h3 className="font-semibold">{extConfig.name}</h3>
+              <p className="text-xs text-muted-foreground">No Tax Applied • External Country</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => exportExternalCountryPDF(extCountry)}>
+            <Download className="h-4 w-4 mr-1" />
+            Export PDF
+          </Button>
+        </div>
+
         {/* External Country Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="p-3 rounded-lg bg-muted/50">
@@ -827,21 +1128,24 @@ export const Lifeline = ({}: LifelineProps) => {
             <p className="text-sm font-semibold">1 USD = {extRate.toFixed(2)} {extConfig.currency}</p>
           </div>
           <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-            <p className="text-xs text-green-600 dark:text-green-400">Local Earnings</p>
+            <p className="text-xs text-green-600 dark:text-green-400">Total Credits</p>
             <p className="text-sm font-semibold text-green-700 dark:text-green-300">
-              {formatCurrency(extEarnings, extConfig.currency)}
+              {formatCurrency(totalCredits, extConfig.currency)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              From {mainConfig.currency}: {formatCurrency(extExpensesFromMain, extConfig.currency)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-xs text-red-600 dark:text-red-400">Local Expenses</p>
-            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-              {formatCurrency(extExpenses, extConfig.currency)}
+          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <p className="text-xs text-blue-600 dark:text-blue-400">Local Earnings</p>
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+              {formatCurrency(extEarnings, extConfig.currency)}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
             <p className="text-xs text-primary">Local Balance</p>
-            <p className={`text-sm font-semibold ${extBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(extBalance, extConfig.currency)}
+            <p className={`text-sm font-semibold ${localBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(localBalance, extConfig.currency)}
             </p>
           </div>
         </div>
@@ -874,14 +1178,14 @@ export const Lifeline = ({}: LifelineProps) => {
                   <SelectContent>
                     <SelectItem value="expense">
                       <span className="flex items-center gap-1">
-                        <ArrowDownRight className="h-3 w-3 text-red-500" />
-                        Expense (from {data.settings.currency})
+                        <ArrowDownRight className="h-3 w-3 text-green-500" />
+                        Expense (from {data.settings.currency} → Credit here)
                       </span>
                     </SelectItem>
                     <SelectItem value="earning">
                       <span className="flex items-center gap-1">
-                        <ArrowUpRight className="h-3 w-3 text-green-500" />
-                        Earning (local only)
+                        <ArrowUpRight className="h-3 w-3 text-blue-500" />
+                        Local Earning (stays here)
                       </span>
                     </SelectItem>
                   </SelectContent>
@@ -891,13 +1195,13 @@ export const Lifeline = ({}: LifelineProps) => {
             
             {extTransType === "expense" && extTransAmount && parseFloat(extTransAmount) > 0 && (
               <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                💡 This will deduct <strong>{formatCurrency((parseFloat(extTransAmount) / extRate) * mainRate, data.settings.currency)}</strong> from your main balance
+                💡 This will deduct <strong>{formatCurrency((parseFloat(extTransAmount) / extRate) * mainRate, data.settings.currency)}</strong> from your {mainConfig.flag} main balance and credit <strong>{formatCurrency(parseFloat(extTransAmount), extConfig.currency)}</strong> here
               </p>
             )}
             
             {extTransType === "earning" && (
-              <p className="text-xs text-amber-600 bg-amber-500/10 p-2 rounded">
-                ⚠️ Local earnings stay in {extConfig.name} only and won't add to your main target
+              <p className="text-xs text-blue-600 bg-blue-500/10 p-2 rounded">
+                ℹ️ Local earnings stay in {extConfig.name} only and won't affect your main balance
               </p>
             )}
             
@@ -930,21 +1234,20 @@ export const Lifeline = ({}: LifelineProps) => {
                   >
                     <div className="flex-1">
                       <p className="font-medium text-sm">{transaction.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{new Date(transaction.date).toLocaleDateString()}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-muted text-xs">
+                          {transaction.type === "expense" ? `From ${mainConfig.currency}` : "Local"}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`font-semibold text-sm ${
-                          transaction.type === "earning"
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {transaction.type === "earning" ? "+" : "-"}
-                        {formatCurrency(transaction.amount, extConfig.currency)}
-                      </span>
+                      <div className="text-right">
+                        <span className="font-semibold text-sm text-green-600 dark:text-green-400">
+                          +{formatCurrency(transaction.amount, extConfig.currency)}
+                        </span>
+                        <p className="text-xs text-muted-foreground">Credit</p>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -971,28 +1274,26 @@ export const Lifeline = ({}: LifelineProps) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass-card glow-primary mb-4">
             <Activity className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
             Setup Your Lifeline
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Define your financial goals and let us calculate your earning targets automatically
+            Track your earnings, manage expenses, and stay on top of your financial goals with smart tax calculations
           </p>
         </div>
 
-        {/* Setup Form Card */}
-        <Card className="overflow-hidden">
-          <CardHeader className="border-b border-border/30 pb-4">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-                <Settings2 className="h-5 w-5 text-primary" />
-              </div>
-              Configuration
+        {/* Setup Form */}
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5 text-primary" />
+              Configure Your Targets
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            {/* Monthly Expense */}
+          <CardContent className="space-y-6">
+            {/* Monthly Expense Input */}
             <div className="space-y-3">
-              <Label htmlFor="monthly-expense" className="text-base font-medium flex items-center gap-2">
+              <Label htmlFor="monthly-expense" className="text-sm font-medium flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" />
                 Monthly Expense Target
               </Label>
@@ -1168,11 +1469,9 @@ export const Lifeline = ({}: LifelineProps) => {
     );
   }
 
-  if (!stats || !data) return null;
+  if (!stats || !data || !liveTaxInfo) return null;
 
   const quotaStatus = stats.progressPercent >= 100 ? "complete" : "active";
-  const taxOwedLocal = calculateTaxOwed(data, exchangeRate);
-  const taxOwedUSD = taxOwedLocal / exchangeRate;
 
   const savedCountryConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey] || COUNTRY_TAX_CONFIG.canada;
   const usdToLocalDisplay = `1 USD = ${exchangeRate.toFixed(2)} ${data.settings.currency}`;
@@ -1189,7 +1488,7 @@ export const Lifeline = ({}: LifelineProps) => {
             <span>{savedCountryConfig.name}</span>
           </div>
           <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-            Tax: {data.settings.taxRate}%
+            Tax: {liveTaxInfo.currentRate}%
           </div>
           <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
             {usdToLocalDisplay}
@@ -1339,88 +1638,99 @@ export const Lifeline = ({}: LifelineProps) => {
                   </div>
                 </div>
 
-                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <div className="flex justify-between items-center mb-2">
+                {/* Live Tax Bracket Card */}
+                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-3">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-primary font-semibold">Tax Payable ({data.settings.taxRate}%)</p>
-                      <p className="text-xs text-muted-foreground">Based on untaxed earnings</p>
+                      <p className="text-sm text-primary font-semibold flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Live Tax Status
+                      </p>
+                      <p className="text-xs text-muted-foreground">Based on your actual earnings</p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">
-                        {formatCurrency(taxOwedLocal, data.settings.currency)}
+                        {liveTaxInfo.currentRate}%
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        ${taxOwedUSD.toFixed(2)} USD
-                      </p>
+                      <p className="text-xs text-muted-foreground">Current Bracket</p>
                     </div>
                   </div>
                   
-                  {taxOwedLocal > 0 && (
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/30">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Earnings</p>
+                      <p className="text-sm font-semibold">{formatCurrency(liveTaxInfo.totalEarnings, data.settings.currency)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Projected Yearly</p>
+                      <p className="text-sm font-semibold">{formatCurrency(liveTaxInfo.projectedYearlyIncome, data.settings.currency)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Taxed Earnings</p>
+                      <p className="text-sm font-semibold text-green-600">{formatCurrency(liveTaxInfo.taxedEarnings, data.settings.currency)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Untaxed Earnings</p>
+                      <p className="text-sm font-semibold text-amber-600">{formatCurrency(liveTaxInfo.untaxedEarnings, data.settings.currency)}</p>
+                    </div>
+                  </div>
+                  
+                  {liveTaxInfo.currentBracket && (
+                    <p className="text-xs text-primary/80 bg-primary/5 p-2 rounded">
+                      📊 Current Bracket: {liveTaxInfo.currentBracket.label}
+                    </p>
+                  )}
+                </div>
+
+                {/* Tax Owed Card */}
+                {liveTaxInfo.taxOwed > 0 && (
+                  <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          Tax Due ({liveTaxInfo.currentRate}%)
+                        </p>
+                        <p className="text-xs text-muted-foreground">On untaxed earnings</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                          {formatCurrency(liveTaxInfo.taxOwed, data.settings.currency)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ${(liveTaxInfo.taxOwed / exchangeRate).toFixed(2)} USD
+                        </p>
+                      </div>
+                    </div>
+                    
                     <Button 
                       onClick={handlePayTax} 
                       disabled={isPaying}
-                      className="w-full mt-2"
+                      className="w-full"
                       variant="default"
                     >
-                      {isPaying ? "Processing..." : `Pay Tax (${formatCurrency(taxOwedLocal, data.settings.currency)})`}
+                      {isPaying ? "Processing..." : `Pay Tax (${formatCurrency(liveTaxInfo.taxOwed, data.settings.currency)})`}
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Tax Paid Summary */}
+                {stats.totalTaxPaid > 0 && liveTaxInfo.taxOwed <= 0 && (
+                  <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-green-600 font-medium">All Tax Paid ✓</span>
+                      </div>
+                      <span className="font-semibold text-green-700">
+                        {formatCurrency(stats.totalTaxPaid, data.settings.currency)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
-
-          {/* Tax Payment Card */}
-          {taxOwedLocal > 0 && (
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <AlertCircle className="h-5 w-5 text-destructive" />
-                  Tax Due ({data.settings.taxRate}%)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 rounded-lg bg-muted/30 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Untaxed Earnings</span>
-                    <span className="font-semibold text-lg">{formatCurrency(taxOwedLocal / (data.settings.taxRate/100), data.settings.currency)}</span>
-                  </div>
-                  <div className="h-px bg-border" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Tax Amount ({data.settings.taxRate}%)</span>
-                    <span className="font-bold text-xl text-destructive">
-                      {formatCurrency(taxOwedLocal, data.settings.currency)}
-                    </span>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handlePayTax} 
-                  className="w-full"
-                  variant="destructive"
-                  disabled={isPaying}
-                >
-                  {isPaying ? "Processing..." : "Pay Tax Now"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Tax Summary if already paid */}
-          {stats.totalTaxPaid > 0 && (
-            <Card>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Total Tax Paid</span>
-                  </div>
-                  <span className="font-semibold text-red-600 dark:text-red-400">
-                    {formatCurrency(stats.totalTaxPaid, data.settings.currency)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Add Transaction Card */}
           <Card>
@@ -1488,9 +1798,14 @@ export const Lifeline = ({}: LifelineProps) => {
                     >
                       <div className="flex-1">
                         <p className="font-medium text-sm">{transaction.description}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.date).toLocaleDateString()}
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{new Date(transaction.date).toLocaleDateString()}</span>
+                          {transaction.type === "earning" && (
+                            <span className={`px-1.5 py-0.5 rounded ${transaction.taxed ? 'bg-green-500/20 text-green-600' : 'bg-amber-500/20 text-amber-600'}`}>
+                              {transaction.taxed ? 'Taxed' : 'Untaxed'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span
@@ -1534,6 +1849,9 @@ export const Lifeline = ({}: LifelineProps) => {
                 <PieChart className="h-5 w-5 text-primary" />
                 Expense Distribution by Country
               </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                All amounts shown in {data.settings.currency}
+              </p>
             </CardHeader>
             <CardContent>
               {expenseDistribution.length > 0 ? (
@@ -1576,7 +1894,7 @@ export const Lifeline = ({}: LifelineProps) => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingDown className="h-4 w-4 text-red-500" />
-                  Expenses by Country
+                  Expenses by Country ({data.settings.currency})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1604,7 +1922,7 @@ export const Lifeline = ({}: LifelineProps) => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-green-500" />
-                  Earnings by Country
+                  Earnings by Country ({data.settings.currency})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1616,7 +1934,7 @@ export const Lifeline = ({}: LifelineProps) => {
                         <span className="text-sm font-medium">{item.name}</span>
                       </span>
                       <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                        {formatCurrency(item.value, item.currency)}
+                        {formatCurrency(item.value, data.settings.currency)}
                       </span>
                     </div>
                   ))}
