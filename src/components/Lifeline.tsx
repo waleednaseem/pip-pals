@@ -168,10 +168,38 @@ export const Lifeline = ({}: LifelineProps) => {
 
   // Calculate LIVE tax bracket based on actual earnings (for dashboard)
   const liveTaxInfo = useMemo(() => {
-    if (!data || !stats) return null;
+    const defaultBracket = { min: 0, max: Infinity, rate: 0, label: "0%" };
+    
+    if (!data || !stats) {
+      return {
+        totalEarnings: 0,
+        projectedYearlyIncome: 0,
+        currentRate: 0,
+        currentBracket: defaultBracket,
+        projectedRate: 0,
+        projectedBracket: defaultBracket,
+        untaxedEarnings: 0,
+        taxedEarnings: 0,
+        taxOwed: 0,
+      };
+    }
     
     const countryKey = data.settings.country as CountryKey;
     const config = COUNTRY_TAX_CONFIG[countryKey];
+    
+    if (!config) {
+      return {
+        totalEarnings: stats.totalEarned,
+        projectedYearlyIncome: 0,
+        currentRate: 0,
+        currentBracket: defaultBracket,
+        projectedRate: 0,
+        projectedBracket: defaultBracket,
+        untaxedEarnings: 0,
+        taxedEarnings: 0,
+        taxOwed: 0,
+      };
+    }
     
     // Total earnings so far
     const totalEarnings = stats.totalEarned;
@@ -1469,7 +1497,7 @@ export const Lifeline = ({}: LifelineProps) => {
     );
   }
 
-  if (!stats || !data || !liveTaxInfo) return null;
+  if (!stats || !data) return null;
 
   const quotaStatus = stats.progressPercent >= 100 ? "complete" : "active";
 
