@@ -261,25 +261,21 @@ export const Lifeline = ({}: LifelineProps) => {
       });
     }
 
-    // External country expenses - convert to main currency
+    // External country expenses - already stored in main currency
     if (data.externalCountryData) {
       data.externalCountryData.forEach(extData => {
         const extConfig = COUNTRY_TAX_CONFIG[extData.country as CountryKey];
         if (!extConfig) return;
         
+        // Transactions are already in primary currency (CAD), no conversion needed
         const extExpenses = extData.transactions
           .filter(t => t.type === "expense")
           .reduce((sum, t) => sum + t.amount, 0);
         
         if (extExpenses > 0) {
-          // Convert to main currency
-          const extRate = externalRates[extConfig.currency] || 1;
-          const mainRate = exchangeRate;
-          const expenseInMainCurrency = (extExpenses / extRate) * mainRate;
-          
           distribution.push({
             name: extConfig.name,
-            value: expenseInMainCurrency,
+            value: extExpenses,
             flag: extConfig.flag,
           });
         }
