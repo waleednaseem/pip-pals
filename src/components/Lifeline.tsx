@@ -135,6 +135,7 @@ export const Lifeline = ({}: LifelineProps) => {
   const [extTransAmount, setExtTransAmount] = useState("");
   const [extTransDescription, setExtTransDescription] = useState("");
   const [extTransType, setExtTransType] = useState<"expense" | "earning">("expense");
+  const [inputCurrencyMode, setInputCurrencyMode] = useState<"primary" | "local">("primary");
   const [activeExternalTab, setActiveExternalTab] = useState<string>("");
 
   // Derived values
@@ -250,7 +251,19 @@ export const Lifeline = ({}: LifelineProps) => {
     const mainCountryKey = data.settings.country as CountryKey;
     const mainConfig = COUNTRY_TAX_CONFIG[mainCountryKey] || COUNTRY_TAX_CONFIG.canada;
     const mainExpenses = data.transactions
-      .filter(t => (t.type === "expense" || t.type === "tax") && (!t.country || t.country === mainCountryKey))
+      .filter(t => {
+        // Filter out explicit external expenses (new data)
+        if (t.isExternalExpense) return false;
+
+        // Filter out legacy external expenses based on flag in description (existing data)
+        // Check if description starts with any external country flag
+        const isLegacyExternal = Object.values(COUNTRY_TAX_CONFIG).some(config => 
+          config.name !== mainConfig.name && t.description.startsWith(config.flag)
+        );
+        if (isLegacyExternal) return false;
+
+        return (t.type === "expense" || t.type === "tax") && (!t.country || t.country === mainCountryKey);
+      })
       .reduce((sum, t) => sum + t.amount, 0);
     
     if (mainExpenses > 0) {
@@ -506,13 +519,24 @@ export const Lifeline = ({}: LifelineProps) => {
     const extRate = externalRates[extConfig.currency] || 1;
     const mainCurrencyRate = exchangeRate;
 
-    // Amount is entered in PRIMARY currency (CAD) - convert to local for display
-    const amountInPrimary = parseFloat(extTransAmount);
-    const amountInLocal = (amountInPrimary / mainCurrencyRate) * extRate;
+    // Calculate amounts based on input mode
+    const rawAmount = parseFloat(extTransAmount);
+    let amountInPrimary = 0;
+    let amountInLocal = 0;
+
+    if (inputCurrencyMode === "primary") {
+      // Amount is entered in PRIMARY currency (e.g. CAD)
+      amountInPrimary = rawAmount;
+      amountInLocal = (amountInPrimary / mainCurrencyRate) * extRate;
+    } else {
+      // Amount is entered in LOCAL currency (e.g. PKR)
+      amountInLocal = rawAmount;
+      amountInPrimary = (amountInLocal / extRate) * mainCurrencyRate;
+    }
 
     const transaction: Transaction = {
       id: uuidv4(),
-      amount: amountInPrimary, // Store in PRIMARY currency
+      amount: amountInPrimary, // Always store in PRIMARY currency
       amountUSD: amountInPrimary / mainCurrencyRate,
       description: extTransDescription,
       date: new Date().toISOString(),
@@ -555,6 +579,7 @@ export const Lifeline = ({}: LifelineProps) => {
         type: "expense",
         exchangeRate: mainCurrencyRate,
         country: data.settings.country,
+        isExternalExpense: true,
       };
       updatedData.transactions.push(mainExpenseTransaction);
     }
@@ -908,6 +933,7 @@ export const Lifeline = ({}: LifelineProps) => {
 
     const mainConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey];
     const extRate = externalRates[extConfig.currency] || 1;
+    const toLocal = (amount: number) => (amount / exchangeRate) * extRate;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -996,10 +1022,10 @@ export const Lifeline = ({}: LifelineProps) => {
     doc.text("TOTAL CREDITS", 20, y + 10);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`+ ${formatCurrency(totalCredits, extConfig.currency)}`, 20, y + 22);
+    doc.text(`+ ${formatCurrency(toLocal(totalCredits), extConfig.currency)}`, 20, y + 22);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text(`From ${mainConfig.currency}: ${formatCurrency(creditsFromMain, extConfig.currency)}`, 20, y + 30);
+    doc.text(`From ${mainConfig.currency}: ${formatCurrency(toLocal(creditsFromMain), extConfig.currency)}`, 20, y + 30);
 
     doc.setFillColor(254, 226, 226);
     doc.roundedRect(20 + boxWidth, y, boxWidth, 35, 2, 2, "F");
@@ -1009,7 +1035,7 @@ export const Lifeline = ({}: LifelineProps) => {
     doc.text("TOTAL DEBITS", 25 + boxWidth, y + 10);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`- ${formatCurrency(totalDebits, extConfig.currency)}`, 25 + boxWidth, y + 22);
+    doc.text(`- ${formatCurrency(toLocal(totalDebits), extConfig.currency)}`, 25 + boxWidth, y + 22);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text("Local expenses only", 25 + boxWidth, y + 30);
@@ -1022,7 +1048,7 @@ export const Lifeline = ({}: LifelineProps) => {
     doc.text("BALANCE", 30 + boxWidth * 2, y + 10);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(formatCurrency(balance, extConfig.currency), 30 + boxWidth * 2, y + 22);
+    doc.text(formatCurrency(toLocal(balance), extConfig.currency), 30 + boxWidth * 2, y + 22);
 
     y += 50;
 
@@ -1096,7 +1122,7 @@ export const Lifeline = ({}: LifelineProps) => {
       
       // Credits - both expenses (from main) and local earnings are credits here
       doc.setTextColor(22, 101, 52);
-      doc.text(formatCurrency(transaction.amount, extConfig.currency), 145, y + 4);
+      doc.text(formatCurrency(toLocal(transaction.amount), extConfig.currency), 145, y + 4);
       
       // Debits - none for now
       doc.setTextColor(100, 116, 139);
@@ -1183,20 +1209,20 @@ export const Lifeline = ({}: LifelineProps) => {
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-2 rounded bg-muted/50">
                   <p className="text-xs text-muted-foreground">Monthly Budget</p>
-                  <p className="text-sm font-semibold">{formatCurrency(monthlyBudget, data.settings.currency)}</p>
-                  <p className="text-xs text-muted-foreground">(≈{formatCurrency(toLocal(monthlyBudget), extConfig.currency)})</p>
+                  <p className="text-sm font-semibold">{formatCurrency(toLocal(monthlyBudget), extConfig.currency)}</p>
+                  <p className="text-xs text-muted-foreground">(≈{formatCurrency(monthlyBudget, data.settings.currency)})</p>
                 </div>
                 <div className="p-2 rounded bg-red-500/10">
                   <p className="text-xs text-red-600">Spent</p>
-                  <p className="text-sm font-semibold text-red-700">{formatCurrency(extExpenses, data.settings.currency)}</p>
-                  <p className="text-xs text-muted-foreground">(≈{formatCurrency(toLocal(extExpenses), extConfig.currency)})</p>
+                  <p className="text-sm font-semibold text-red-700">{formatCurrency(toLocal(extExpenses), extConfig.currency)}</p>
+                  <p className="text-xs text-muted-foreground">(≈{formatCurrency(extExpenses, data.settings.currency)})</p>
                 </div>
                 <div className="p-2 rounded bg-green-500/10">
                   <p className="text-xs text-green-600">Remaining</p>
                   <p className={`text-sm font-semibold ${remaining >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    {formatCurrency(remaining, data.settings.currency)}
+                    {formatCurrency(toLocal(remaining), extConfig.currency)}
                   </p>
-                  <p className="text-xs text-muted-foreground">(≈{formatCurrency(toLocal(remaining), extConfig.currency)})</p>
+                  <p className="text-xs text-muted-foreground">(≈{formatCurrency(remaining, data.settings.currency)})</p>
                 </div>
               </div>
             </CardContent>
@@ -1212,25 +1238,28 @@ export const Lifeline = ({}: LifelineProps) => {
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
             <p className="text-xs text-red-600 dark:text-red-400">Total Expenses</p>
             <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-              {formatCurrency(extExpenses, data.settings.currency)}
+              {formatCurrency(toLocal(extExpenses), extConfig.currency)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              (≈{formatCurrency(toLocal(extExpenses), extConfig.currency)})
+              (≈{formatCurrency(extExpenses, data.settings.currency)})
             </p>
           </div>
           <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <p className="text-xs text-blue-600 dark:text-blue-400">Local Earnings</p>
             <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-              {formatCurrency(extEarnings, data.settings.currency)}
+              {formatCurrency(toLocal(extEarnings), extConfig.currency)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              (≈{formatCurrency(toLocal(extEarnings), extConfig.currency)})
+              (≈{formatCurrency(extEarnings, data.settings.currency)})
             </p>
           </div>
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
             <p className="text-xs text-primary">Net Balance</p>
             <p className={`text-sm font-semibold ${(extEarnings - extExpenses) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(extEarnings - extExpenses, data.settings.currency)}
+              {formatCurrency(toLocal(extEarnings - extExpenses), extConfig.currency)}
+            </p>
+             <p className="text-xs text-muted-foreground mt-1">
+              (≈{formatCurrency(extEarnings - extExpenses, data.settings.currency)})
             </p>
           </div>
         </div>
@@ -1246,7 +1275,23 @@ export const Lifeline = ({}: LifelineProps) => {
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Amount ({data.settings.currency})</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Amount</Label>
+                  <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+                    <button 
+                      className={`px-2 py-0.5 text-[10px] rounded-sm transition-colors ${inputCurrencyMode === 'primary' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setInputCurrencyMode('primary')}
+                    >
+                      {data.settings.currency}
+                    </button>
+                    <button 
+                      className={`px-2 py-0.5 text-[10px] rounded-sm transition-colors ${inputCurrencyMode === 'local' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setInputCurrencyMode('local')}
+                    >
+                      {extConfig.currency}
+                    </button>
+                  </div>
+                </div>
                 <Input
                   type="number"
                   placeholder="0.00"
@@ -1255,7 +1300,10 @@ export const Lifeline = ({}: LifelineProps) => {
                 />
                 {extTransAmount && parseFloat(extTransAmount) > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    ≈ {formatCurrency(toLocal(parseFloat(extTransAmount)), extConfig.currency)}
+                    ≈ {inputCurrencyMode === 'primary' 
+                      ? formatCurrency(toLocal(parseFloat(extTransAmount)), extConfig.currency)
+                      : formatCurrency((parseFloat(extTransAmount) / extRate) * mainRate, data.settings.currency)
+                    }
                   </p>
                 )}
               </div>
@@ -1285,13 +1333,29 @@ export const Lifeline = ({}: LifelineProps) => {
             
             {extTransType === "expense" && extTransAmount && parseFloat(extTransAmount) > 0 && (
               <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                💡 This will record <strong>{formatCurrency(parseFloat(extTransAmount), data.settings.currency)}</strong> (≈{formatCurrency(toLocal(parseFloat(extTransAmount)), extConfig.currency)}) as expense in {extConfig.name}
+                💡 This will record <strong>
+                  {inputCurrencyMode === 'primary' 
+                    ? formatCurrency(parseFloat(extTransAmount), data.settings.currency)
+                    : formatCurrency((parseFloat(extTransAmount) / extRate) * mainRate, data.settings.currency)
+                  }
+                </strong> (≈{inputCurrencyMode === 'primary' 
+                  ? formatCurrency(toLocal(parseFloat(extTransAmount)), extConfig.currency)
+                  : formatCurrency(parseFloat(extTransAmount), extConfig.currency)
+                }) as expense in {extConfig.name}
               </p>
             )}
             
             {extTransType === "earning" && extTransAmount && parseFloat(extTransAmount) > 0 && (
               <p className="text-xs text-green-600 bg-green-500/10 p-2 rounded">
-                ✓ Local earning of <strong>{formatCurrency(parseFloat(extTransAmount), data.settings.currency)}</strong> (≈{formatCurrency(toLocal(parseFloat(extTransAmount)), extConfig.currency)}) - stays in {extConfig.name} only
+                ✓ Local earning of <strong>
+                  {inputCurrencyMode === 'primary' 
+                    ? formatCurrency(parseFloat(extTransAmount), data.settings.currency)
+                    : formatCurrency((parseFloat(extTransAmount) / extRate) * mainRate, data.settings.currency)
+                  }
+                </strong> (≈{inputCurrencyMode === 'primary' 
+                  ? formatCurrency(toLocal(parseFloat(extTransAmount)), extConfig.currency)
+                  : formatCurrency(parseFloat(extTransAmount), extConfig.currency)
+                }) - stays in {extConfig.name} only
               </p>
             )}
             
@@ -1313,7 +1377,7 @@ export const Lifeline = ({}: LifelineProps) => {
         {extData && extData.transactions.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Transaction History ({data.settings.currency})</CardTitle>
+              <CardTitle className="text-base">Transaction History ({extConfig.currency})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -1334,10 +1398,10 @@ export const Lifeline = ({}: LifelineProps) => {
                     <div className="flex items-center gap-2">
                       <div className="text-right">
                         <span className={`font-semibold text-sm ${transaction.type === "expense" ? 'text-red-600' : 'text-green-600'}`}>
-                          {transaction.type === "expense" ? "-" : "+"}{formatCurrency(transaction.amount, data.settings.currency)}
+                          {transaction.type === "expense" ? "-" : "+"}{formatCurrency(toLocal(transaction.amount), extConfig.currency)}
                         </span>
                         <p className="text-xs text-muted-foreground">
-                          (≈{formatCurrency(toLocal(transaction.amount), extConfig.currency)})
+                          (≈{formatCurrency(transaction.amount, data.settings.currency)})
                         </p>
                       </div>
                       <Button

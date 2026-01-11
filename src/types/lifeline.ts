@@ -24,6 +24,7 @@ export interface Transaction {
   taxed?: boolean; // For earnings, tracks if tax has been paid
   exchangeRate?: number; // Exchange rate used for conversion
   country?: string; // Country for this transaction (main or external)
+  isExternalExpense?: boolean; // If true, this is a mirror of an external country expense
 }
 
 export interface TaxPayment {
