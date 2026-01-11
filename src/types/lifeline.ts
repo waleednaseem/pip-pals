@@ -1,3 +1,8 @@
+export interface ExternalCountryBudget {
+  country: string;
+  monthlyBudget: number; // Monthly budget in PRIMARY currency (e.g., CAD)
+}
+
 export interface LifelineSettings {
   monthlyExpense: number; // Monthly expense in selected currency
   currency: string; // Selected currency (e.g., CAD, PKR, EUR)
@@ -6,6 +11,7 @@ export interface LifelineSettings {
   startDate: string;
   periodMonths: number; // 1 for monthly, 6 for 6-month tracking
   externalCountries?: string[]; // Additional countries for expense tracking (e.g., ["pakistan", "uae"])
+  externalCountryBudgets?: ExternalCountryBudget[]; // Monthly budgets for external countries in PRIMARY currency
 }
 
 export interface Transaction {
@@ -32,8 +38,9 @@ export interface TaxPayment {
 export interface ExternalCountryData {
   country: string;
   currency: string;
-  transactions: Transaction[];
-  exchangeRate: number; // Rate from main currency to this currency
+  transactions: Transaction[]; // All amounts stored in PRIMARY currency
+  exchangeRate: number; // Rate from USD to this local currency (for display)
+  monthlyBudget: number; // Monthly budget in PRIMARY currency
 }
 
 export interface LifelineData {
