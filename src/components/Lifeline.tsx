@@ -137,6 +137,7 @@ export const Lifeline = ({}: LifelineProps) => {
   const [extTransType, setExtTransType] = useState<"expense" | "earning">("expense");
   const [inputCurrencyMode, setInputCurrencyMode] = useState<"primary" | "local">("primary");
   const [activeExternalTab, setActiveExternalTab] = useState<string>("");
+  const [fundAmount, setFundAmount] = useState("");
 
   // Derived values
   const countryConfig = COUNTRY_TAX_CONFIG[selectedCountry];
@@ -534,6 +535,29 @@ export const Lifeline = ({}: LifelineProps) => {
       amountInPrimary = (amountInLocal / extRate) * mainCurrencyRate;
     }
 
+    // Check for insufficient funds if it's an expense
+    if (extTransType === "expense") {
+      const extData = data.externalCountryData?.find(e => e.country === extCountry);
+      const currentEarnings = extData?.transactions
+        .filter(t => t.type === "earning")
+        .reduce((sum, t) => sum + t.amount, 0) || 0;
+      const currentExpenses = extData?.transactions
+        .filter(t => t.type === "expense")
+        .reduce((sum, t) => sum + t.amount, 0) || 0;
+      
+      const balance = currentEarnings - currentExpenses;
+      
+      // Allow a small margin of error for floating point calculations (e.g. 0.01)
+      if (amountInPrimary > balance + 0.01) {
+         toast({
+          title: "Insufficient Funds",
+          description: `Insufficient funds in ${extCountry}. Available: ${formatCurrency(balance, data.settings.currency)}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const transaction: Transaction = {
       id: uuidv4(),
       amount: amountInPrimary, // Always store in PRIMARY currency
@@ -593,6 +617,84 @@ export const Lifeline = ({}: LifelineProps) => {
     toast({
       title: "Transaction Added",
       description: `${extTransType === "expense" ? "Expense" : "Earning"} of ${formatCurrency(amountInPrimary, data.settings.currency)} (≈${formatCurrency(amountInLocal, extConfig.currency)}) recorded`,
+    });
+  };
+
+  const handleTransferFund = (extCountry: string) => {
+    if (!fundAmount || parseFloat(fundAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to transfer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data) return;
+
+    const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
+    const amount = parseFloat(fundAmount);
+
+    // 1. Create Expense in Primary Country
+    const mainTransaction: Transaction = {
+      id: uuidv4(),
+      amount: amount,
+      amountUSD: data.settings.currency !== "USD" ? amount / exchangeRate : amount,
+      description: `Fund Transfer to ${extConfig.name} ${extConfig.flag}`,
+      date: new Date().toISOString(),
+      type: "expense",
+      exchangeRate: data.settings.currency !== "USD" ? exchangeRate : undefined,
+      country: data.settings.country,
+    };
+
+    // 2. Add Fund (Earning) to Sub Country
+    const extRate = externalRates[extConfig.currency] || 1;
+    const mainCurrencyRate = exchangeRate;
+
+    const extTransaction: Transaction = {
+      id: uuidv4(),
+      amount: amount, // Stored in PRIMARY currency
+      amountUSD: amount / mainCurrencyRate,
+      description: "Fund Received from Primary",
+      date: new Date().toISOString(),
+      type: "earning", // Treating Fund as Earning for the Sub Country
+      exchangeRate: extRate,
+      country: extCountry,
+    };
+
+    const currentData = getLifelineData();
+    if (!currentData) return;
+
+    // Add to main transactions
+    currentData.transactions.push(mainTransaction);
+
+    // Add to external country data
+    if (!currentData.externalCountryData) {
+      currentData.externalCountryData = [];
+    }
+    
+    const extIndex = currentData.externalCountryData.findIndex(e => e.country === extCountry);
+    
+    if (extIndex >= 0) {
+      currentData.externalCountryData[extIndex].transactions.push(extTransaction);
+    } else {
+      currentData.externalCountryData.push({
+        country: extCountry,
+        currency: extConfig.currency,
+        transactions: [extTransaction],
+        exchangeRate: extRate,
+        monthlyBudget: 0,
+      });
+    }
+
+    saveLifelineData(currentData);
+    loadData();
+    
+    setFundAmount("");
+    
+    toast({
+      title: "Funds Transferred",
+      description: `Transferred ${formatCurrency(amount, data.settings.currency)} to ${extConfig.name}`,
     });
   };
 
@@ -1254,7 +1356,7 @@ export const Lifeline = ({}: LifelineProps) => {
             </p>
           </div>
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <p className="text-xs text-primary">Net Balance</p>
+            <p className="text-xs text-primary">Available Funds</p>
             <p className={`text-sm font-semibold ${(extEarnings - extExpenses) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatCurrency(toLocal(extEarnings - extExpenses), extConfig.currency)}
             </p>
@@ -1263,6 +1365,38 @@ export const Lifeline = ({}: LifelineProps) => {
             </p>
           </div>
         </div>
+
+        {/* Fund Transfer Card */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ArrowUpRight className="h-4 w-4 text-primary" />
+              Add Funds from Primary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Input
+                  type="number"
+                  placeholder="Amount to transfer..."
+                  value={fundAmount}
+                  onChange={(e) => setFundAmount(e.target.value)}
+                  className="pl-8"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
+                  {data.settings.currency}
+                </div>
+              </div>
+              <Button onClick={() => handleTransferFund(extCountry)} size="sm">
+                Transfer
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This will deduct from Main Country balance and add to {extConfig.name} funds.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Add Transaction Form */}
         <Card>
