@@ -2,6 +2,17 @@ import { LifelineSettings, Transaction, LifelineData, LifelineStats, TaxPayment 
 
 const LIFELINE_STORAGE_KEY = "forex-lifeline-data";
 
+const FALLBACK_RATES: Record<string, number> = {
+  USD: 1,
+  CAD: 1.35,
+  PKR: 278,
+  AED: 3.67,
+  SAR: 3.75,
+  EUR: 0.92,
+  GBP: 0.79,
+  INR: 83,
+};
+
 export const getLifelineData = (): LifelineData | null => {
   const stored = localStorage.getItem(LIFELINE_STORAGE_KEY);
   if (!stored) return null;
@@ -70,8 +81,17 @@ export const getExchangeRate = async (targetCurrency: string): Promise<number> =
     return rate;
   } catch (error) {
     console.error('Failed to fetch exchange rate:', error);
-    // Fallback to cached rate if available, otherwise 1
-    return data?.cachedExchangeRate || 1;
+    // Fallback to cached rate only if it matches the target currency
+    if (data?.cachedExchangeRate && data.settings.currency === targetCurrency) {
+      return data.cachedExchangeRate;
+    }
+    
+    // Check fallback rates
+    if (FALLBACK_RATES[targetCurrency]) {
+      return FALLBACK_RATES[targetCurrency];
+    }
+
+    return 1;
   }
 };
 
