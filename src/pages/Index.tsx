@@ -498,6 +498,7 @@ const SalaryCalculator = () => {
   const exportToPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", {
       weekday: "long",
@@ -510,61 +511,155 @@ const SalaryCalculator = () => {
       minute: "2-digit",
     });
 
-    let y = 20;
+    // Colors
+    const primaryColor: [number, number, number] = [20, 184, 166]; // Teal
+    const darkColor: [number, number, number] = [30, 41, 59]; // Slate-800
+    const grayColor: [number, number, number] = [100, 116, 139]; // Slate-500
+    const lightBg: [number, number, number] = [241, 245, 249]; // Slate-100
+    const successColor: [number, number, number] = [34, 197, 94]; // Green-500
+    const warningColor: [number, number, number] = [234, 179, 8]; // Yellow-500
 
-    // Header
-    doc.setFontSize(20);
+    let y = 0;
+
+    // Header Banner
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, 45, "F");
+
+    // Header Text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("Salary Calculator Report", pageWidth / 2, y, { align: "center" });
-    y += 10;
+    doc.text("SALARY REPORT", pageWidth / 2, 22, { align: "center" });
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Generated: ${dateStr} at ${timeStr}`, pageWidth / 2, y, { align: "center" });
-    y += 15;
+    doc.text(`Generated on ${dateStr} at ${timeStr}`, pageWidth / 2, 35, { align: "center" });
 
-    // Summary Section
+    y = 60;
+
+    // Summary Cards Section
+    doc.setTextColor(...darkColor);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Summary", 20, y);
-    y += 8;
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total Salary: ${salary.toLocaleString()}`, 20, y);
-    y += 6;
-    doc.text(`Total Used: ${totalUsed.toLocaleString()} (${salary > 0 ? Math.round((totalUsed / salary) * 100) : 0}%)`, 20, y);
-    y += 6;
-    doc.text(`Remaining: ${remaining.toLocaleString()} (${salary > 0 ? Math.round((remaining / salary) * 100) : 0}%)`, 20, y);
+    doc.text("Financial Overview", 20, y);
     y += 12;
 
-    // Expenses Section
+    // Draw summary cards
+    const cardWidth = (pageWidth - 50) / 3;
+    const cardHeight = 35;
+    const cardY = y;
+
+    // Card 1: Total Salary
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(20, cardY, cardWidth, cardHeight, 3, 3, "F");
+    doc.setFontSize(9);
+    doc.setTextColor(...grayColor);
+    doc.text("TOTAL SALARY", 20 + cardWidth / 2, cardY + 12, { align: "center" });
+    doc.setFontSize(16);
+    doc.setTextColor(...darkColor);
+    doc.setFont("helvetica", "bold");
+    doc.text(`$${salary.toLocaleString()}`, 20 + cardWidth / 2, cardY + 26, { align: "center" });
+
+    // Card 2: Total Expenses
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(25 + cardWidth, cardY, cardWidth, cardHeight, 3, 3, "F");
+    doc.setFontSize(9);
+    doc.setTextColor(...grayColor);
+    doc.setFont("helvetica", "normal");
+    doc.text("TOTAL EXPENSES", 25 + cardWidth + cardWidth / 2, cardY + 12, { align: "center" });
+    doc.setFontSize(16);
+    doc.setTextColor(...warningColor);
+    doc.setFont("helvetica", "bold");
+    const expensePercent = salary > 0 ? Math.round((totalUsed / salary) * 100) : 0;
+    doc.text(`$${totalUsed.toLocaleString()} (${expensePercent}%)`, 25 + cardWidth + cardWidth / 2, cardY + 26, { align: "center" });
+
+    // Card 3: Remaining
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(30 + cardWidth * 2, cardY, cardWidth, cardHeight, 3, 3, "F");
+    doc.setFontSize(9);
+    doc.setTextColor(...grayColor);
+    doc.setFont("helvetica", "normal");
+    doc.text("REMAINING BALANCE", 30 + cardWidth * 2 + cardWidth / 2, cardY + 12, { align: "center" });
+    doc.setFontSize(16);
+    doc.setTextColor(...successColor);
+    doc.setFont("helvetica", "bold");
+    const remainingPercent = salary > 0 ? Math.round((remaining / salary) * 100) : 0;
+    doc.text(`$${remaining.toLocaleString()} (${remainingPercent}%)`, 30 + cardWidth * 2 + cardWidth / 2, cardY + 26, { align: "center" });
+
+    y = cardY + cardHeight + 20;
+
+    // Divider
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pageWidth - 20, y);
+    y += 15;
+
+    // Expenses Breakdown Section
+    doc.setTextColor(...darkColor);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("Expenses Breakdown", 20, y);
-    y += 8;
+    y += 12;
 
+    // Table Header
+    doc.setFillColor(...primaryColor);
+    doc.rect(20, y, pageWidth - 40, 10, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Category", 25, y + 7);
+    doc.text("Amount", pageWidth - 70, y + 7, { align: "right" });
+    doc.text("Share", pageWidth - 25, y + 7, { align: "right" });
+    y += 14;
+
+    // Table Rows
+    let rowIndex = 0;
     expenses.forEach((expense) => {
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text(`${expense.name}: ${expense.amount.toLocaleString()} (${Math.round(pct(expense.amount))}%)`, 20, y);
-      y += 6;
+      // Alternate row background
+      if (rowIndex % 2 === 0) {
+        doc.setFillColor(248, 250, 252); // Slate-50
+        doc.rect(20, y - 4, pageWidth - 40, expense.allowSubExpenses && expense.subExpenses.length > 0 ? 8 + expense.subExpenses.length * 6 : 8, "F");
+      }
 
+      doc.setTextColor(...darkColor);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(expense.name, 25, y + 2);
+      doc.setFont("helvetica", "normal");
+      doc.text(`$${expense.amount.toLocaleString()}`, pageWidth - 70, y + 2, { align: "right" });
+      doc.setTextColor(...primaryColor);
+      doc.text(`${Math.round(pct(expense.amount))}%`, pageWidth - 25, y + 2, { align: "right" });
+      y += 8;
+
+      // Sub-expenses
       if (expense.allowSubExpenses && expense.subExpenses.length > 0) {
-        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...grayColor);
+        doc.setFontSize(9);
         expense.subExpenses.forEach((sub) => {
-          doc.text(`  - ${sub.name}: ${sub.amount.toLocaleString()}`, 25, y);
-          y += 5;
+          doc.text(`  └ ${sub.name}`, 30, y + 1);
+          doc.text(`$${sub.amount.toLocaleString()}`, pageWidth - 70, y + 1, { align: "right" });
+          y += 6;
         });
       }
       y += 2;
+      rowIndex++;
 
       // Check for page overflow
-      if (y > 270) {
+      if (y > pageHeight - 40) {
         doc.addPage();
         y = 20;
       }
     });
+
+    // Footer
+    y = pageHeight - 20;
+    doc.setDrawColor(...lightBg);
+    doc.setLineWidth(0.3);
+    doc.line(20, y - 10, pageWidth - 20, y - 10);
+    doc.setTextColor(...grayColor);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.text("Generated by Salary Calculator • Pip Pals", pageWidth / 2, y, { align: "center" });
 
     // Save the PDF
     const fileName = `salary-report-${now.toISOString().split("T")[0]}.pdf`;
