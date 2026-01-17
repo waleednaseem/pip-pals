@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Menu, ChevronDown, Plus, Trash, Download, History, Clock, X } from "lucide-react";
+import { Menu, ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw } from "lucide-react";
 import jsPDF from "jspdf";
 import {
   Sheet,
@@ -812,30 +812,70 @@ const SalaryCalculator = () => {
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex items-center justify-between">
-        <CardTitle>Expense Calculator</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={saveToHistory} title="Save to History">
-            <History className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => setShowHistory(!showHistory)} 
-            title="View History"
-            className={showHistory ? "bg-primary text-primary-foreground" : ""}
-          >
-            <Clock className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={exportToPDF} title="Export PDF">
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button variant="destructive" size="icon" onClick={clearAllData} title="Clear All">
-            <Trash className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => setAdding((v) => !v)}>
-            <Plus className="h-4 w-4" />
-          </Button>
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-4">
+          <CardTitle className="text-xl">Expense Calculator</CardTitle>
+          
+          {/* Action Buttons - Professional Design */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Primary Actions */}
+            <Button 
+              onClick={() => setAdding((v) => !v)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={saveToHistory}
+              className="gap-2 border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              size="sm"
+            >
+              <Save className="h-4 w-4" />
+              Save
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setShowHistory(!showHistory)}
+              className={`gap-2 ${showHistory 
+                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                : "border-purple-300 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+              }`}
+              size="sm"
+            >
+              <Clock className="h-4 w-4" />
+              History
+              {history.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {history.length}
+                </Badge>
+              )}
+            </Button>
+
+            <Button 
+              variant="outline" 
+              onClick={exportToPDF}
+              className="gap-2 border-amber-300 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+              size="sm"
+            >
+              <FileText className="h-4 w-4" />
+              Export PDF
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={clearAllData}
+              className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+              size="sm"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Clear All
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -872,19 +912,20 @@ const SalaryCalculator = () => {
                         Budget: {entry.salary.toLocaleString()} | Expenses: {entry.totalExpenses.toLocaleString()} | Balance: {entry.remaining.toLocaleString()}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <Button 
-                        variant="ghost" 
-                        size="sm" 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
                         onClick={(e) => { e.stopPropagation(); loadFromHistory(entry); }}
-                        title="Load this entry"
                       >
+                        <RotateCcw className="h-3 w-3" />
                         Load
                       </Button>
                       <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 w-7 p-0 border-red-300 text-red-500 hover:bg-red-50"
                         onClick={(e) => { e.stopPropagation(); deleteFromHistory(entry.id); }}
                       >
                         <Trash className="h-3 w-3" />
