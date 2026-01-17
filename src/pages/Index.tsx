@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Menu, ChevronDown, Plus, Trash, Download } from "lucide-react";
+import { Menu, ChevronDown, Plus, Trash, Download, History, Clock, X } from "lucide-react";
 import jsPDF from "jspdf";
 import {
   Sheet,
@@ -379,17 +379,30 @@ const Index = () => {
 };
 
 const EXPENSE_STORAGE_KEY = "expense-calculator-data";
+const EXPENSE_HISTORY_KEY = "expense-calculator-history";
+
+interface ExpenseItem {
+  id: string;
+  name: string;
+  amount: number;
+  color: string;
+  subExpenses: { id: string; name: string; amount: number }[];
+  allowSubExpenses: boolean;
+}
 
 interface ExpenseData {
   salary: number;
-  expenses: {
-    id: string;
-    name: string;
-    amount: number;
-    color: string;
-    subExpenses: { id: string; name: string; amount: number }[];
-    allowSubExpenses: boolean;
-  }[];
+  expenses: ExpenseItem[];
+}
+
+interface ExpenseHistoryEntry {
+  id: string;
+  date: string;
+  timestamp: number;
+  salary: number;
+  expenses: ExpenseItem[];
+  totalExpenses: number;
+  remaining: number;
 }
 
 const SalaryCalculator = () => {
@@ -411,6 +424,11 @@ const SalaryCalculator = () => {
   const [addingSubFor, setAddingSubFor] = useState<string | null>(null);
   const [newSubName, setNewSubName] = useState<string>("");
   const [newSubAmount, setNewSubAmount] = useState<string>("");
+  
+  // History states
+  const [history, setHistory] = useState<ExpenseHistoryEntry[]>([]);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [viewingEntry, setViewingEntry] = useState<ExpenseHistoryEntry | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -422,6 +440,16 @@ const SalaryCalculator = () => {
         setExpenses(data.expenses || []);
       } catch (e) {
         console.error("Failed to parse expense data:", e);
+      }
+    }
+    
+    // Load history
+    const savedHistory = localStorage.getItem(EXPENSE_HISTORY_KEY);
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to parse expense history:", e);
       }
     }
   }, []);
@@ -440,6 +468,70 @@ const SalaryCalculator = () => {
     toast({
       title: "Data cleared",
       description: "All expenses have been removed",
+    });
+  };
+
+  // Save to history
+  const saveToHistory = () => {
+    if (salary === 0 && expenses.length === 0) {
+      toast({
+        title: "Nothing to save",
+        description: "Add some expenses first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const now = new Date();
+    const entry: ExpenseHistoryEntry = {
+      id: crypto.randomUUID(),
+      date: now.toLocaleDateString("en-GB", { 
+        day: "2-digit", 
+        month: "short", 
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      timestamp: now.getTime(),
+      salary,
+      expenses: JSON.parse(JSON.stringify(expenses)),
+      totalExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
+      remaining: Math.max(0, salary - expenses.reduce((sum, e) => sum + e.amount, 0)),
+    };
+
+    const newHistory = [entry, ...history];
+    setHistory(newHistory);
+    localStorage.setItem(EXPENSE_HISTORY_KEY, JSON.stringify(newHistory));
+
+    toast({
+      title: "Saved to history",
+      description: `Expense report for ${entry.date}`,
+    });
+  };
+
+  // Delete from history
+  const deleteFromHistory = (id: string) => {
+    const newHistory = history.filter(h => h.id !== id);
+    setHistory(newHistory);
+    localStorage.setItem(EXPENSE_HISTORY_KEY, JSON.stringify(newHistory));
+    if (viewingEntry?.id === id) {
+      setViewingEntry(null);
+    }
+    toast({
+      title: "Deleted",
+      description: "History entry removed",
+    });
+  };
+
+  // Load history entry
+  const loadFromHistory = (entry: ExpenseHistoryEntry) => {
+    setSalary(entry.salary);
+    setExpenses(JSON.parse(JSON.stringify(entry.expenses)));
+    setViewingEntry(null);
+    setShowHistory(false);
+    toast({
+      title: "Loaded",
+      description: `Expense report from ${entry.date}`,
     });
   };
 
@@ -723,6 +815,18 @@ const SalaryCalculator = () => {
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Expense Calculator</CardTitle>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={saveToHistory} title="Save to History">
+            <History className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setShowHistory(!showHistory)} 
+            title="View History"
+            className={showHistory ? "bg-primary text-primary-foreground" : ""}
+          >
+            <Clock className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={exportToPDF} title="Export PDF">
             <Download className="h-4 w-4" />
           </Button>
@@ -735,6 +839,95 @@ const SalaryCalculator = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* History Panel */}
+        {showHistory && (
+          <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Expense History
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {history.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No history yet. Click the save button to add entries.
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {history.map((entry) => (
+                  <div 
+                    key={entry.id} 
+                    className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors ${
+                      viewingEntry?.id === entry.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
+                    }`}
+                    onClick={() => setViewingEntry(viewingEntry?.id === entry.id ? null : entry)}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{entry.date}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Budget: {entry.salary.toLocaleString()} | Expenses: {entry.totalExpenses.toLocaleString()} | Balance: {entry.remaining.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => { e.stopPropagation(); loadFromHistory(entry); }}
+                        title="Load this entry"
+                      >
+                        Load
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); deleteFromHistory(entry.id); }}
+                      >
+                        <Trash className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {viewingEntry && (
+              <div className="border-t pt-3 mt-3 space-y-2">
+                <h4 className="font-medium text-sm">Preview: {viewingEntry.date}</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="bg-background p-2 rounded text-center">
+                    <div className="text-muted-foreground text-xs">Budget</div>
+                    <div className="font-semibold">{viewingEntry.salary.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-background p-2 rounded text-center">
+                    <div className="text-muted-foreground text-xs">Expenses</div>
+                    <div className="font-semibold">{viewingEntry.totalExpenses.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-background p-2 rounded text-center">
+                    <div className="text-muted-foreground text-xs">Balance</div>
+                    <div className="font-semibold">{viewingEntry.remaining.toLocaleString()}</div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {viewingEntry.expenses.map((e) => (
+                    <div key={e.id} className="flex items-center justify-between text-sm bg-background p-2 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full ${e.color}`} />
+                        <span>{e.name}</span>
+                      </div>
+                      <span className="font-medium">{e.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 space-y-2">
             <Input
