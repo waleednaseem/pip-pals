@@ -21,7 +21,8 @@ import {
   Gamepad2,
   Baby,
   PawPrint,
-  Globe
+  Globe,
+  Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -42,6 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
 
 const formatCurrency = (value: number, currency: string = "CAD") => {
   if (!isFinite(value)) return "-";
@@ -270,6 +272,124 @@ export default function CanadaFundCalculator() {
   const yearlyPkr = yearlyAed * toNum(aedToPkr);
   const yearlyUsd = yearlySalary * toNum(cadToUsd);
 
+  // PDF Export
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const currency = countryConfig.currency;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    const addLine = (leftText: string, rightText: string, bold = false) => {
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(10);
+      doc.text(leftText, 20, y);
+      doc.text(rightText, pageWidth - 20, y, { align: "right" });
+      y += 7;
+    };
+
+    const addSection = (title: string) => {
+      y += 4;
+      doc.setFillColor(30, 41, 59);
+      doc.rect(15, y - 5, pageWidth - 30, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(title, 20, y);
+      doc.setTextColor(0, 0, 0);
+      y += 10;
+    };
+
+    const addDivider = () => {
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, y, pageWidth - 20, y);
+      y += 5;
+    };
+
+    // Header
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 40, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("FINANCIAL PLAN REPORT", pageWidth / 2, 18, { align: "center" });
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${countryConfig.flag} ${countryConfig.name} • Generated: ${new Date().toLocaleDateString("en-CA")}`, pageWidth / 2, 28, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    y = 52;
+
+    // Income Section
+    addSection("💰 INCOME OVERVIEW");
+    addLine("Salary Type", salaryType.charAt(0).toUpperCase() + salaryType.slice(1));
+    addLine("Gross Yearly Salary", formatCurrency(yearlySalary, currency), true);
+    addLine("Gross Monthly Salary", formatCurrency(monthlySalary, currency));
+    addLine("Hourly Rate", formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek) * toNum(hoursPerDay)), currency));
+    addLine("Daily Rate", formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek)), currency));
+
+    // Tax Section
+    addSection("🏛️ TAX BREAKDOWN");
+    addLine("Country", `${countryConfig.name}`);
+    addLine("Tax Bracket", `${effectiveTaxRate}%`);
+    addLine("Monthly Tax Deduction", formatCurrency(taxPerMonth, currency));
+    addLine("Yearly Tax", formatCurrency(taxPerMonth * 12, currency));
+    addLine("Net Monthly Income", formatCurrency(netMonthly, currency), true);
+    addLine("Net Yearly Income", formatCurrency(netYearly, currency), true);
+
+    // Expenses Section
+    addSection("📋 MONTHLY EXPENSES");
+    addLine("🏠 Rent", formatCurrency(toNum(rent), currency));
+    addLine("🛒 Groceries", formatCurrency(toNum(groceries), currency));
+    addLine("💡 Utilities", formatCurrency(toNum(utilities), currency));
+    addLine("🚗 Transport", formatCurrency(toNum(transport), currency));
+    addLine("💸 Family Support", formatCurrency(toNum(familySupport), currency));
+
+    // Addon expenses
+    if (activeAddons.length > 0) {
+      addDivider();
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.text("Additional Expenses:", 20, y);
+      y += 7;
+      activeAddons.forEach(id => {
+        const addon = ADDON_OPTIONS.find(o => o.id === id);
+        if (addon) {
+          addLine(`${addon.emoji} ${addon.label}`, formatCurrency(toNum(addonValues[id] || "0"), currency));
+        }
+      });
+    }
+
+    addDivider();
+    addLine("TOTAL MONTHLY EXPENSES", formatCurrency(totalExpenses, currency), true);
+    addLine("TOTAL YEARLY EXPENSES", formatCurrency(totalExpenses * 12, currency), true);
+
+    // Savings Section
+    addSection("💎 SAVINGS SUMMARY");
+    const savingsColor = monthlySavings >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(savingsColor[0], savingsColor[1], savingsColor[2]);
+    addLine("Monthly Savings", formatCurrency(monthlySavings, currency), true);
+    addLine("Yearly Savings", formatCurrency(yearlySavings, currency), true);
+    doc.setTextColor(0, 0, 0);
+    y += 3;
+    addLine("Savings Rate", `${((monthlySavings / netMonthly) * 100).toFixed(1)}% of net income`);
+
+    // Currency Conversions
+    if (yearlySalary > 0) {
+      addSection("🌍 CURRENCY CONVERSIONS (Yearly Salary)");
+      addLine("AED", formatCurrency(yearlyAed, "AED"));
+      addLine("PKR", formatCurrency(yearlyPkr, "PKR"));
+      addLine("USD", formatCurrency(yearlyUsd, "USD"));
+    }
+
+    // Footer
+    y = doc.internal.pageSize.getHeight() - 15;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Generated by Financial Plan • Pip Pals", pageWidth / 2, y, { align: "center" });
+
+    doc.save(`financial-plan-${new Date().toISOString().split("T")[0]}.pdf`);
+    toast({ title: "PDF Exported", description: "Your financial plan report has been downloaded." });
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Hero Header */}
@@ -281,6 +401,15 @@ export default function CanadaFundCalculator() {
           Financial Plan
         </h1>
         <p className="text-muted-foreground text-sm">Calculate your income, expenses & savings</p>
+        <Button
+          onClick={exportToPDF}
+          variant="outline"
+          size="sm"
+          className="mt-2 gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+        >
+          <Download className="w-4 h-4" />
+          Export PDF Report
+        </Button>
       </div>
 
       {/* Income Section */}
