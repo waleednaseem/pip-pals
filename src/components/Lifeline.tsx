@@ -327,7 +327,7 @@ export const Lifeline = ({}: LifelineProps) => {
         if (!extConfig) return;
         
         const extEarnings = extData.transactions
-          .filter(t => t.type === "earning")
+          .filter(t => t.type === "earning" && t.description !== "Fund Received from Primary")
           .reduce((sum, t) => sum + t.amount, 0);
         
         if (extEarnings > 0) {
