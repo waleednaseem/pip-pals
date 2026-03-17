@@ -119,7 +119,7 @@ export const payTax = async (
     data.taxPayments = [];
   }
   
-  const taxAmountLocal = calculateTaxOwed(data, exchangeRate);
+  const taxAmountLocal = calculateTaxOwed(data, exchangeRate, liveTaxRate);
   if (taxAmountLocal <= 0) return;
   
   const taxAmountUSD = taxAmountLocal / exchangeRate;
