@@ -327,7 +327,7 @@ export const Lifeline = ({}: LifelineProps) => {
         if (!extConfig) return;
         
         const extEarnings = extData.transactions
-          .filter(t => t.type === "earning")
+          .filter(t => t.type === "earning" && t.description !== "Fund Received from Primary")
           .reduce((sum, t) => sum + t.amount, 0);
         
         if (extEarnings > 0) {
@@ -1272,7 +1272,10 @@ export const Lifeline = ({}: LifelineProps) => {
     const mainConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey];
 
     // Calculate stats for this external country - ALL IN PRIMARY CURRENCY
-    const extEarnings = extData?.transactions.filter(t => t.type === "earning").reduce((sum, t) => sum + t.amount, 0) || 0;
+    // Separate fund transfers from actual local earnings
+    const fundsReceived = extData?.transactions.filter(t => t.type === "earning" && t.description === "Fund Received from Primary").reduce((sum, t) => sum + t.amount, 0) || 0;
+    const localEarnings = extData?.transactions.filter(t => t.type === "earning" && t.description !== "Fund Received from Primary").reduce((sum, t) => sum + t.amount, 0) || 0;
+    const extEarnings = fundsReceived + localEarnings;
     const extExpenses = extData?.transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) || 0;
     
     // Monthly budget for this country (in PRIMARY currency)
@@ -1356,13 +1359,13 @@ export const Lifeline = ({}: LifelineProps) => {
               (≈{formatCurrency(extExpenses, data.settings.currency)})
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <p className="text-xs text-blue-600 dark:text-blue-400">Local Earnings</p>
-            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-              {formatCurrency(toLocal(extEarnings), extConfig.currency)}
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+            <p className="text-xs text-green-600 dark:text-green-400">Funds Received</p>
+            <p className="text-sm font-semibold text-green-700 dark:text-green-300">
+              {formatCurrency(toLocal(fundsReceived), extConfig.currency)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              (≈{formatCurrency(extEarnings, data.settings.currency)})
+              (≈{formatCurrency(fundsReceived, data.settings.currency)})
             </p>
           </div>
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
