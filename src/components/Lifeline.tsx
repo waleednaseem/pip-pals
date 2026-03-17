@@ -1272,7 +1272,10 @@ export const Lifeline = ({}: LifelineProps) => {
     const mainConfig = COUNTRY_TAX_CONFIG[data.settings.country as CountryKey];
 
     // Calculate stats for this external country - ALL IN PRIMARY CURRENCY
-    const extEarnings = extData?.transactions.filter(t => t.type === "earning").reduce((sum, t) => sum + t.amount, 0) || 0;
+    // Separate fund transfers from actual local earnings
+    const fundsReceived = extData?.transactions.filter(t => t.type === "earning" && t.description === "Fund Received from Primary").reduce((sum, t) => sum + t.amount, 0) || 0;
+    const localEarnings = extData?.transactions.filter(t => t.type === "earning" && t.description !== "Fund Received from Primary").reduce((sum, t) => sum + t.amount, 0) || 0;
+    const extEarnings = fundsReceived + localEarnings;
     const extExpenses = extData?.transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) || 0;
     
     // Monthly budget for this country (in PRIMARY currency)
