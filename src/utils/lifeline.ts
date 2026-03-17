@@ -95,8 +95,8 @@ export const getExchangeRate = async (targetCurrency: string): Promise<number> =
   }
 };
 
-export const calculateTaxOwed = (data: LifelineData, exchangeRate: number): number => {
-  const TAX_RATE = (data.settings.taxRate || 30) / 100;
+export const calculateTaxOwed = (data: LifelineData, exchangeRate: number, overrideTaxRate?: number): number => {
+  const TAX_RATE = overrideTaxRate !== undefined ? (overrideTaxRate / 100) : (data.settings.taxRate || 30) / 100;
   
   // Get untaxed manual earnings (already in local currency)
   const untaxedManualEarnings = data.transactions
