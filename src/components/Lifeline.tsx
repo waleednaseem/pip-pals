@@ -740,7 +740,7 @@ export const Lifeline = ({}: LifelineProps) => {
 
     setIsPaying(true);
     try {
-      await payTax(exchangeRate);
+      await payTax(exchangeRate, liveTaxInfo.currentRate);
       loadData();
       
       const taxOwedUSD = liveTaxInfo.taxOwed / exchangeRate;

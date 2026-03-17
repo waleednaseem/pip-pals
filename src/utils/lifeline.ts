@@ -153,7 +153,7 @@ export const payTax = async (
     id: crypto.randomUUID(),
     amount: taxAmountLocal,
     amountUSD: taxAmountUSD,
-    description: `Tax Payment (${data.settings.taxRate}% Tax)`,
+    description: `Tax Payment (${liveTaxRate ?? data.settings.taxRate}% Tax)`,
     date: new Date().toISOString(),
     type: "tax",
     exchangeRate,
