@@ -108,7 +108,8 @@ export const calculateTaxOwed = (data: LifelineData, exchangeRate: number, overr
 };
 
 export const payTax = async (
-  exchangeRate: number
+  exchangeRate: number,
+  liveTaxRate?: number
 ): Promise<void> => {
   const data = getLifelineData();
   if (!data) return;
