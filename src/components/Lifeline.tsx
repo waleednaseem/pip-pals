@@ -635,6 +635,16 @@ export const Lifeline = ({}: LifelineProps) => {
     const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
     const amount = parseFloat(fundAmount);
 
+    // Validate: cannot transfer more than available primary balance
+    if (amount > stats.remaining) {
+      toast({
+        title: "Insufficient Balance",
+        description: `Primary balance is ${formatCurrency(stats.remaining, data.settings.currency)}. You cannot transfer more than that.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // 1. Create Expense in Primary Country
     const mainTransaction: Transaction = {
       id: uuidv4(),
