@@ -25,7 +25,7 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
   const [profitUSD, setProfitUSD] = useState("");
 
   const isCalculating = useRef(false);
-  const calculationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const calculationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const performCalculation = useCallback(() => {
     if (isCalculating.current) return;
