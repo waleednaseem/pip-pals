@@ -48,43 +48,35 @@ export const deleteTransaction = (id: string): void => {
   saveLifelineData(data);
 };
 
+// In-memory cache for exchange rates (per currency, per day)
+const rateCache: Record<string, { rate: number; date: string }> = {};
+
 export const getExchangeRate = async (targetCurrency: string): Promise<number> => {
   if (targetCurrency === "USD") return 1;
 
-  const data = getLifelineData();
   const now = new Date();
+  const todayStr = now.toDateString();
   
-  // Check if we have a cached rate from today for this currency
-  if (data?.cachedExchangeRate && data.lastExchangeRateUpdate && data.settings.currency === targetCurrency) {
-    const lastUpdate = new Date(data.lastExchangeRateUpdate);
-    const isSameDay = lastUpdate.toDateString() === now.toDateString();
-    if (isSameDay) {
-      return data.cachedExchangeRate;
-    }
+  // Check in-memory cache first
+  if (rateCache[targetCurrency] && rateCache[targetCurrency].date === todayStr) {
+    return rateCache[targetCurrency].rate;
   }
   
   try {
-    // Using a free exchange rate API
     const response = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
     const rates = await response.json();
     const rate = rates.rates[targetCurrency];
     
     if (!rate) throw new Error(`Rate for ${targetCurrency} not found`);
 
-    // Cache the rate
-    if (data) {
-      data.cachedExchangeRate = rate;
-      data.lastExchangeRateUpdate = now.toISOString();
-      saveLifelineData(data);
+    // Cache ALL rates from this response
+    for (const [currency, value] of Object.entries(rates.rates)) {
+      rateCache[currency] = { rate: value as number, date: todayStr };
     }
     
     return rate;
   } catch (error) {
     console.error('Failed to fetch exchange rate:', error);
-    // Fallback to cached rate only if it matches the target currency
-    if (data?.cachedExchangeRate && data.settings.currency === targetCurrency) {
-      return data.cachedExchangeRate;
-    }
     
     // Check fallback rates
     if (FALLBACK_RATES[targetCurrency]) {
