@@ -95,8 +95,8 @@ export const getExchangeRate = async (targetCurrency: string): Promise<number> =
   }
 };
 
-export const calculateTaxOwed = (data: LifelineData, exchangeRate: number): number => {
-  const TAX_RATE = (data.settings.taxRate || 30) / 100;
+export const calculateTaxOwed = (data: LifelineData, exchangeRate: number, overrideTaxRate?: number): number => {
+  const TAX_RATE = overrideTaxRate !== undefined ? (overrideTaxRate / 100) : (data.settings.taxRate || 30) / 100;
   
   // Get untaxed manual earnings (already in local currency)
   const untaxedManualEarnings = data.transactions
@@ -108,7 +108,8 @@ export const calculateTaxOwed = (data: LifelineData, exchangeRate: number): numb
 };
 
 export const payTax = async (
-  exchangeRate: number
+  exchangeRate: number,
+  liveTaxRate?: number
 ): Promise<void> => {
   const data = getLifelineData();
   if (!data) return;
@@ -118,7 +119,7 @@ export const payTax = async (
     data.taxPayments = [];
   }
   
-  const taxAmountLocal = calculateTaxOwed(data, exchangeRate);
+  const taxAmountLocal = calculateTaxOwed(data, exchangeRate, liveTaxRate);
   if (taxAmountLocal <= 0) return;
   
   const taxAmountUSD = taxAmountLocal / exchangeRate;
@@ -152,7 +153,7 @@ export const payTax = async (
     id: crypto.randomUUID(),
     amount: taxAmountLocal,
     amountUSD: taxAmountUSD,
-    description: `Tax Payment (${data.settings.taxRate}% Tax)`,
+    description: `Tax Payment (${liveTaxRate ?? data.settings.taxRate}% Tax)`,
     date: new Date().toISOString(),
     type: "tax",
     exchangeRate,
