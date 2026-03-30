@@ -256,6 +256,14 @@ const Index = () => {
               <SalaryCalculator />
             </TabsContent>
 
+            <TabsContent value="dynamic-calc" className="mt-6">
+              <DynamicCalculator pair={selectedPair!} />
+            </TabsContent>
+
+            <TabsContent value="time-convert" className="mt-6">
+              <TimeConversion />
+            </TabsContent>
+
             <TabsContent value="pair" className="mt-6">
               <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
             </TabsContent>
