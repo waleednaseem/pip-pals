@@ -42,7 +42,7 @@ const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [activeTab, setActiveTab] = useState("calculator");
   const [trades, setTrades] = useState<TradeEntry[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
