@@ -150,8 +150,6 @@ const Index = () => {
     ? [
         { value: "calculator", label: "Forex Pip Calculator" },
         { value: "converter", label: "Currency Converter" },
-        { value: "dynamic-calc", label: "Dynamic Calculator" },
-        { value: "time-convert", label: "Time Conversion" },
       ]
     : [
         { value: "lifeline", label: "Setup Your Lifeline" },
@@ -159,6 +157,8 @@ const Index = () => {
         { value: "canada", label: "Financial Plan" },
         { value: "converter", label: "Currency Converter" },
         { value: "salary", label: "Expense Calculator" },
+        { value: "dynamic-calc", label: "Dynamic Calculator" },
+        { value: "time-convert", label: "Time Conversion" },
         { value: "pair", label: "Select Trading Pair" },
       ];
 
@@ -254,6 +254,14 @@ const Index = () => {
 
             <TabsContent value="salary" className="mt-6">
               <SalaryCalculator />
+            </TabsContent>
+
+            <TabsContent value="dynamic-calc" className="mt-6">
+              <DynamicCalculator />
+            </TabsContent>
+
+            <TabsContent value="time-convert" className="mt-6">
+              <TimeConversion />
             </TabsContent>
 
             <TabsContent value="pair" className="mt-6">
@@ -375,15 +383,6 @@ const Index = () => {
             <CurrencyConverter />
           </TabsContent>
 
-          {/* Dynamic Calculator Tab */}
-          <TabsContent value="dynamic-calc" className="mt-6">
-            <DynamicCalculator pair={selectedPair} />
-          </TabsContent>
-
-          {/* Time Conversion Tab */}
-          <TabsContent value="time-convert" className="mt-6">
-            <TimeConversion />
-          </TabsContent>
         </Tabs>
       </div>
     </div>
