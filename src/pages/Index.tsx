@@ -26,15 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Menu, ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw } from "lucide-react";
+import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw } from "lucide-react";
 import jsPDF from "jspdf";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Drawer,
@@ -44,11 +37,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
