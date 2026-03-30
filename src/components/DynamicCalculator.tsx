@@ -13,13 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Calculator, X } from "lucide-react";
 
 interface DynamicCalculatorProps {
-  pair: TradingPair;
+  pair?: TradingPair;
   entryPrice?: number;
   exitPrice?: number;
 }
 
 const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorProps) => {
-  const config = getPairConfig(pair);
+  const config = getPairConfig(pair || "EURUSD");
   const [pips, setPips] = useState("");
   const [lot, setLot] = useState("1");
   const [profitUSD, setProfitUSD] = useState("");

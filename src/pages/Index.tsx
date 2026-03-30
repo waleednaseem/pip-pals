@@ -257,7 +257,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="dynamic-calc" className="mt-6">
-              <DynamicCalculator pair={selectedPair!} />
+              <DynamicCalculator />
             </TabsContent>
 
             <TabsContent value="time-convert" className="mt-6">
