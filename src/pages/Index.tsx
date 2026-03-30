@@ -385,6 +385,16 @@ const Index = () => {
             <CurrencyConverter />
           </TabsContent>
 
+          {/* Dynamic Calculator Tab */}
+          <TabsContent value="dynamic-calc" className="mt-6">
+            <DynamicCalculator pair={selectedPair} />
+          </TabsContent>
+
+          {/* Time Conversion Tab */}
+          <TabsContent value="time-convert" className="mt-6">
+            <TimeConversion />
+          </TabsContent>
+
         </Tabs>
       </div>
     </div>
