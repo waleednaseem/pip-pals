@@ -175,172 +175,28 @@ const Index = () => {
 
   const totals = calculateTotals();
 
-  // If no pair selected, show simpler layout without sidebar/header
-  if (!selectedPair) {
-    return (
-      <div className="min-h-screen p-4 md:p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-              Forex Trading Tools
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your financial goals and track expenses
-            </p>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12">
-                  <span>{getCurrentTabLabel()}</span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent className="max-h-[85vh]">
-                <DrawerHeader>
-                  <DrawerTitle>Select Tool</DrawerTitle>
-                </DrawerHeader>
-                <div className="p-4 space-y-2">
-                  {availableTabs.map((tab) => (
-                    <DrawerClose key={tab.value} asChild>
-                      <Button 
-                        variant={activeTab === tab.value ? "default" : "ghost"} 
-                        className="w-full justify-start h-14 text-lg"
-                        onClick={() => setActiveTab(tab.value)}
-                      >
-                        {tab.label}
-                      </Button>
-                    </DrawerClose>
-                  ))}
-                </div>
-              </DrawerContent>
-            </Drawer>
-
-            <TabsContent value="lifeline" className="mt-6">
-              <Lifeline />
-            </TabsContent>
-
-            <TabsContent value="tax" className="mt-6">
-              {(() => {
-                const lifelineData = localStorage.getItem("forex-lifeline-data");
-                if (!lifelineData) {
-                  return (
-                    <div className="text-center py-12 text-muted-foreground">
-                      Please setup your Lifeline first to track tax payments
-                    </div>
-                  );
-                }
-                const data = JSON.parse(lifelineData);
-                return (
-                  <TaxHistory 
-                    taxPayments={data.taxPayments || []} 
-                    currency={data.settings?.currency || "USD"} 
-                  />
-                );
-              })()}
-            </TabsContent>
-
-            <TabsContent value="canada" className="mt-6">
-              <CanadaFundCalculator />
-            </TabsContent>
-
-            <TabsContent value="converter" className="mt-6">
-              <CurrencyConverter />
-            </TabsContent>
-
-            <TabsContent value="salary" className="mt-6">
-              <SalaryCalculator />
-            </TabsContent>
-
-            <TabsContent value="dynamic-calc" className="mt-6">
-              <DynamicCalculator />
-            </TabsContent>
-
-            <TabsContent value="time-convert" className="mt-6">
-              <TimeConversion />
-            </TabsContent>
-
-            <TabsContent value="pair" className="mt-6">
-              <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            {/* Hamburger Menu Button - All Screen Sizes */}
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle sidebar</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[320px] sm:w-[380px] overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="text-xl">Tools & Summary</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 space-y-6 pb-6">
-                  {/* Collapsible Dynamic Calculator */}
-                  <Collapsible defaultOpen>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 glass-subtle rounded-xl hover:bg-muted/30 transition-all duration-300">
-                      <span className="font-semibold">Dynamic Calculator</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-4">
-                      <DynamicCalculator pair={selectedPair} />
-                    </CollapsibleContent>
-                  </Collapsible>
-
-                  {/* Collapsible Totals Summary */}
-                  <Collapsible defaultOpen>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 glass-subtle rounded-xl hover:bg-muted/30 transition-all duration-300">
-                      <span className="font-semibold">Totals Summary</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-4">
-                      <TotalsSummary totals={totals} />
-                    </CollapsibleContent>
-                  </Collapsible>
-
-                  {/* Collapsible Time Conversion */}
-                  <Collapsible>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 glass-subtle rounded-xl hover:bg-muted/30 transition-all duration-300">
-                      <span className="font-semibold">Time Conversion</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-4">
-                      <TimeConversion />
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              </SheetContent>
-            </Sheet>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-                Forex Trading Tools
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Calculate trades for {selectedPair}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+              Forex Trading Tools
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {selectedPair ? `Calculate trades for ${selectedPair}` : "Manage your financial goals and track expenses"}
+            </p>
           </div>
-          <ActionButtons
-            onClearHistory={handleClearHistory}
-            onExportCSV={handleExportCSV}
-            onChangePair={handleChangePair}
-            hasHistory={trades.length > 0}
-          />
+          {selectedPair && (
+            <ActionButtons
+              onClearHistory={handleClearHistory}
+              onExportCSV={handleExportCSV}
+              onChangePair={handleChangePair}
+              hasHistory={trades.length > 0}
+            />
+          )}
         </div>
 
-        {/* Tabs for Calculator - Only Forex Pip Calculator when pair is selected */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <Drawer>
             <DrawerTrigger asChild>
@@ -353,7 +209,7 @@ const Index = () => {
               <DrawerHeader>
                 <DrawerTitle>Select Tool</DrawerTitle>
               </DrawerHeader>
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-2 overflow-y-auto">
                 {availableTabs.map((tab) => (
                   <DrawerClose key={tab.value} asChild>
                     <Button 
@@ -369,27 +225,62 @@ const Index = () => {
             </DrawerContent>
           </Drawer>
 
-          {/* Calculator Tab */}
           <TabsContent value="calculator" className="space-y-6 mt-6">
-            <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />
+            {selectedPair && <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />}
             <TradeHistory trades={trades} />
           </TabsContent>
 
-          {/* Currency Converter Tab */}
           <TabsContent value="converter" className="mt-6">
             <CurrencyConverter />
           </TabsContent>
 
-          {/* Dynamic Calculator Tab */}
           <TabsContent value="dynamic-calc" className="mt-6">
             <DynamicCalculator pair={selectedPair} />
           </TabsContent>
 
-          {/* Time Conversion Tab */}
           <TabsContent value="time-convert" className="mt-6">
             <TimeConversion />
           </TabsContent>
 
+          <TabsContent value="lifeline" className="mt-6">
+            <Lifeline />
+          </TabsContent>
+
+          <TabsContent value="tax" className="mt-6">
+            {(() => {
+              const lifelineData = localStorage.getItem("forex-lifeline-data");
+              if (!lifelineData) {
+                return (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Please setup your Lifeline first to track tax payments
+                  </div>
+                );
+              }
+              const data = JSON.parse(lifelineData);
+              return (
+                <TaxHistory 
+                  taxPayments={data.taxPayments || []} 
+                  currency={data.settings?.currency || "USD"} 
+                />
+              );
+            })()}
+          </TabsContent>
+
+          <TabsContent value="canada" className="mt-6">
+            <CanadaFundCalculator />
+          </TabsContent>
+
+          <TabsContent value="salary" className="mt-6">
+            <SalaryCalculator />
+          </TabsContent>
+
+          <TabsContent value="totals" className="mt-6">
+            <TotalsSummary totals={totals} />
+          </TabsContent>
+
+          <TabsContent value="pair" className="mt-6">
+            <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
