@@ -150,6 +150,8 @@ const Index = () => {
     ? [
         { value: "calculator", label: "Forex Pip Calculator" },
         { value: "converter", label: "Currency Converter" },
+        { value: "dynamic-calc", label: "Dynamic Calculator" },
+        { value: "time-convert", label: "Time Conversion" },
       ]
     : [
         { value: "lifeline", label: "Setup Your Lifeline" },
@@ -381,6 +383,16 @@ const Index = () => {
           {/* Currency Converter Tab */}
           <TabsContent value="converter" className="mt-6">
             <CurrencyConverter />
+          </TabsContent>
+
+          {/* Dynamic Calculator Tab */}
+          <TabsContent value="dynamic-calc" className="mt-6">
+            <DynamicCalculator pair={selectedPair} />
+          </TabsContent>
+
+          {/* Time Conversion Tab */}
+          <TabsContent value="time-convert" className="mt-6">
+            <TimeConversion />
           </TabsContent>
 
         </Tabs>
