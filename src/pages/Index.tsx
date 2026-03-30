@@ -150,6 +150,8 @@ const Index = () => {
     ? [
         { value: "calculator", label: "Forex Pip Calculator" },
         { value: "converter", label: "Currency Converter" },
+        { value: "dynamic-calc", label: "Dynamic Calculator" },
+        { value: "time-convert", label: "Time Conversion" },
       ]
     : [
         { value: "lifeline", label: "Setup Your Lifeline" },
