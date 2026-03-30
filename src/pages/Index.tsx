@@ -145,24 +145,19 @@ const Index = () => {
     };
   };
 
-  // Define available tabs based on whether pair is selected
-  const availableTabs = selectedPair 
-    ? [
-        { value: "calculator", label: "Forex Pip Calculator" },
-        { value: "converter", label: "Currency Converter" },
-        { value: "dynamic-calc", label: "Dynamic Calculator" },
-        { value: "time-convert", label: "Time Conversion" },
-      ]
-    : [
-        { value: "lifeline", label: "Setup Your Lifeline" },
-        { value: "tax", label: "Tax History" },
-        { value: "canada", label: "Financial Plan" },
-        { value: "converter", label: "Currency Converter" },
-        { value: "salary", label: "Expense Calculator" },
-        { value: "dynamic-calc", label: "Dynamic Calculator" },
-        { value: "time-convert", label: "Time Conversion" },
-        { value: "pair", label: "Select Trading Pair" },
-      ];
+  // All tabs in one unified menu
+  const availableTabs = [
+    ...(selectedPair ? [{ value: "calculator", label: "Forex Pip Calculator" }] : []),
+    { value: "canada", label: "Financial Plan" },
+    { value: "converter", label: "Currency Converter" },
+    { value: "dynamic-calc", label: "Dynamic Calculator" },
+    { value: "salary", label: "Expense Calculator" },
+    { value: "time-convert", label: "Time Conversion" },
+    { value: "lifeline", label: "Setup Your Lifeline" },
+    { value: "tax", label: "Tax History" },
+    ...(selectedPair ? [{ value: "totals", label: "Totals Summary" }] : []),
+    { value: "pair", label: "Select Trading Pair" },
+  ];
 
   // Set default tab based on pair selection
   useEffect(() => {
