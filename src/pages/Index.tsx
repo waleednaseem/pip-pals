@@ -150,8 +150,6 @@ const Index = () => {
     ? [
         { value: "calculator", label: "Forex Pip Calculator" },
         { value: "converter", label: "Currency Converter" },
-        { value: "dynamic-calc", label: "Dynamic Calculator" },
-        { value: "time-convert", label: "Time Conversion" },
       ]
     : [
         { value: "lifeline", label: "Setup Your Lifeline" },
@@ -159,6 +157,8 @@ const Index = () => {
         { value: "canada", label: "Financial Plan" },
         { value: "converter", label: "Currency Converter" },
         { value: "salary", label: "Expense Calculator" },
+        { value: "dynamic-calc", label: "Dynamic Calculator" },
+        { value: "time-convert", label: "Time Conversion" },
         { value: "pair", label: "Select Trading Pair" },
       ];
 
