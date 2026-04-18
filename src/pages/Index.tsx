@@ -1088,4 +1088,136 @@ const SalaryCalculator = () => {
   );
 };
 
+interface SubExpenseRowProps {
+  node: SubExpense;
+  depth: number;
+  addingSubFor: string | null;
+  setAddingSubFor: (id: string | null) => void;
+  newSubName: string;
+  setNewSubName: (v: string) => void;
+  newSubAmount: string;
+  setNewSubAmount: (v: string) => void;
+  onAddSub: (parentId: string) => void;
+  onRemove: (id: string) => void;
+  onUpdateAmount: (id: string, amount: number) => void;
+  onTogglePaid: (id: string) => void;
+}
+
+const SubExpenseRow = ({
+  node,
+  depth,
+  addingSubFor,
+  setAddingSubFor,
+  newSubName,
+  setNewSubName,
+  newSubAmount,
+  setNewSubAmount,
+  onAddSub,
+  onRemove,
+  onUpdateAmount,
+  onTogglePaid,
+}: SubExpenseRowProps) => {
+  const hasChildren = node.subExpenses.length > 0;
+  const isPlus = !hasChildren && node.amount > 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded gap-2">
+        <span className={`truncate ${node.paid ? "line-through text-muted-foreground" : ""}`}>
+          {node.name}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {isPlus && (
+            <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox
+                checked={!!node.paid}
+                onCheckedChange={() => onTogglePaid(node.id)}
+              />
+              <span>Paid</span>
+            </label>
+          )}
+          {hasChildren ? (
+            <span className="font-medium text-sm w-20 text-right">{node.amount.toLocaleString()}</span>
+          ) : (
+            <Input
+              type="number"
+              value={node.amount === 0 ? "" : node.amount}
+              onChange={(ev) => onUpdateAmount(node.id, parseFloat(ev.target.value) || 0)}
+              className="w-20 h-7 text-right text-sm"
+            />
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => onRemove(node.id)}
+          >
+            <Trash className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+
+      {hasChildren && (
+        <div className="pl-4 space-y-2 border-l border-border/50 ml-2">
+          {node.subExpenses.map((child) => (
+            <SubExpenseRow
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              addingSubFor={addingSubFor}
+              setAddingSubFor={setAddingSubFor}
+              newSubName={newSubName}
+              setNewSubName={setNewSubName}
+              newSubAmount={newSubAmount}
+              setNewSubAmount={setNewSubAmount}
+              onAddSub={onAddSub}
+              onRemove={onRemove}
+              onUpdateAmount={onUpdateAmount}
+              onTogglePaid={onTogglePaid}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="pl-4">
+        {addingSubFor === node.id ? (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              className="h-8 text-sm flex-1 min-w-0"
+              value={newSubName}
+              onChange={(ev) => setNewSubName(ev.target.value)}
+              placeholder="Item name"
+            />
+            <div className="flex gap-2">
+              <Input
+                className="h-8 text-sm flex-1 sm:w-24"
+                type="number"
+                value={newSubAmount}
+                onChange={(ev) => setNewSubAmount(ev.target.value)}
+                placeholder="Amount (- ok)"
+              />
+              <Button size="sm" className="h-8" onClick={() => onAddSub(node.id)}>Add</Button>
+              <Button size="sm" className="h-8" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-muted-foreground"
+            onClick={() => {
+              setAddingSubFor(node.id);
+              setNewSubName("");
+              setNewSubAmount("");
+            }}
+          >
+            <PlusCircle className="h-3 w-3 mr-1" />
+            Add sub-expense
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default Index;
