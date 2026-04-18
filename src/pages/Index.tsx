@@ -26,7 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw } from "lucide-react";
+import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw, PlusCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -278,12 +279,21 @@ const Index = () => {
 const EXPENSE_STORAGE_KEY = "expense-calculator-data";
 const EXPENSE_HISTORY_KEY = "expense-calculator-history";
 
+interface SubExpense {
+  id: string;
+  name: string;
+  amount: number;
+  paid?: boolean;
+  subExpenses: SubExpense[];
+}
+
 interface ExpenseItem {
   id: string;
   name: string;
   amount: number;
   color: string;
-  subExpenses: { id: string; name: string; amount: number }[];
+  paid?: boolean;
+  subExpenses: SubExpense[];
   allowSubExpenses: boolean;
 }
 
@@ -305,19 +315,12 @@ interface ExpenseHistoryEntry {
 const SalaryCalculator = () => {
   const { toast } = useToast();
   const [salary, setSalary] = useState<number>(0);
-  const [expenses, setExpenses] = useState<{
-    id: string;
-    name: string;
-    amount: number;
-    color: string;
-    subExpenses: { id: string; name: string; amount: number }[];
-    allowSubExpenses: boolean;
-  }[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [adding, setAdding] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>("");
   const [newAmount, setNewAmount] = useState<string>("");
   
-  // Sub-expense states
+  // Sub-expense states (works for any nesting level via parent path id)
   const [addingSubFor, setAddingSubFor] = useState<string | null>(null);
   const [newSubName, setNewSubName] = useState<string>("");
   const [newSubAmount, setNewSubAmount] = useState<string>("");
@@ -447,9 +450,66 @@ const SalaryCalculator = () => {
   const remaining = Math.max(0, salary - totalUsed);
   const pct = (amount: number) => (salary > 0 ? (amount / salary) * 100 : 0);
 
+  // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
+  const recomputeSub = (s: SubExpense): SubExpense => {
+    if (s.subExpenses && s.subExpenses.length > 0) {
+      const subs = s.subExpenses.map(recomputeSub);
+      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      return { ...s, subExpenses: subs, amount: total };
+    }
+    return s;
+  };
+
+  const recomputeExpense = (e: ExpenseItem): ExpenseItem => {
+    if (e.allowSubExpenses && e.subExpenses.length > 0) {
+      const subs = e.subExpenses.map(recomputeSub);
+      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      return { ...e, subExpenses: subs, amount: total };
+    }
+    return e;
+  };
+
+  // Recursively transform a sub node by id (or any of its descendants)
+  const mapSubTree = (
+    nodes: SubExpense[],
+    targetId: string,
+    transform: (n: SubExpense) => SubExpense | null,
+  ): SubExpense[] => {
+    const result: SubExpense[] = [];
+    for (const n of nodes) {
+      if (n.id === targetId) {
+        const t = transform(n);
+        if (t !== null) result.push(t);
+      } else {
+        result.push({ ...n, subExpenses: mapSubTree(n.subExpenses, targetId, transform) });
+      }
+    }
+    return result;
+  };
+
+  const updateNodeById = (
+    targetId: string,
+    transform: (n: SubExpense) => SubExpense | null,
+    transformExpense?: (e: ExpenseItem) => ExpenseItem | null,
+  ) => {
+    setExpenses((prev) => {
+      const out: ExpenseItem[] = [];
+      for (const e of prev) {
+        if (e.id === targetId && transformExpense) {
+          const t = transformExpense(e);
+          if (t !== null) out.push(recomputeExpense(t));
+        } else {
+          const updated = { ...e, subExpenses: mapSubTree(e.subExpenses, targetId, transform) };
+          out.push(recomputeExpense(updated));
+        }
+      }
+      return out;
+    });
+  };
+
   const addExpense = () => {
     const amountNum = parseFloat(newAmount);
-    if (!newName.trim() || isNaN(amountNum) || amountNum < 0) return;
+    if (!newName.trim() || isNaN(amountNum)) return;
     
     const allowSubExpenses = amountNum === 0;
     const color = colors[expenses.length % colors.length];
@@ -461,6 +521,7 @@ const SalaryCalculator = () => {
         name: newName.trim(), 
         amount: amountNum, 
         color,
+        paid: false,
         subExpenses: [],
         allowSubExpenses
       },
@@ -474,58 +535,53 @@ const SalaryCalculator = () => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const addSubExpense = (expenseId: string) => {
+  // Add a sub-expense under any node (top-level expense OR nested sub) by id
+  const addSubExpense = (parentId: string) => {
     const amountNum = parseFloat(newSubAmount);
-    if (!newSubName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+    if (!newSubName.trim() || isNaN(amountNum)) return;
 
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId) {
-        const newSub = { id: crypto.randomUUID(), name: newSubName.trim(), amount: amountNum };
-        const updatedSubExpenses = [...e.subExpenses, newSub];
-        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
-        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
-      }
-      return e;
-    }));
-    
+    const newSub: SubExpense = {
+      id: crypto.randomUUID(),
+      name: newSubName.trim(),
+      amount: amountNum,
+      paid: false,
+      subExpenses: [],
+    };
+
+    updateNodeById(
+      parentId,
+      // For nested sub: append as child
+      (n) => ({ ...n, subExpenses: [...n.subExpenses, newSub] }),
+      // For top-level expense: append and ensure allowSubExpenses
+      (e) => ({ ...e, allowSubExpenses: true, subExpenses: [...e.subExpenses, newSub] }),
+    );
+
     setNewSubName("");
     setNewSubAmount("");
     setAddingSubFor(null);
   };
 
-  const removeSubExpense = (expenseId: string, subId: string) => {
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId) {
-        const updatedSubExpenses = e.subExpenses.filter(s => s.id !== subId);
-        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
-        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
-      }
-      return e;
-    }));
+  // Remove any node by id (sub at any depth)
+  const removeNode = (id: string) => {
+    updateNodeById(id, () => null, () => null);
   };
 
-  // Update single expense amount (only for non-sub-expense expenses)
-  const updateExpenseAmount = (expenseId: string, newAmount: number) => {
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId && !e.allowSubExpenses) {
-        return { ...e, amount: newAmount };
-      }
-      return e;
-    }));
+  // Update amount on any leaf node
+  const updateNodeAmount = (id: string, newAmount: number) => {
+    updateNodeById(
+      id,
+      (n) => (n.subExpenses.length === 0 ? { ...n, amount: newAmount } : n),
+      (e) => (!e.allowSubExpenses ? { ...e, amount: newAmount } : e),
+    );
   };
 
-  // Update sub-expense amount
-  const updateSubExpenseAmount = (expenseId: string, subId: string, newAmount: number) => {
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId) {
-        const updatedSubExpenses = e.subExpenses.map(s => 
-          s.id === subId ? { ...s, amount: newAmount } : s
-        );
-        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
-        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
-      }
-      return e;
-    }));
+  // Toggle paid status on any node
+  const togglePaid = (id: string) => {
+    updateNodeById(
+      id,
+      (n) => ({ ...n, paid: !n.paid }),
+      (e) => ({ ...e, paid: !e.paid }),
+    );
   };
 
   // Export to PDF
@@ -929,55 +985,64 @@ const SalaryCalculator = () => {
         )}
 
         <div className="space-y-2">
-          {expenses.map((e) => (
-            <div key={e.id} className="rounded-md border p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className={`h-3 w-3 rounded-full ${e.color}`} />
-                  <div className="font-medium">{e.name}</div>
+          {expenses.map((e) => {
+            const hasSubs = e.allowSubExpenses;
+            const isPlus = !hasSubs && e.amount > 0;
+            return (
+              <div key={e.id} className="rounded-md border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`h-3 w-3 rounded-full ${e.color} shrink-0`} />
+                    <div className={`font-medium truncate ${e.paid ? "line-through text-muted-foreground" : ""}`}>
+                      {e.name}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPlus && (
+                      <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
+                        <Checkbox
+                          checked={!!e.paid}
+                          onCheckedChange={() => togglePaid(e.id)}
+                        />
+                        <span>Paid</span>
+                      </label>
+                    )}
+                    <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
+                    {hasSubs ? (
+                      <div className="font-semibold">{e.amount.toLocaleString()}</div>
+                    ) : (
+                      <Input
+                        type="number"
+                        value={e.amount === 0 ? "" : e.amount}
+                        onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
+                        className="w-24 h-8 text-right font-semibold"
+                      />
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
-                  {e.allowSubExpenses ? (
-                    <div className="font-semibold">{e.amount.toLocaleString()}</div>
-                  ) : (
-                    <Input
-                      type="number"
-                      value={e.amount || ""}
-                      onChange={(ev) => updateExpenseAmount(e.id, parseFloat(ev.target.value) || 0)}
-                      className="w-24 h-8 text-right font-semibold"
-                    />
-                  )}
-                  <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
 
-              {e.allowSubExpenses && (
                 <div className="pl-6 space-y-2">
                   {e.subExpenses.map((sub) => (
-                    <div key={sub.id} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
-                      <span>{sub.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={sub.amount || ""}
-                          onChange={(ev) => updateSubExpenseAmount(e.id, sub.id, parseFloat(ev.target.value) || 0)}
-                          className="w-20 h-7 text-right text-sm"
-                        />
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6" 
-                          onClick={() => removeSubExpense(e.id, sub.id)}
-                        >
-                          <Trash className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
+                    <SubExpenseRow
+                      key={sub.id}
+                      node={sub}
+                      depth={1}
+                      addingSubFor={addingSubFor}
+                      setAddingSubFor={setAddingSubFor}
+                      newSubName={newSubName}
+                      setNewSubName={setNewSubName}
+                      newSubAmount={newSubAmount}
+                      setNewSubAmount={setNewSubAmount}
+                      onAddSub={addSubExpense}
+                      onRemove={removeNode}
+                      onUpdateAmount={updateNodeAmount}
+                      onTogglePaid={togglePaid}
+                    />
                   ))}
-                  
+
                   {addingSubFor === e.id ? (
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
                       <Input
@@ -992,33 +1057,166 @@ const SalaryCalculator = () => {
                           type="number"
                           value={newSubAmount}
                           onChange={(ev) => setNewSubAmount(ev.target.value)}
-                          placeholder="Amount"
+                          placeholder="Amount (- ok)"
                         />
                         <Button size="sm" className="h-9" onClick={() => addSubExpense(e.id)}>Add</Button>
                         <Button size="sm" className="h-9" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
                       </div>
                     </div>
                   ) : (
-                    <Button 
-                      variant="link" 
-                      size="sm" 
-                      className="h-auto p-0 text-muted-foreground" 
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-muted-foreground"
                       onClick={() => {
                         setAddingSubFor(e.id);
                         setNewSubName("");
                         setNewSubAmount("");
                       }}
                     >
-                      + Add sub-expense
+                      <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                      Add sub-expense
                     </Button>
                   )}
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+interface SubExpenseRowProps {
+  node: SubExpense;
+  depth: number;
+  addingSubFor: string | null;
+  setAddingSubFor: (id: string | null) => void;
+  newSubName: string;
+  setNewSubName: (v: string) => void;
+  newSubAmount: string;
+  setNewSubAmount: (v: string) => void;
+  onAddSub: (parentId: string) => void;
+  onRemove: (id: string) => void;
+  onUpdateAmount: (id: string, amount: number) => void;
+  onTogglePaid: (id: string) => void;
+}
+
+const SubExpenseRow = ({
+  node,
+  depth,
+  addingSubFor,
+  setAddingSubFor,
+  newSubName,
+  setNewSubName,
+  newSubAmount,
+  setNewSubAmount,
+  onAddSub,
+  onRemove,
+  onUpdateAmount,
+  onTogglePaid,
+}: SubExpenseRowProps) => {
+  const hasChildren = node.subExpenses.length > 0;
+  const isPlus = !hasChildren && node.amount > 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded gap-2">
+        <span className={`truncate ${node.paid ? "line-through text-muted-foreground" : ""}`}>
+          {node.name}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {isPlus && (
+            <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox
+                checked={!!node.paid}
+                onCheckedChange={() => onTogglePaid(node.id)}
+              />
+              <span>Paid</span>
+            </label>
+          )}
+          {hasChildren ? (
+            <span className="font-medium text-sm w-20 text-right">{node.amount.toLocaleString()}</span>
+          ) : (
+            <Input
+              type="number"
+              value={node.amount === 0 ? "" : node.amount}
+              onChange={(ev) => onUpdateAmount(node.id, parseFloat(ev.target.value) || 0)}
+              className="w-20 h-7 text-right text-sm"
+            />
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => onRemove(node.id)}
+          >
+            <Trash className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+
+      {hasChildren && (
+        <div className="pl-4 space-y-2 border-l border-border/50 ml-2">
+          {node.subExpenses.map((child) => (
+            <SubExpenseRow
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              addingSubFor={addingSubFor}
+              setAddingSubFor={setAddingSubFor}
+              newSubName={newSubName}
+              setNewSubName={setNewSubName}
+              newSubAmount={newSubAmount}
+              setNewSubAmount={setNewSubAmount}
+              onAddSub={onAddSub}
+              onRemove={onRemove}
+              onUpdateAmount={onUpdateAmount}
+              onTogglePaid={onTogglePaid}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="pl-4">
+        {addingSubFor === node.id ? (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              className="h-8 text-sm flex-1 min-w-0"
+              value={newSubName}
+              onChange={(ev) => setNewSubName(ev.target.value)}
+              placeholder="Item name"
+            />
+            <div className="flex gap-2">
+              <Input
+                className="h-8 text-sm flex-1 sm:w-24"
+                type="number"
+                value={newSubAmount}
+                onChange={(ev) => setNewSubAmount(ev.target.value)}
+                placeholder="Amount (- ok)"
+              />
+              <Button size="sm" className="h-8" onClick={() => onAddSub(node.id)}>Add</Button>
+              <Button size="sm" className="h-8" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-muted-foreground"
+            onClick={() => {
+              setAddingSubFor(node.id);
+              setNewSubName("");
+              setNewSubAmount("");
+            }}
+          >
+            <PlusCircle className="h-3 w-3 mr-1" />
+            Add sub-expense
+          </Button>
+        )}
+      </div>
+    </div>
   );
 };
 
