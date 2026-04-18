@@ -1011,6 +1011,46 @@ const SalaryCalculator = () => {
           </div>
         </div>
 
+        {/* Paid / Unpaid Summary */}
+        {trackedTotal > 0 && (
+          <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Payment Status
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {Math.round(paidPct)}% paid
+              </span>
+            </div>
+            <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="absolute h-full bg-emerald-500 transition-all"
+                style={{ width: `${paidPct}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide">Paid</div>
+                <div className="font-semibold text-sm text-emerald-700 dark:text-emerald-300">
+                  {paidTotal.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-center">
+                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wide">Unpaid</div>
+                <div className="font-semibold text-sm text-amber-700 dark:text-amber-300">
+                  {unpaidTotal.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-md bg-muted/40 border border-border p-2 text-center">
+                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Tracked</div>
+                <div className="font-semibold text-sm">
+                  {trackedTotal.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {adding && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Input
