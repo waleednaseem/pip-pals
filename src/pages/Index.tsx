@@ -450,6 +450,50 @@ const SalaryCalculator = () => {
   const remaining = Math.max(0, salary - totalUsed);
   const pct = (amount: number) => (salary > 0 ? (amount / salary) * 100 : 0);
 
+  // Paid/Unpaid breakdown — only counts plus (>0) leaf items.
+  // For nodes with sub-expenses, recurse into children (parent paid flag is ignored).
+  // Negative items (refunds/credits) are excluded from both buckets.
+  const sumPaidUnpaidSub = (s: SubExpense): { paid: number; unpaid: number } => {
+    if (s.subExpenses.length > 0) {
+      return s.subExpenses.reduce(
+        (acc, c) => {
+          const r = sumPaidUnpaidSub(c);
+          return { paid: acc.paid + r.paid, unpaid: acc.unpaid + r.unpaid };
+        },
+        { paid: 0, unpaid: 0 },
+      );
+    }
+    if (s.amount > 0) {
+      return s.paid ? { paid: s.amount, unpaid: 0 } : { paid: 0, unpaid: s.amount };
+    }
+    return { paid: 0, unpaid: 0 };
+  };
+
+  const { paidTotal, unpaidTotal } = expenses.reduce(
+    (acc, e) => {
+      if (e.allowSubExpenses && e.subExpenses.length > 0) {
+        const r = e.subExpenses.reduce(
+          (a, c) => {
+            const x = sumPaidUnpaidSub(c);
+            return { paid: a.paid + x.paid, unpaid: a.unpaid + x.unpaid };
+          },
+          { paid: 0, unpaid: 0 },
+        );
+        return { paidTotal: acc.paidTotal + r.paid, unpaidTotal: acc.unpaidTotal + r.unpaid };
+      }
+      if (e.amount > 0) {
+        return e.paid
+          ? { paidTotal: acc.paidTotal + e.amount, unpaidTotal: acc.unpaidTotal }
+          : { paidTotal: acc.paidTotal, unpaidTotal: acc.unpaidTotal + e.amount };
+      }
+      return acc;
+    },
+    { paidTotal: 0, unpaidTotal: 0 },
+  );
+
+  const trackedTotal = paidTotal + unpaidTotal;
+  const paidPct = trackedTotal > 0 ? (paidTotal / trackedTotal) * 100 : 0;
+
   // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
   const recomputeSub = (s: SubExpense): SubExpense => {
     if (s.subExpenses && s.subExpenses.length > 0) {
@@ -966,6 +1010,46 @@ const SalaryCalculator = () => {
             </div>
           </div>
         </div>
+
+        {/* Paid / Unpaid Summary */}
+        {trackedTotal > 0 && (
+          <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Payment Status
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {Math.round(paidPct)}% paid
+              </span>
+            </div>
+            <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="absolute h-full bg-emerald-500 transition-all"
+                style={{ width: `${paidPct}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide">Paid</div>
+                <div className="font-semibold text-sm text-emerald-700 dark:text-emerald-300">
+                  {paidTotal.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-center">
+                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wide">Unpaid</div>
+                <div className="font-semibold text-sm text-amber-700 dark:text-amber-300">
+                  {unpaidTotal.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-md bg-muted/40 border border-border p-2 text-center">
+                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Tracked</div>
+                <div className="font-semibold text-sm">
+                  {trackedTotal.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {adding && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
