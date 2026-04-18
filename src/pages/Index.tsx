@@ -450,9 +450,66 @@ const SalaryCalculator = () => {
   const remaining = Math.max(0, salary - totalUsed);
   const pct = (amount: number) => (salary > 0 ? (amount / salary) * 100 : 0);
 
+  // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
+  const recomputeSub = (s: SubExpense): SubExpense => {
+    if (s.subExpenses && s.subExpenses.length > 0) {
+      const subs = s.subExpenses.map(recomputeSub);
+      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      return { ...s, subExpenses: subs, amount: total };
+    }
+    return s;
+  };
+
+  const recomputeExpense = (e: ExpenseItem): ExpenseItem => {
+    if (e.allowSubExpenses && e.subExpenses.length > 0) {
+      const subs = e.subExpenses.map(recomputeSub);
+      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      return { ...e, subExpenses: subs, amount: total };
+    }
+    return e;
+  };
+
+  // Recursively transform a sub node by id (or any of its descendants)
+  const mapSubTree = (
+    nodes: SubExpense[],
+    targetId: string,
+    transform: (n: SubExpense) => SubExpense | null,
+  ): SubExpense[] => {
+    const result: SubExpense[] = [];
+    for (const n of nodes) {
+      if (n.id === targetId) {
+        const t = transform(n);
+        if (t !== null) result.push(t);
+      } else {
+        result.push({ ...n, subExpenses: mapSubTree(n.subExpenses, targetId, transform) });
+      }
+    }
+    return result;
+  };
+
+  const updateNodeById = (
+    targetId: string,
+    transform: (n: SubExpense) => SubExpense | null,
+    transformExpense?: (e: ExpenseItem) => ExpenseItem | null,
+  ) => {
+    setExpenses((prev) => {
+      const out: ExpenseItem[] = [];
+      for (const e of prev) {
+        if (e.id === targetId && transformExpense) {
+          const t = transformExpense(e);
+          if (t !== null) out.push(recomputeExpense(t));
+        } else {
+          const updated = { ...e, subExpenses: mapSubTree(e.subExpenses, targetId, transform) };
+          out.push(recomputeExpense(updated));
+        }
+      }
+      return out;
+    });
+  };
+
   const addExpense = () => {
     const amountNum = parseFloat(newAmount);
-    if (!newName.trim() || isNaN(amountNum) || amountNum < 0) return;
+    if (!newName.trim() || isNaN(amountNum)) return;
     
     const allowSubExpenses = amountNum === 0;
     const color = colors[expenses.length % colors.length];
@@ -464,6 +521,7 @@ const SalaryCalculator = () => {
         name: newName.trim(), 
         amount: amountNum, 
         color,
+        paid: false,
         subExpenses: [],
         allowSubExpenses
       },
@@ -477,58 +535,53 @@ const SalaryCalculator = () => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const addSubExpense = (expenseId: string) => {
+  // Add a sub-expense under any node (top-level expense OR nested sub) by id
+  const addSubExpense = (parentId: string) => {
     const amountNum = parseFloat(newSubAmount);
-    if (!newSubName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+    if (!newSubName.trim() || isNaN(amountNum)) return;
 
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId) {
-        const newSub = { id: crypto.randomUUID(), name: newSubName.trim(), amount: amountNum };
-        const updatedSubExpenses = [...e.subExpenses, newSub];
-        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
-        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
-      }
-      return e;
-    }));
-    
+    const newSub: SubExpense = {
+      id: crypto.randomUUID(),
+      name: newSubName.trim(),
+      amount: amountNum,
+      paid: false,
+      subExpenses: [],
+    };
+
+    updateNodeById(
+      parentId,
+      // For nested sub: append as child
+      (n) => ({ ...n, subExpenses: [...n.subExpenses, newSub] }),
+      // For top-level expense: append and ensure allowSubExpenses
+      (e) => ({ ...e, allowSubExpenses: true, subExpenses: [...e.subExpenses, newSub] }),
+    );
+
     setNewSubName("");
     setNewSubAmount("");
     setAddingSubFor(null);
   };
 
-  const removeSubExpense = (expenseId: string, subId: string) => {
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId) {
-        const updatedSubExpenses = e.subExpenses.filter(s => s.id !== subId);
-        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
-        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
-      }
-      return e;
-    }));
+  // Remove any node by id (sub at any depth)
+  const removeNode = (id: string) => {
+    updateNodeById(id, () => null, () => null);
   };
 
-  // Update single expense amount (only for non-sub-expense expenses)
-  const updateExpenseAmount = (expenseId: string, newAmount: number) => {
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId && !e.allowSubExpenses) {
-        return { ...e, amount: newAmount };
-      }
-      return e;
-    }));
+  // Update amount on any leaf node
+  const updateNodeAmount = (id: string, newAmount: number) => {
+    updateNodeById(
+      id,
+      (n) => (n.subExpenses.length === 0 ? { ...n, amount: newAmount } : n),
+      (e) => (!e.allowSubExpenses ? { ...e, amount: newAmount } : e),
+    );
   };
 
-  // Update sub-expense amount
-  const updateSubExpenseAmount = (expenseId: string, subId: string, newAmount: number) => {
-    setExpenses((prev) => prev.map(e => {
-      if (e.id === expenseId) {
-        const updatedSubExpenses = e.subExpenses.map(s => 
-          s.id === subId ? { ...s, amount: newAmount } : s
-        );
-        const newTotal = updatedSubExpenses.reduce((sum, s) => sum + s.amount, 0);
-        return { ...e, subExpenses: updatedSubExpenses, amount: newTotal };
-      }
-      return e;
-    }));
+  // Toggle paid status on any node
+  const togglePaid = (id: string) => {
+    updateNodeById(
+      id,
+      (n) => ({ ...n, paid: !n.paid }),
+      (e) => ({ ...e, paid: !e.paid }),
+    );
   };
 
   // Export to PDF
