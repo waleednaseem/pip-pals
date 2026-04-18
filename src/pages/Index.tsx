@@ -315,19 +315,12 @@ interface ExpenseHistoryEntry {
 const SalaryCalculator = () => {
   const { toast } = useToast();
   const [salary, setSalary] = useState<number>(0);
-  const [expenses, setExpenses] = useState<{
-    id: string;
-    name: string;
-    amount: number;
-    color: string;
-    subExpenses: { id: string; name: string; amount: number }[];
-    allowSubExpenses: boolean;
-  }[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [adding, setAdding] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>("");
   const [newAmount, setNewAmount] = useState<string>("");
   
-  // Sub-expense states
+  // Sub-expense states (works for any nesting level via parent path id)
   const [addingSubFor, setAddingSubFor] = useState<string | null>(null);
   const [newSubName, setNewSubName] = useState<string>("");
   const [newSubAmount, setNewSubAmount] = useState<string>("");
