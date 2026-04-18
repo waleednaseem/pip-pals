@@ -279,12 +279,21 @@ const Index = () => {
 const EXPENSE_STORAGE_KEY = "expense-calculator-data";
 const EXPENSE_HISTORY_KEY = "expense-calculator-history";
 
+interface SubExpense {
+  id: string;
+  name: string;
+  amount: number;
+  paid?: boolean;
+  subExpenses: SubExpense[];
+}
+
 interface ExpenseItem {
   id: string;
   name: string;
   amount: number;
   color: string;
-  subExpenses: { id: string; name: string; amount: number }[];
+  paid?: boolean;
+  subExpenses: SubExpense[];
   allowSubExpenses: boolean;
 }
 
