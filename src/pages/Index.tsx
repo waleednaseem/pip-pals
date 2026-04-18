@@ -450,6 +450,50 @@ const SalaryCalculator = () => {
   const remaining = Math.max(0, salary - totalUsed);
   const pct = (amount: number) => (salary > 0 ? (amount / salary) * 100 : 0);
 
+  // Paid/Unpaid breakdown — only counts plus (>0) leaf items.
+  // For nodes with sub-expenses, recurse into children (parent paid flag is ignored).
+  // Negative items (refunds/credits) are excluded from both buckets.
+  const sumPaidUnpaidSub = (s: SubExpense): { paid: number; unpaid: number } => {
+    if (s.subExpenses.length > 0) {
+      return s.subExpenses.reduce(
+        (acc, c) => {
+          const r = sumPaidUnpaidSub(c);
+          return { paid: acc.paid + r.paid, unpaid: acc.unpaid + r.unpaid };
+        },
+        { paid: 0, unpaid: 0 },
+      );
+    }
+    if (s.amount > 0) {
+      return s.paid ? { paid: s.amount, unpaid: 0 } : { paid: 0, unpaid: s.amount };
+    }
+    return { paid: 0, unpaid: 0 };
+  };
+
+  const { paidTotal, unpaidTotal } = expenses.reduce(
+    (acc, e) => {
+      if (e.allowSubExpenses && e.subExpenses.length > 0) {
+        const r = e.subExpenses.reduce(
+          (a, c) => {
+            const x = sumPaidUnpaidSub(c);
+            return { paid: a.paid + x.paid, unpaid: a.unpaid + x.unpaid };
+          },
+          { paid: 0, unpaid: 0 },
+        );
+        return { paidTotal: acc.paidTotal + r.paid, unpaidTotal: acc.unpaidTotal + r.unpaid };
+      }
+      if (e.amount > 0) {
+        return e.paid
+          ? { paidTotal: acc.paidTotal + e.amount, unpaidTotal: acc.unpaidTotal }
+          : { paidTotal: acc.paidTotal, unpaidTotal: acc.unpaidTotal + e.amount };
+      }
+      return acc;
+    },
+    { paidTotal: 0, unpaidTotal: 0 },
+  );
+
+  const trackedTotal = paidTotal + unpaidTotal;
+  const paidPct = trackedTotal > 0 ? (paidTotal / trackedTotal) * 100 : 0;
+
   // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
   const recomputeSub = (s: SubExpense): SubExpense => {
     if (s.subExpenses && s.subExpenses.length > 0) {
