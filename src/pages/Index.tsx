@@ -985,55 +985,64 @@ const SalaryCalculator = () => {
         )}
 
         <div className="space-y-2">
-          {expenses.map((e) => (
-            <div key={e.id} className="rounded-md border p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className={`h-3 w-3 rounded-full ${e.color}`} />
-                  <div className="font-medium">{e.name}</div>
+          {expenses.map((e) => {
+            const hasSubs = e.allowSubExpenses;
+            const isPlus = !hasSubs && e.amount > 0;
+            return (
+              <div key={e.id} className="rounded-md border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`h-3 w-3 rounded-full ${e.color} shrink-0`} />
+                    <div className={`font-medium truncate ${e.paid ? "line-through text-muted-foreground" : ""}`}>
+                      {e.name}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPlus && (
+                      <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
+                        <Checkbox
+                          checked={!!e.paid}
+                          onCheckedChange={() => togglePaid(e.id)}
+                        />
+                        <span>Paid</span>
+                      </label>
+                    )}
+                    <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
+                    {hasSubs ? (
+                      <div className="font-semibold">{e.amount.toLocaleString()}</div>
+                    ) : (
+                      <Input
+                        type="number"
+                        value={e.amount === 0 ? "" : e.amount}
+                        onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
+                        className="w-24 h-8 text-right font-semibold"
+                      />
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
-                  {e.allowSubExpenses ? (
-                    <div className="font-semibold">{e.amount.toLocaleString()}</div>
-                  ) : (
-                    <Input
-                      type="number"
-                      value={e.amount || ""}
-                      onChange={(ev) => updateExpenseAmount(e.id, parseFloat(ev.target.value) || 0)}
-                      className="w-24 h-8 text-right font-semibold"
-                    />
-                  )}
-                  <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
 
-              {e.allowSubExpenses && (
                 <div className="pl-6 space-y-2">
                   {e.subExpenses.map((sub) => (
-                    <div key={sub.id} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
-                      <span>{sub.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={sub.amount || ""}
-                          onChange={(ev) => updateSubExpenseAmount(e.id, sub.id, parseFloat(ev.target.value) || 0)}
-                          className="w-20 h-7 text-right text-sm"
-                        />
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6" 
-                          onClick={() => removeSubExpense(e.id, sub.id)}
-                        >
-                          <Trash className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
+                    <SubExpenseRow
+                      key={sub.id}
+                      node={sub}
+                      depth={1}
+                      addingSubFor={addingSubFor}
+                      setAddingSubFor={setAddingSubFor}
+                      newSubName={newSubName}
+                      setNewSubName={setNewSubName}
+                      newSubAmount={newSubAmount}
+                      setNewSubAmount={setNewSubAmount}
+                      onAddSub={addSubExpense}
+                      onRemove={removeNode}
+                      onUpdateAmount={updateNodeAmount}
+                      onTogglePaid={togglePaid}
+                    />
                   ))}
-                  
+
                   {addingSubFor === e.id ? (
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
                       <Input
@@ -1048,30 +1057,31 @@ const SalaryCalculator = () => {
                           type="number"
                           value={newSubAmount}
                           onChange={(ev) => setNewSubAmount(ev.target.value)}
-                          placeholder="Amount"
+                          placeholder="Amount (- ok)"
                         />
                         <Button size="sm" className="h-9" onClick={() => addSubExpense(e.id)}>Add</Button>
                         <Button size="sm" className="h-9" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
                       </div>
                     </div>
                   ) : (
-                    <Button 
-                      variant="link" 
-                      size="sm" 
-                      className="h-auto p-0 text-muted-foreground" 
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-muted-foreground"
                       onClick={() => {
                         setAddingSubFor(e.id);
                         setNewSubName("");
                         setNewSubAmount("");
                       }}
                     >
-                      + Add sub-expense
+                      <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                      Add sub-expense
                     </Button>
                   )}
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
