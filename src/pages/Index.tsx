@@ -1072,97 +1072,106 @@ const SalaryCalculator = () => {
           {expenses.map((e) => {
             const hasSubs = e.allowSubExpenses;
             const isPlus = !hasSubs && e.amount > 0;
+            const canAddSub = hasSubs; // only when added with amount 0
             return (
-              <div key={e.id} className="rounded-md border p-3 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={`h-3 w-3 rounded-full ${e.color} shrink-0`} />
-                    <div className={`font-medium truncate ${e.paid ? "line-through text-muted-foreground" : ""}`}>
+              <div
+                key={e.id}
+                className={`rounded-md border p-3 space-y-3 transition-colors ${
+                  isPlus ? "cursor-pointer hover:bg-muted/40" : ""
+                } ${e.paid && isPlus ? "bg-emerald-500/5 border-emerald-500/30" : ""}`}
+                onClick={(ev) => {
+                  if (!isPlus) return;
+                  // ignore clicks on inputs/buttons
+                  const target = ev.target as HTMLElement;
+                  if (target.closest("input,button,a")) return;
+                  togglePaid(e.id);
+                }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <span className={`h-3 w-3 rounded-full ${e.color} shrink-0 mt-1`} />
+                    <div className={`font-medium text-sm break-words min-w-0 flex-1 ${e.paid ? "line-through text-muted-foreground" : ""}`}>
                       {e.name}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {isPlus && (
-                      <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
-                        <Checkbox
-                          checked={!!e.paid}
-                          onCheckedChange={() => togglePaid(e.id)}
-                        />
-                        <span>Paid</span>
-                      </label>
-                    )}
-                    <div className="text-sm text-muted-foreground">{Math.round(pct(e.amount))}%</div>
+                    <div className="text-xs text-muted-foreground">{Math.round(pct(e.amount))}%</div>
                     {hasSubs ? (
-                      <div className="font-semibold">{e.amount.toLocaleString()}</div>
+                      <div className="font-semibold text-sm">{e.amount.toLocaleString()}</div>
                     ) : (
                       <Input
                         type="number"
                         value={e.amount === 0 ? "" : e.amount}
                         onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
+                        onClick={(ev) => ev.stopPropagation()}
                         className="w-24 h-8 text-right font-semibold"
                       />
                     )}
-                    <Button variant="ghost" size="icon" onClick={() => removeExpense(e.id)}>
+                    <Button variant="ghost" size="icon" onClick={(ev) => { ev.stopPropagation(); removeExpense(e.id); }}>
                       <Trash className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
 
-                <div className="pl-6 space-y-2">
-                  {e.subExpenses.map((sub) => (
-                    <SubExpenseRow
-                      key={sub.id}
-                      node={sub}
-                      depth={1}
-                      addingSubFor={addingSubFor}
-                      setAddingSubFor={setAddingSubFor}
-                      newSubName={newSubName}
-                      setNewSubName={setNewSubName}
-                      newSubAmount={newSubAmount}
-                      setNewSubAmount={setNewSubAmount}
-                      onAddSub={addSubExpense}
-                      onRemove={removeNode}
-                      onUpdateAmount={updateNodeAmount}
-                      onTogglePaid={togglePaid}
-                    />
-                  ))}
-
-                  {addingSubFor === e.id ? (
-                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                      <Input
-                        className="h-9 text-sm flex-1 min-w-0"
-                        value={newSubName}
-                        onChange={(ev) => setNewSubName(ev.target.value)}
-                        placeholder="Item name"
+                {(canAddSub || e.subExpenses.length > 0) && (
+                  <div className="pl-6 space-y-2" onClick={(ev) => ev.stopPropagation()}>
+                    {e.subExpenses.map((sub) => (
+                      <SubExpenseRow
+                        key={sub.id}
+                        node={sub}
+                        depth={1}
+                        addingSubFor={addingSubFor}
+                        setAddingSubFor={setAddingSubFor}
+                        newSubName={newSubName}
+                        setNewSubName={setNewSubName}
+                        newSubAmount={newSubAmount}
+                        setNewSubAmount={setNewSubAmount}
+                        onAddSub={addSubExpense}
+                        onRemove={removeNode}
+                        onUpdateAmount={updateNodeAmount}
+                        onTogglePaid={togglePaid}
                       />
-                      <div className="flex gap-2">
-                        <Input
-                          className="h-9 text-sm flex-1 sm:w-28"
-                          type="number"
-                          value={newSubAmount}
-                          onChange={(ev) => setNewSubAmount(ev.target.value)}
-                          placeholder="Amount (- ok)"
-                        />
-                        <Button size="sm" className="h-9" onClick={() => addSubExpense(e.id)}>Add</Button>
-                        <Button size="sm" className="h-9" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-muted-foreground"
-                      onClick={() => {
-                        setAddingSubFor(e.id);
-                        setNewSubName("");
-                        setNewSubAmount("");
-                      }}
-                    >
-                      <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                      Add sub-expense
-                    </Button>
-                  )}
-                </div>
+                    ))}
+
+                    {canAddSub && (
+                      addingSubFor === e.id ? (
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                          <Input
+                            className="h-9 text-sm flex-1 min-w-0"
+                            value={newSubName}
+                            onChange={(ev) => setNewSubName(ev.target.value)}
+                            placeholder="Item name"
+                          />
+                          <div className="flex gap-2">
+                            <Input
+                              className="h-9 text-sm flex-1 sm:w-28"
+                              type="number"
+                              value={newSubAmount}
+                              onChange={(ev) => setNewSubAmount(ev.target.value)}
+                              placeholder="Amount (- ok)"
+                            />
+                            <Button size="sm" className="h-9" onClick={() => addSubExpense(e.id)}>Add</Button>
+                            <Button size="sm" className="h-9" variant="ghost" onClick={() => setAddingSubFor(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-muted-foreground"
+                          onClick={() => {
+                            setAddingSubFor(e.id);
+                            setNewSubName("");
+                            setNewSubAmount("");
+                          }}
+                        >
+                          <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                          Add sub-expense
+                        </Button>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
