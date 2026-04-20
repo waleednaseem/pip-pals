@@ -652,6 +652,8 @@ const SalaryCalculator = () => {
     const lightBg: [number, number, number] = [241, 245, 249]; // Slate-100
     const successColor: [number, number, number] = [34, 197, 94]; // Green-500
     const warningColor: [number, number, number] = [234, 179, 8]; // Yellow-500
+    const dangerColor: [number, number, number] = [239, 68, 68]; // Red-500
+    const subtleBg: [number, number, number] = [248, 250, 252]; // Slate-50
 
     let y = 0;
 
@@ -678,112 +680,209 @@ const SalaryCalculator = () => {
     doc.text("Financial Overview", 20, y);
     y += 12;
 
-    // Draw summary cards
-    const cardWidth = (pageWidth - 50) / 3;
-    const cardHeight = 35;
-    const cardY = y;
+    // Draw summary cards (2x2 grid)
+    const cardWidth = (pageWidth - 50) / 2;
+    const cardHeight = 28;
+    let cardY = y;
 
-    // Card 1: Total Salary
-    doc.setFillColor(...lightBg);
-    doc.roundedRect(20, cardY, cardWidth, cardHeight, 3, 3, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(...grayColor);
-    doc.text("TOTAL BUDGET", 20 + cardWidth / 2, cardY + 12, { align: "center" });
-    doc.setFontSize(16);
-    doc.setTextColor(...darkColor);
-    doc.setFont("helvetica", "bold");
-    doc.text(`$${salary.toLocaleString()}`, 20 + cardWidth / 2, cardY + 26, { align: "center" });
+    const drawCard = (
+      x: number,
+      cy: number,
+      label: string,
+      value: string,
+      valueColor: [number, number, number],
+    ) => {
+      doc.setFillColor(...lightBg);
+      doc.roundedRect(x, cy, cardWidth, cardHeight, 3, 3, "F");
+      doc.setFontSize(8);
+      doc.setTextColor(...grayColor);
+      doc.setFont("helvetica", "normal");
+      doc.text(label, x + cardWidth / 2, cy + 10, { align: "center" });
+      doc.setFontSize(13);
+      doc.setTextColor(...valueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(value, x + cardWidth / 2, cy + 22, { align: "center" });
+    };
 
-    // Card 2: Total Expenses
-    doc.setFillColor(...lightBg);
-    doc.roundedRect(25 + cardWidth, cardY, cardWidth, cardHeight, 3, 3, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(...grayColor);
-    doc.setFont("helvetica", "normal");
-    doc.text("TOTAL EXPENSES", 25 + cardWidth + cardWidth / 2, cardY + 12, { align: "center" });
-    doc.setFontSize(16);
-    doc.setTextColor(...warningColor);
-    doc.setFont("helvetica", "bold");
     const expensePercent = salary > 0 ? Math.round((totalUsed / salary) * 100) : 0;
-    doc.text(`$${totalUsed.toLocaleString()} (${expensePercent}%)`, 25 + cardWidth + cardWidth / 2, cardY + 26, { align: "center" });
-
-    // Card 3: Remaining
-    doc.setFillColor(...lightBg);
-    doc.roundedRect(30 + cardWidth * 2, cardY, cardWidth, cardHeight, 3, 3, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(...grayColor);
-    doc.setFont("helvetica", "normal");
-    doc.text("REMAINING BALANCE", 30 + cardWidth * 2 + cardWidth / 2, cardY + 12, { align: "center" });
-    doc.setFontSize(16);
-    doc.setTextColor(...successColor);
-    doc.setFont("helvetica", "bold");
     const remainingPercent = salary > 0 ? Math.round((remaining / salary) * 100) : 0;
-    doc.text(`$${remaining.toLocaleString()} (${remainingPercent}%)`, 30 + cardWidth * 2 + cardWidth / 2, cardY + 26, { align: "center" });
+    const paidPctRound = Math.round(paidPct);
 
-    y = cardY + cardHeight + 20;
+    drawCard(20, cardY, "TOTAL BUDGET", `$${salary.toLocaleString()}`, darkColor);
+    drawCard(30 + cardWidth, cardY, "TOTAL EXPENSES", `$${totalUsed.toLocaleString()} (${expensePercent}%)`, warningColor);
+    cardY += cardHeight + 5;
+    drawCard(20, cardY, "REMAINING BALANCE", `$${remaining.toLocaleString()} (${remainingPercent}%)`, remaining >= 0 ? successColor : dangerColor);
+    drawCard(30 + cardWidth, cardY, `PAID / UNPAID (${paidPctRound}% paid)`, `$${paidTotal.toLocaleString()} / $${unpaidTotal.toLocaleString()}`, successColor);
+
+    y = cardY + cardHeight + 15;
 
     // Divider
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.5);
     doc.line(20, y, pageWidth - 20, y);
-    y += 15;
+    y += 12;
 
     // Expenses Breakdown Section
     doc.setTextColor(...darkColor);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("Expenses Breakdown", 20, y);
-    y += 12;
+    y += 10;
 
     // Table Header
     doc.setFillColor(...primaryColor);
-    doc.rect(20, y, pageWidth - 40, 10, "F");
+    doc.rect(20, y, pageWidth - 40, 9, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text("Category", 25, y + 7);
-    doc.text("Amount", pageWidth - 70, y + 7, { align: "right" });
-    doc.text("Share", pageWidth - 25, y + 7, { align: "right" });
-    y += 14;
+    doc.text("Item", 25, y + 6);
+    doc.text("Status", pageWidth - 75, y + 6, { align: "right" });
+    doc.text("Amount", pageWidth - 42, y + 6, { align: "right" });
+    doc.text("Share", pageWidth - 23, y + 6, { align: "right" });
+    y += 12;
 
-    // Table Rows
-    let rowIndex = 0;
-    expenses.forEach((expense) => {
-      // Alternate row background
-      if (rowIndex % 2 === 0) {
-        doc.setFillColor(248, 250, 252); // Slate-50
-        doc.rect(20, y - 4, pageWidth - 40, expense.allowSubExpenses && expense.subExpenses.length > 0 ? 8 + expense.subExpenses.length * 6 : 8, "F");
+    const ensureSpace = (needed: number) => {
+      if (y + needed > pageHeight - 25) {
+        doc.addPage();
+        y = 20;
+      }
+    };
+
+    // Recursive renderer for sub-expenses (any depth)
+    const renderSub = (sub: SubExpense, depth: number) => {
+      ensureSpace(7);
+      const hasChildren = sub.subExpenses.length > 0;
+      const isLeafPositive = !hasChildren && sub.amount > 0;
+      const indentX = 25 + depth * 6;
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...grayColor);
+
+      // Tree connector + name
+      const prefix = depth > 0 ? "└ " : "";
+      const nameMaxWidth = pageWidth - 80 - depth * 6;
+      const nameLines = doc.splitTextToSize(`${prefix}${sub.name || "(unnamed)"}`, nameMaxWidth);
+      doc.text(nameLines, indentX, y);
+
+      // Status
+      if (isLeafPositive) {
+        if (sub.paid) {
+          doc.setTextColor(...successColor);
+          doc.setFont("helvetica", "bold");
+          doc.text("PAID", pageWidth - 75, y, { align: "right" });
+        } else {
+          doc.setTextColor(...warningColor);
+          doc.setFont("helvetica", "bold");
+          doc.text("UNPAID", pageWidth - 75, y, { align: "right" });
+        }
+      } else if (hasChildren) {
+        doc.setTextColor(...grayColor);
+        doc.setFont("helvetica", "italic");
+        doc.text("group", pageWidth - 75, y, { align: "right" });
+      }
+
+      // Amount
+      doc.setFont("helvetica", "normal");
+      const amtColor: [number, number, number] = sub.amount < 0 ? dangerColor : darkColor;
+      doc.setTextColor(...amtColor);
+      const amtStr = sub.amount < 0 ? `-$${Math.abs(sub.amount).toLocaleString()}` : `$${sub.amount.toLocaleString()}`;
+      doc.text(amtStr, pageWidth - 42, y, { align: "right" });
+
+      // Share (relative to total budget)
+      doc.setTextColor(...primaryColor);
+      doc.text(`${Math.round(pct(sub.amount))}%`, pageWidth - 23, y, { align: "right" });
+
+      y += Math.max(6, nameLines.length * 5);
+
+      if (hasChildren) {
+        sub.subExpenses.forEach((c) => renderSub(c, depth + 1));
+      }
+    };
+
+    // Top-level expense rows
+    expenses.forEach((expense, idx) => {
+      ensureSpace(10);
+      const hasChildren = expense.allowSubExpenses && expense.subExpenses.length > 0;
+      const isLeafPositive = !hasChildren && expense.amount > 0;
+
+      // Row background (alternating)
+      if (idx % 2 === 0) {
+        doc.setFillColor(...subtleBg);
+        doc.rect(20, y - 5, pageWidth - 40, 9, "F");
       }
 
       doc.setTextColor(...darkColor);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(expense.name, 25, y + 2);
-      doc.setFont("helvetica", "normal");
-      doc.text(`$${expense.amount.toLocaleString()}`, pageWidth - 70, y + 2, { align: "right" });
-      doc.setTextColor(...primaryColor);
-      doc.text(`${Math.round(pct(expense.amount))}%`, pageWidth - 25, y + 2, { align: "right" });
-      y += 8;
+      const nameLines = doc.splitTextToSize(expense.name || "(unnamed)", pageWidth - 90);
+      doc.text(nameLines, 25, y);
 
-      // Sub-expenses
-      if (expense.allowSubExpenses && expense.subExpenses.length > 0) {
+      // Status badge
+      if (isLeafPositive) {
+        if (expense.paid) {
+          doc.setTextColor(...successColor);
+          doc.text("PAID", pageWidth - 75, y, { align: "right" });
+        } else {
+          doc.setTextColor(...warningColor);
+          doc.text("UNPAID", pageWidth - 75, y, { align: "right" });
+        }
+      } else if (hasChildren) {
         doc.setTextColor(...grayColor);
-        doc.setFontSize(9);
-        expense.subExpenses.forEach((sub) => {
-          doc.text(`  └ ${sub.name}`, 30, y + 1);
-          doc.text(`$${sub.amount.toLocaleString()}`, pageWidth - 70, y + 1, { align: "right" });
-          y += 6;
-        });
+        doc.setFont("helvetica", "italic");
+        doc.text("group", pageWidth - 75, y, { align: "right" });
+        doc.setFont("helvetica", "bold");
       }
-      y += 2;
-      rowIndex++;
 
-      // Check for page overflow
-      if (y > pageHeight - 40) {
-        doc.addPage();
-        y = 20;
+      // Amount
+      const amtColor: [number, number, number] = expense.amount < 0 ? dangerColor : darkColor;
+      doc.setTextColor(...amtColor);
+      const amtStr = expense.amount < 0 ? `-$${Math.abs(expense.amount).toLocaleString()}` : `$${expense.amount.toLocaleString()}`;
+      doc.text(amtStr, pageWidth - 42, y, { align: "right" });
+
+      // Share
+      doc.setTextColor(...primaryColor);
+      doc.text(`${Math.round(pct(expense.amount))}%`, pageWidth - 23, y, { align: "right" });
+
+      y += Math.max(7, nameLines.length * 5);
+
+      // Sub-expenses (recursive)
+      if (hasChildren) {
+        expense.subExpenses.forEach((sub) => renderSub(sub, 1));
       }
+      y += 3;
     });
+
+    // Totals summary band
+    ensureSpace(40);
+    y += 4;
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pageWidth - 20, y);
+    y += 8;
+
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(20, y, pageWidth - 40, 28, 3, 3, "F");
+    doc.setFontSize(10);
+    doc.setTextColor(...darkColor);
+    doc.setFont("helvetica", "bold");
+    doc.text("Summary", 25, y + 8);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...grayColor);
+    doc.text(`Total Expenses: $${totalUsed.toLocaleString()}`, 25, y + 16);
+    doc.setTextColor(...successColor);
+    doc.text(`Paid: $${paidTotal.toLocaleString()}`, 25, y + 23);
+    doc.setTextColor(...warningColor);
+    doc.text(`Unpaid: $${unpaidTotal.toLocaleString()}`, 70, y + 23);
+    const remColor = remaining >= 0 ? successColor : dangerColor;
+    doc.setTextColor(...remColor);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Remaining: $${remaining.toLocaleString()}`, pageWidth - 25, y + 16, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...grayColor);
+    doc.text(`${paidPctRound}% paid of tracked`, pageWidth - 25, y + 23, { align: "right" });
+    y += 32;
 
     // Footer
     y = pageHeight - 20;
