@@ -652,6 +652,8 @@ const SalaryCalculator = () => {
     const lightBg: [number, number, number] = [241, 245, 249]; // Slate-100
     const successColor: [number, number, number] = [34, 197, 94]; // Green-500
     const warningColor: [number, number, number] = [234, 179, 8]; // Yellow-500
+    const dangerColor: [number, number, number] = [239, 68, 68]; // Red-500
+    const subtleBg: [number, number, number] = [248, 250, 252]; // Slate-50
 
     let y = 0;
 
