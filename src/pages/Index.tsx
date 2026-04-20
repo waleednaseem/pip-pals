@@ -875,7 +875,8 @@ const SalaryCalculator = () => {
     doc.text(`Paid: $${paidTotal.toLocaleString()}`, 25, y + 23);
     doc.setTextColor(...warningColor);
     doc.text(`Unpaid: $${unpaidTotal.toLocaleString()}`, 70, y + 23);
-    doc.setTextColor(remaining >= 0 ? successColor : dangerColor);
+    const remColor = remaining >= 0 ? successColor : dangerColor;
+    doc.setTextColor(...remColor);
     doc.setFont("helvetica", "bold");
     doc.text(`Remaining: $${remaining.toLocaleString()}`, pageWidth - 25, y + 16, { align: "right" });
     doc.setFont("helvetica", "normal");
