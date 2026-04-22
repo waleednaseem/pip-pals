@@ -177,6 +177,22 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="sidebar-pair">Trading Pair</Label>
+            <Select value={activePair} onValueChange={(v) => setActivePair(v as TradingPair)}>
+              <SelectTrigger id="sidebar-pair">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRADING_PAIRS.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Pip size: {config.pipSize} · Contract: {config.contractSize.toLocaleString()}
+            </p>
+          </div>
           <p className="text-sm text-muted-foreground">
             Enter any 2 fields, 3rd calculates automatically
           </p>
