@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { TradingPair } from "@/types/calculator";
-import { getPairConfig } from "@/utils/pairConfig";
+import { getPairConfig, TRADING_PAIRS } from "@/utils/pairConfig";
 import {
   calculateProfitFromPipsAndLot,
   calculateLotSizeFromPipsAndProfit,
@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calculator, X } from "lucide-react";
 
 interface DynamicCalculatorProps {
@@ -19,7 +26,13 @@ interface DynamicCalculatorProps {
 }
 
 const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorProps) => {
-  const config = getPairConfig(pair || "EURUSD");
+  const [activePair, setActivePair] = useState<TradingPair>(pair || "XAUUSD");
+
+  useEffect(() => {
+    if (pair) setActivePair(pair);
+  }, [pair]);
+
+  const config = getPairConfig(activePair);
   const [pips, setPips] = useState("");
   const [lot, setLot] = useState("1");
   const [profitUSD, setProfitUSD] = useState("");
