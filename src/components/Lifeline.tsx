@@ -2348,6 +2348,11 @@ export const Lifeline = ({}: LifelineProps) => {
             </Card>
           </div>
         </TabsContent>
+
+        {/* Family / Loans / Zakat Tab */}
+        <TabsContent value="family" className="mt-4 space-y-4">
+          <FamilyManager currency={data.settings.currency} />
+        </TabsContent>
       </Tabs>
     </div>
   );
