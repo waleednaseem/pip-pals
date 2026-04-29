@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download, Globe, PieChart, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download, Globe, PieChart, ArrowUpRight, ArrowDownRight, Heart } from "lucide-react";
+import { FamilyManager } from "@/components/FamilyManager";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import jsPDF from "jspdf";
 import { LifelineData, Transaction, LifelineStats, ExternalCountryData } from "@/types/lifeline";
@@ -1851,6 +1852,10 @@ export const Lifeline = ({}: LifelineProps) => {
           <TabsTrigger value="analytics" className="flex-1 min-w-[100px] gap-1">
             <PieChart className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="family" className="flex-1 min-w-[100px] gap-1">
+            <Heart className="h-4 w-4" />
+            Family
           </TabsTrigger>
         </TabsList>
 
