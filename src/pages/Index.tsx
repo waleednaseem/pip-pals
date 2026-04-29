@@ -21,6 +21,7 @@ import { Lifeline } from "@/components/Lifeline";
 import { TaxHistory } from "@/components/TaxHistory";
 import CanadaFundCalculator from "@/components/CanadaFundCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
+import { GroupExpenses } from "@/components/GroupExpenses";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -143,6 +144,7 @@ const Index = () => {
     { value: "salary", label: "Expense Calculator" },
     { value: "time-convert", label: "Time Conversion" },
     { value: "lifeline", label: "Setup Your Lifeline" },
+    { value: "group-expenses", label: "Group Expenses (Friends)" },
     { value: "tax", label: "Tax History" },
     ...(selectedPair ? [{ value: "totals", label: "Totals Summary" }] : []),
     { value: "pair", label: "Select Trading Pair" },
@@ -233,6 +235,10 @@ const Index = () => {
 
           <TabsContent value="lifeline" className="mt-6">
             <Lifeline />
+          </TabsContent>
+
+          <TabsContent value="group-expenses" className="mt-6">
+            <GroupExpenses />
           </TabsContent>
 
           <TabsContent value="tax" className="mt-6">
