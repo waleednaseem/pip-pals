@@ -202,23 +202,46 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
   const [amt, setAmt] = useState("");
   const [desc, setDesc] = useState("");
   const [cat, setCat] = useState(categories?.[0] || "general");
+  const [partialFor, setPartialFor] = useState<string | null>(null);
+  const [partialAmt, setPartialAmt] = useState("");
 
   const add = () => {
     const a = parseFloat(amt);
     if (!a || a <= 0) return;
     onChange([
       ...entries,
-      { id: uid(), amount: a, category: cat, description: desc || cat, date: new Date().toISOString(), paid: false },
+      { id: uid(), amount: a, category: cat, description: desc || cat, date: new Date().toISOString(), paid: false, paidAmount: 0 },
     ]);
     setAmt(""); setDesc("");
   };
 
   const togglePaid = (id: string) =>
-    onChange(entries.map(e => (e.id === id ? { ...e, paid: !e.paid } : e)));
+    onChange(entries.map(e => e.id === id
+      ? { ...e, paid: !e.paid, paidAmount: !e.paid ? e.amount : 0 }
+      : e));
+
+  const setPartial = (id: string) => {
+    const a = parseFloat(partialAmt);
+    if (isNaN(a) || a < 0) return;
+    onChange(entries.map(e => e.id === id
+      ? { ...e, paidAmount: Math.min(a, e.amount), paid: a >= e.amount }
+      : e));
+    setPartialFor(null); setPartialAmt("");
+  };
+
   const remove = (id: string) => onChange(entries.filter(e => e.id !== id));
 
   const total = sumExpenses(entries);
-  const paidTotal = sumExpenses(entries.filter(e => e.paid));
+  const paidTotal = entries.reduce((s, e) => {
+    if (e.paid) return s + e.amount;
+    return s + (e.paidAmount || 0);
+  }, 0);
+
+  const statusOf = (e: ExpenseEntry): "paid" | "partial" | "due" => {
+    if (e.paid || (e.paidAmount && e.paidAmount >= e.amount)) return "paid";
+    if (e.paidAmount && e.paidAmount > 0) return "partial";
+    return "due";
+  };
 
   return (
     <div className="space-y-2">
@@ -239,20 +262,57 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
       </div>
 
       {entries.length > 0 && (
-        <div className="space-y-1 max-h-64 overflow-y-auto">
-          {entries.slice().reverse().map(e => (
-            <div key={e.id}
-              onClick={(ev) => { if ((ev.target as HTMLElement).closest("button")) return; togglePaid(e.id); }}
-              className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-muted/40 ${e.paid ? "bg-emerald-500/5 border-emerald-500/30" : "border-border/50"}`}>
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-medium break-words ${e.paid ? "line-through opacity-70" : ""}`}>{e.description}</div>
-                <div className="text-[10px] text-muted-foreground">{e.category} · {new Date(e.date).toLocaleDateString()}</div>
+        <div className="space-y-1 max-h-72 overflow-y-auto">
+          {entries.slice().reverse().map(e => {
+            const st = statusOf(e);
+            const remain = e.amount - (e.paidAmount || (e.paid ? e.amount : 0));
+            return (
+              <div key={e.id} className={`rounded border ${
+                st === "paid" ? "bg-emerald-500/5 border-emerald-500/30"
+                  : st === "partial" ? "bg-amber-500/5 border-amber-500/30"
+                  : "border-border/50"
+              }`}>
+                <div
+                  onClick={(ev) => { if ((ev.target as HTMLElement).closest("button,input") ) return; togglePaid(e.id); }}
+                  className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/40">
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium break-words ${st === "paid" ? "line-through opacity-70" : ""}`}>{e.description}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {e.category} · {new Date(e.date).toLocaleDateString()}
+                      {e.recurring && <> · <RefreshCw className="inline h-2.5 w-2.5" /> {e.recurrenceFreq}</>}
+                      {e.parentRecurringId && " · auto"}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-semibold ${st === "paid" ? "text-emerald-500" : st === "partial" ? "text-amber-500" : ""}`}>
+                      {fmt(e.amount, currency)}
+                    </div>
+                    {st === "partial" && (
+                      <div className="text-[9px] text-amber-600">
+                        Paid {fmt(e.paidAmount || 0, currency)} · Due {fmt(remain, currency)}
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant={st === "paid" ? "default" : "outline"} className={`text-[9px] ${
+                    st === "partial" ? "border-amber-500 text-amber-600" : ""
+                  }`}>
+                    {st === "paid" ? "PAID" : st === "partial" ? "PARTIAL" : "DUE"}
+                  </Badge>
+                  <Button size="icon" variant="ghost" onClick={() => { setPartialFor(e.id); setPartialAmt(String(e.paidAmount || "")); }}
+                    className="h-7 w-7 text-amber-500" title="Partial payment"><Wallet className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => remove(e.id)} className="h-7 w-7 text-red-500"><Trash2 className="h-3 w-3" /></Button>
+                </div>
+                {partialFor === e.id && (
+                  <div className="flex items-center gap-2 px-2 pb-2">
+                    <Input type="number" placeholder={`Paid amount (max ${e.amount})`}
+                      value={partialAmt} onChange={ev => setPartialAmt(ev.target.value)} className="h-7 text-xs" />
+                    <Button size="sm" className="h-7 bg-amber-600 hover:bg-amber-700" onClick={() => setPartial(e.id)}>Save</Button>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => setPartialFor(null)}>Cancel</Button>
+                  </div>
+                )}
               </div>
-              <div className={`text-sm font-semibold ${e.paid ? "text-emerald-500" : "text-foreground"}`}>{fmt(e.amount, currency)}</div>
-              <Badge variant={e.paid ? "default" : "outline"} className="text-[9px]">{e.paid ? "PAID" : "DUE"}</Badge>
-              <Button size="icon" variant="ghost" onClick={() => remove(e.id)} className="h-7 w-7 text-red-500"><Trash2 className="h-3 w-3" /></Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
