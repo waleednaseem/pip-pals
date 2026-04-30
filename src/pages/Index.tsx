@@ -22,12 +22,14 @@ import { TaxHistory } from "@/components/TaxHistory";
 import CanadaFundCalculator from "@/components/CanadaFundCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import { GroupExpenses } from "@/components/GroupExpenses";
+import { Notifications } from "@/components/Notifications";
+import { runRecurringEngine, getNotifications } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw, PlusCircle } from "lucide-react";
+import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw, PlusCircle, Bell } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,6 +46,7 @@ const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [activeTab, setActiveTab] = useState("calculator");
   const [trades, setTrades] = useState<TradeEntry[]>([]);
+  const [unreadNotif, setUnreadNotif] = useState(0);
   
   const { toast } = useToast();
 
@@ -53,7 +56,17 @@ const Index = () => {
       setSelectedPair(savedPair);
       setTrades(getTradesFromStorage());
     }
+    // Lazy recurring engine + notification refresh on app open
+    runRecurringEngine();
+    setUnreadNotif(getNotifications().filter(n => n.status === "unread").length);
+    const onFocus = () => setUnreadNotif(getNotifications().filter(n => n.status === "unread").length);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
+
+  useEffect(() => {
+    setUnreadNotif(getNotifications().filter(n => n.status === "unread").length);
+  }, [activeTab]);
 
   const handleSelectPair = (pair: TradingPair) => {
     setSelectedPair(pair);
@@ -138,6 +151,7 @@ const Index = () => {
   // All tabs in one unified menu
   const availableTabs = [
     ...(selectedPair ? [{ value: "calculator", label: "Forex Pip Calculator" }] : []),
+    { value: "notifications", label: "Notifications" },
     { value: "canada", label: "Financial Plan" },
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
@@ -191,8 +205,14 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <Drawer>
             <DrawerTrigger asChild>
-              <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12">
-                <span>{getCurrentTabLabel()}</span>
+              <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12 relative">
+                <span className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  {getCurrentTabLabel()}
+                  {unreadNotif > 0 && (
+                    <Badge className="bg-red-500 text-white text-[10px] px-1.5">{unreadNotif}</Badge>
+                  )}
+                </span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DrawerTrigger>
@@ -208,7 +228,13 @@ const Index = () => {
                       className="w-full justify-start h-14 text-lg"
                       onClick={() => setActiveTab(tab.value)}
                     >
-                      {tab.label}
+                      <span className="flex items-center gap-2">
+                        {tab.value === "notifications" && <Bell className="h-4 w-4" />}
+                        {tab.label}
+                      </span>
+                      {tab.value === "notifications" && unreadNotif > 0 && (
+                        <Badge className="ml-auto bg-red-500 text-white">{unreadNotif}</Badge>
+                      )}
                     </Button>
                   </DrawerClose>
                 ))}
@@ -239,6 +265,14 @@ const Index = () => {
 
           <TabsContent value="group-expenses" className="mt-6">
             <GroupExpenses />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-6">
+            <Notifications onNavigate={(t) => {
+              if (t.type === "wife" || t.type === "child") setActiveTab("lifeline");
+              else if (t.type === "loan") setActiveTab("lifeline");
+              else if (t.type === "household") setActiveTab("lifeline");
+            }} />
           </TabsContent>
 
           <TabsContent value="tax" className="mt-6">

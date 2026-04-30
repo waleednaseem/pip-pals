@@ -10,14 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Users, Baby, Heart, UserPlus, Home, CalendarDays, Wallet, Sparkles,
   Plus, Trash2, Check, X, AlertCircle, PieChart as PieIcon, ArrowDownCircle, ArrowUpCircle,
+  Tag, RefreshCw,
 } from "lucide-react";
 import { PieChart as RPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
   FamilyData, Wife, Child, Parent, Sibling, HouseholdExpense, FamilyEvent,
   Loan, ZakatRecord, ExpenseEntry,
 } from "@/types/family";
-import { getFamilyData, saveFamilyData, sumExpenses, wifeTotal, loanOutstanding, calcZakat, uid } from "@/utils/family";
+import { getFamilyData, saveFamilyData, sumExpenses, wifeTotal, loanOutstanding, calcZakat, uid, addNotification } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
+import { RatesCatalog } from "@/components/family/RatesCatalog";
+import { QuickExpenseAdder } from "@/components/family/QuickExpenseAdder";
 
 const CHART_COLORS = ["#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 
@@ -68,6 +71,7 @@ export const FamilyManager = ({ currency }: Props) => {
         <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="dashboard" className="flex-1 min-w-[110px] gap-1"><PieIcon className="h-4 w-4" />Dashboard</TabsTrigger>
           <TabsTrigger value="wives" className="flex-1 min-w-[110px] gap-1"><Heart className="h-4 w-4" />Wives & Kids</TabsTrigger>
+          <TabsTrigger value="rates" className="flex-1 min-w-[110px] gap-1"><Tag className="h-4 w-4" />Rates</TabsTrigger>
           <TabsTrigger value="parents" className="flex-1 min-w-[110px] gap-1"><Users className="h-4 w-4" />Parents</TabsTrigger>
           <TabsTrigger value="siblings" className="flex-1 min-w-[110px] gap-1"><UserPlus className="h-4 w-4" />Siblings</TabsTrigger>
           <TabsTrigger value="household" className="flex-1 min-w-[110px] gap-1"><Home className="h-4 w-4" />Household</TabsTrigger>
@@ -138,6 +142,11 @@ export const FamilyManager = ({ currency }: Props) => {
           <WivesSection data={data} setData={setData} currency={currency} toast={toast} />
         </TabsContent>
 
+        {/* ========== RATES CATALOG ========== */}
+        <TabsContent value="rates" className="mt-4 space-y-4">
+          <RatesCatalog currency={currency} />
+        </TabsContent>
+
         {/* ========== PARENTS ========== */}
         <TabsContent value="parents" className="mt-4 space-y-4">
           <ParentsSection data={data} setData={setData} currency={currency} />
@@ -193,23 +202,46 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
   const [amt, setAmt] = useState("");
   const [desc, setDesc] = useState("");
   const [cat, setCat] = useState(categories?.[0] || "general");
+  const [partialFor, setPartialFor] = useState<string | null>(null);
+  const [partialAmt, setPartialAmt] = useState("");
 
   const add = () => {
     const a = parseFloat(amt);
     if (!a || a <= 0) return;
     onChange([
       ...entries,
-      { id: uid(), amount: a, category: cat, description: desc || cat, date: new Date().toISOString(), paid: false },
+      { id: uid(), amount: a, category: cat, description: desc || cat, date: new Date().toISOString(), paid: false, paidAmount: 0 },
     ]);
     setAmt(""); setDesc("");
   };
 
   const togglePaid = (id: string) =>
-    onChange(entries.map(e => (e.id === id ? { ...e, paid: !e.paid } : e)));
+    onChange(entries.map(e => e.id === id
+      ? { ...e, paid: !e.paid, paidAmount: !e.paid ? e.amount : 0 }
+      : e));
+
+  const setPartial = (id: string) => {
+    const a = parseFloat(partialAmt);
+    if (isNaN(a) || a < 0) return;
+    onChange(entries.map(e => e.id === id
+      ? { ...e, paidAmount: Math.min(a, e.amount), paid: a >= e.amount }
+      : e));
+    setPartialFor(null); setPartialAmt("");
+  };
+
   const remove = (id: string) => onChange(entries.filter(e => e.id !== id));
 
   const total = sumExpenses(entries);
-  const paidTotal = sumExpenses(entries.filter(e => e.paid));
+  const paidTotal = entries.reduce((s, e) => {
+    if (e.paid) return s + e.amount;
+    return s + (e.paidAmount || 0);
+  }, 0);
+
+  const statusOf = (e: ExpenseEntry): "paid" | "partial" | "due" => {
+    if (e.paid || (e.paidAmount && e.paidAmount >= e.amount)) return "paid";
+    if (e.paidAmount && e.paidAmount > 0) return "partial";
+    return "due";
+  };
 
   return (
     <div className="space-y-2">
@@ -230,20 +262,57 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
       </div>
 
       {entries.length > 0 && (
-        <div className="space-y-1 max-h-64 overflow-y-auto">
-          {entries.slice().reverse().map(e => (
-            <div key={e.id}
-              onClick={(ev) => { if ((ev.target as HTMLElement).closest("button")) return; togglePaid(e.id); }}
-              className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-muted/40 ${e.paid ? "bg-emerald-500/5 border-emerald-500/30" : "border-border/50"}`}>
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-medium break-words ${e.paid ? "line-through opacity-70" : ""}`}>{e.description}</div>
-                <div className="text-[10px] text-muted-foreground">{e.category} · {new Date(e.date).toLocaleDateString()}</div>
+        <div className="space-y-1 max-h-72 overflow-y-auto">
+          {entries.slice().reverse().map(e => {
+            const st = statusOf(e);
+            const remain = e.amount - (e.paidAmount || (e.paid ? e.amount : 0));
+            return (
+              <div key={e.id} className={`rounded border ${
+                st === "paid" ? "bg-emerald-500/5 border-emerald-500/30"
+                  : st === "partial" ? "bg-amber-500/5 border-amber-500/30"
+                  : "border-border/50"
+              }`}>
+                <div
+                  onClick={(ev) => { if ((ev.target as HTMLElement).closest("button,input") ) return; togglePaid(e.id); }}
+                  className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/40">
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium break-words ${st === "paid" ? "line-through opacity-70" : ""}`}>{e.description}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {e.category} · {new Date(e.date).toLocaleDateString()}
+                      {e.recurring && <> · <RefreshCw className="inline h-2.5 w-2.5" /> {e.recurrenceFreq}</>}
+                      {e.parentRecurringId && " · auto"}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-semibold ${st === "paid" ? "text-emerald-500" : st === "partial" ? "text-amber-500" : ""}`}>
+                      {fmt(e.amount, currency)}
+                    </div>
+                    {st === "partial" && (
+                      <div className="text-[9px] text-amber-600">
+                        Paid {fmt(e.paidAmount || 0, currency)} · Due {fmt(remain, currency)}
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant={st === "paid" ? "default" : "outline"} className={`text-[9px] ${
+                    st === "partial" ? "border-amber-500 text-amber-600" : ""
+                  }`}>
+                    {st === "paid" ? "PAID" : st === "partial" ? "PARTIAL" : "DUE"}
+                  </Badge>
+                  <Button size="icon" variant="ghost" onClick={() => { setPartialFor(e.id); setPartialAmt(String(e.paidAmount || "")); }}
+                    className="h-7 w-7 text-amber-500" title="Partial payment"><Wallet className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => remove(e.id)} className="h-7 w-7 text-red-500"><Trash2 className="h-3 w-3" /></Button>
+                </div>
+                {partialFor === e.id && (
+                  <div className="flex items-center gap-2 px-2 pb-2">
+                    <Input type="number" placeholder={`Paid amount (max ${e.amount})`}
+                      value={partialAmt} onChange={ev => setPartialAmt(ev.target.value)} className="h-7 text-xs" />
+                    <Button size="sm" className="h-7 bg-amber-600 hover:bg-amber-700" onClick={() => setPartial(e.id)}>Save</Button>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => setPartialFor(null)}>Cancel</Button>
+                  </div>
+                )}
               </div>
-              <div className={`text-sm font-semibold ${e.paid ? "text-emerald-500" : "text-foreground"}`}>{fmt(e.amount, currency)}</div>
-              <Badge variant={e.paid ? "default" : "outline"} className="text-[9px]">{e.paid ? "PAID" : "DUE"}</Badge>
-              <Button size="icon" variant="ghost" onClick={() => remove(e.id)} className="h-7 w-7 text-red-500"><Trash2 className="h-3 w-3" /></Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -357,8 +426,13 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
         </div>
 
         {/* Wife expenses */}
-        <div>
+        <div className="space-y-2">
           <Label className="text-sm font-semibold">Wife's Expenses</Label>
+          <QuickExpenseAdder
+            scope="wife"
+            currency={currency}
+            onAdd={(entries) => onUpdate({ expenses: [...wife.expenses, ...entries] })}
+          />
           <ExpenseListEditor
             entries={wife.expenses}
             currency={currency}
@@ -389,21 +463,45 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
   );
 };
 
+const computeAge = (dob?: string) => {
+  if (!dob) return null;
+  const d = new Date(dob);
+  const diff = Date.now() - d.getTime();
+  const age = new Date(diff).getUTCFullYear() - 1970;
+  return age;
+};
+
 const ChildBlock = ({ child, currency, onUpdate, onRemove }: any) => {
   const total = sumExpenses(child.expenses) + (child.monthlyFee || 0);
+  const age = computeAge(child.dob);
   return (
     <div className="border border-border/50 rounded p-3 space-y-2 bg-muted/20">
       <div className="flex items-center justify-between gap-2">
         <Input value={child.name} onChange={e => onUpdate({ name: e.target.value })} className="h-7 font-semibold max-w-[160px]" />
+        {age !== null && <Badge variant="outline" className="text-[10px]">Age: {age}</Badge>}
         <Badge variant="outline" className="text-[10px]">{fmt(total, currency)}</Badge>
         <Button size="icon" variant="ghost" onClick={onRemove} className="h-6 w-6 text-red-500"><Trash2 className="h-3 w-3" /></Button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div><Label className="text-[10px]">DOB</Label><Input type="date" value={child.dob || ""} onChange={e => onUpdate({ dob: e.target.value })} className="h-7 text-xs" /></div>
+        <div><Label className="text-[10px]">Gender</Label>
+          <Select value={child.gender || ""} onValueChange={(v: any) => onUpdate({ gender: v })}>
+            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="-" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div><Label className="text-[10px]">School</Label><Input value={child.schoolName || ""} onChange={e => onUpdate({ schoolName: e.target.value })} className="h-7 text-xs" /></div>
         <div><Label className="text-[10px]">Class</Label><Input value={child.schoolClass || ""} onChange={e => onUpdate({ schoolClass: e.target.value })} className="h-7 text-xs" /></div>
-        <div><Label className="text-[10px]">Monthly Fee</Label><Input type="number" value={child.monthlyFee ?? ""} onChange={e => onUpdate({ monthlyFee: parseFloat(e.target.value) || 0 })} className="h-7 text-xs" /></div>
+        <div className="col-span-2 md:col-span-1"><Label className="text-[10px]">Monthly Fee</Label><Input type="number" value={child.monthlyFee ?? ""} onChange={e => onUpdate({ monthlyFee: parseFloat(e.target.value) || 0 })} className="h-7 text-xs" /></div>
       </div>
+      <QuickExpenseAdder
+        scope="child"
+        currency={currency}
+        onAdd={(entries) => onUpdate({ expenses: [...child.expenses, ...entries] })}
+      />
       <ExpenseListEditor
         entries={child.expenses}
         currency={currency}
