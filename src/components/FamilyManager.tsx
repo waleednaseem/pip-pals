@@ -10,14 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Users, Baby, Heart, UserPlus, Home, CalendarDays, Wallet, Sparkles,
   Plus, Trash2, Check, X, AlertCircle, PieChart as PieIcon, ArrowDownCircle, ArrowUpCircle,
+  Tag, RefreshCw,
 } from "lucide-react";
 import { PieChart as RPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
   FamilyData, Wife, Child, Parent, Sibling, HouseholdExpense, FamilyEvent,
   Loan, ZakatRecord, ExpenseEntry,
 } from "@/types/family";
-import { getFamilyData, saveFamilyData, sumExpenses, wifeTotal, loanOutstanding, calcZakat, uid } from "@/utils/family";
+import { getFamilyData, saveFamilyData, sumExpenses, wifeTotal, loanOutstanding, calcZakat, uid, addNotification } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
+import { RatesCatalog } from "@/components/family/RatesCatalog";
+import { QuickExpenseAdder } from "@/components/family/QuickExpenseAdder";
 
 const CHART_COLORS = ["#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 
