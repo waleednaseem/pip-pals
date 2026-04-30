@@ -267,6 +267,14 @@ const Index = () => {
             <GroupExpenses />
           </TabsContent>
 
+          <TabsContent value="notifications" className="mt-6">
+            <Notifications onNavigate={(t) => {
+              if (t.type === "wife" || t.type === "child") setActiveTab("lifeline");
+              else if (t.type === "loan") setActiveTab("lifeline");
+              else if (t.type === "household") setActiveTab("lifeline");
+            }} />
+          </TabsContent>
+
           <TabsContent value="tax" className="mt-6">
             {(() => {
               const lifelineData = localStorage.getItem("forex-lifeline-data");
