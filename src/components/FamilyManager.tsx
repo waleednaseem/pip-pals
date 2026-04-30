@@ -71,6 +71,7 @@ export const FamilyManager = ({ currency }: Props) => {
         <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="dashboard" className="flex-1 min-w-[110px] gap-1"><PieIcon className="h-4 w-4" />Dashboard</TabsTrigger>
           <TabsTrigger value="wives" className="flex-1 min-w-[110px] gap-1"><Heart className="h-4 w-4" />Wives & Kids</TabsTrigger>
+          <TabsTrigger value="rates" className="flex-1 min-w-[110px] gap-1"><Tag className="h-4 w-4" />Rates</TabsTrigger>
           <TabsTrigger value="parents" className="flex-1 min-w-[110px] gap-1"><Users className="h-4 w-4" />Parents</TabsTrigger>
           <TabsTrigger value="siblings" className="flex-1 min-w-[110px] gap-1"><UserPlus className="h-4 w-4" />Siblings</TabsTrigger>
           <TabsTrigger value="household" className="flex-1 min-w-[110px] gap-1"><Home className="h-4 w-4" />Household</TabsTrigger>
