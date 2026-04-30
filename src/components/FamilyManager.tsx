@@ -426,8 +426,13 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
         </div>
 
         {/* Wife expenses */}
-        <div>
+        <div className="space-y-2">
           <Label className="text-sm font-semibold">Wife's Expenses</Label>
+          <QuickExpenseAdder
+            scope="wife"
+            currency={currency}
+            onAdd={(entries) => onUpdate({ expenses: [...wife.expenses, ...entries] })}
+          />
           <ExpenseListEditor
             entries={wife.expenses}
             currency={currency}
@@ -458,21 +463,45 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
   );
 };
 
+const computeAge = (dob?: string) => {
+  if (!dob) return null;
+  const d = new Date(dob);
+  const diff = Date.now() - d.getTime();
+  const age = new Date(diff).getUTCFullYear() - 1970;
+  return age;
+};
+
 const ChildBlock = ({ child, currency, onUpdate, onRemove }: any) => {
   const total = sumExpenses(child.expenses) + (child.monthlyFee || 0);
+  const age = computeAge(child.dob);
   return (
     <div className="border border-border/50 rounded p-3 space-y-2 bg-muted/20">
       <div className="flex items-center justify-between gap-2">
         <Input value={child.name} onChange={e => onUpdate({ name: e.target.value })} className="h-7 font-semibold max-w-[160px]" />
+        {age !== null && <Badge variant="outline" className="text-[10px]">Age: {age}</Badge>}
         <Badge variant="outline" className="text-[10px]">{fmt(total, currency)}</Badge>
         <Button size="icon" variant="ghost" onClick={onRemove} className="h-6 w-6 text-red-500"><Trash2 className="h-3 w-3" /></Button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div><Label className="text-[10px]">DOB</Label><Input type="date" value={child.dob || ""} onChange={e => onUpdate({ dob: e.target.value })} className="h-7 text-xs" /></div>
+        <div><Label className="text-[10px]">Gender</Label>
+          <Select value={child.gender || ""} onValueChange={(v: any) => onUpdate({ gender: v })}>
+            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="-" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div><Label className="text-[10px]">School</Label><Input value={child.schoolName || ""} onChange={e => onUpdate({ schoolName: e.target.value })} className="h-7 text-xs" /></div>
         <div><Label className="text-[10px]">Class</Label><Input value={child.schoolClass || ""} onChange={e => onUpdate({ schoolClass: e.target.value })} className="h-7 text-xs" /></div>
-        <div><Label className="text-[10px]">Monthly Fee</Label><Input type="number" value={child.monthlyFee ?? ""} onChange={e => onUpdate({ monthlyFee: parseFloat(e.target.value) || 0 })} className="h-7 text-xs" /></div>
+        <div className="col-span-2 md:col-span-1"><Label className="text-[10px]">Monthly Fee</Label><Input type="number" value={child.monthlyFee ?? ""} onChange={e => onUpdate({ monthlyFee: parseFloat(e.target.value) || 0 })} className="h-7 text-xs" /></div>
       </div>
+      <QuickExpenseAdder
+        scope="child"
+        currency={currency}
+        onAdd={(entries) => onUpdate({ expenses: [...child.expenses, ...entries] })}
+      />
       <ExpenseListEditor
         entries={child.expenses}
         currency={currency}
