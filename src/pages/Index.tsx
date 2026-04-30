@@ -151,6 +151,7 @@ const Index = () => {
   // All tabs in one unified menu
   const availableTabs = [
     ...(selectedPair ? [{ value: "calculator", label: "Forex Pip Calculator" }] : []),
+    { value: "notifications", label: "Notifications" },
     { value: "canada", label: "Financial Plan" },
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
