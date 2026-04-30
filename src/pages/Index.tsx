@@ -46,6 +46,7 @@ const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [activeTab, setActiveTab] = useState("calculator");
   const [trades, setTrades] = useState<TradeEntry[]>([]);
+  const [unreadNotif, setUnreadNotif] = useState(0);
   
   const { toast } = useToast();
 
@@ -55,7 +56,17 @@ const Index = () => {
       setSelectedPair(savedPair);
       setTrades(getTradesFromStorage());
     }
+    // Lazy recurring engine + notification refresh on app open
+    runRecurringEngine();
+    setUnreadNotif(getNotifications().filter(n => n.status === "unread").length);
+    const onFocus = () => setUnreadNotif(getNotifications().filter(n => n.status === "unread").length);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
+
+  useEffect(() => {
+    setUnreadNotif(getNotifications().filter(n => n.status === "unread").length);
+  }, [activeTab]);
 
   const handleSelectPair = (pair: TradingPair) => {
     setSelectedPair(pair);
