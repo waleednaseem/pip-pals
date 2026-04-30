@@ -142,6 +142,11 @@ export const FamilyManager = ({ currency }: Props) => {
           <WivesSection data={data} setData={setData} currency={currency} toast={toast} />
         </TabsContent>
 
+        {/* ========== RATES CATALOG ========== */}
+        <TabsContent value="rates" className="mt-4 space-y-4">
+          <RatesCatalog currency={currency} />
+        </TabsContent>
+
         {/* ========== PARENTS ========== */}
         <TabsContent value="parents" className="mt-4 space-y-4">
           <ParentsSection data={data} setData={setData} currency={currency} />
