@@ -205,8 +205,14 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <Drawer>
             <DrawerTrigger asChild>
-              <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12">
-                <span>{getCurrentTabLabel()}</span>
+              <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12 relative">
+                <span className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  {getCurrentTabLabel()}
+                  {unreadNotif > 0 && (
+                    <Badge className="bg-red-500 text-white text-[10px] px-1.5">{unreadNotif}</Badge>
+                  )}
+                </span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DrawerTrigger>
@@ -222,7 +228,13 @@ const Index = () => {
                       className="w-full justify-start h-14 text-lg"
                       onClick={() => setActiveTab(tab.value)}
                     >
-                      {tab.label}
+                      <span className="flex items-center gap-2">
+                        {tab.value === "notifications" && <Bell className="h-4 w-4" />}
+                        {tab.label}
+                      </span>
+                      {tab.value === "notifications" && unreadNotif > 0 && (
+                        <Badge className="ml-auto bg-red-500 text-white">{unreadNotif}</Badge>
+                      )}
                     </Button>
                   </DrawerClose>
                 ))}
