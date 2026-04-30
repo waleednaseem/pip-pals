@@ -1,5 +1,7 @@
 // Family & Loans & Zakat data model — all amounts in primary currency (from Lifeline settings)
 
+export type RecurrenceFreq = "weekly" | "monthly" | "yearly";
+
 export interface ExpenseEntry {
   id: string;
   amount: number;
@@ -7,7 +9,53 @@ export interface ExpenseEntry {
   description: string;
   date: string; // ISO
   paid?: boolean;
-  recurring?: boolean; // if true, treated as monthly
+  paidAmount?: number;       // for partial payments
+  recurring?: boolean;
+  recurrenceFreq?: RecurrenceFreq;
+  nextDueDate?: string;      // ISO — next auto-generation date
+  parentRecurringId?: string; // if generated from a template
+  // Linkage so notifications can deep-link
+  ownerType?: "wife" | "child" | "parent" | "sibling" | "household";
+  ownerId?: string;
+}
+
+// ---------------- Rates / Prices Catalog ----------------
+
+export interface RateCategory {
+  id: string;
+  name: string;          // e.g. "School Fees", "Eid Clothes"
+  defaultAmount: number; // current default rate
+  scope: "wife" | "child" | "household" | "any";
+  icon?: string;         // emoji
+  recurring?: boolean;
+  recurrenceFreq?: RecurrenceFreq;
+  notes?: string;
+}
+
+export interface RatesCatalog {
+  categories: RateCategory[];
+}
+
+// ---------------- Notifications ----------------
+
+export type NotificationType = "payment" | "event" | "reminder" | "recurring" | "responsibility";
+export type NotificationPriority = "high" | "medium" | "low";
+export type NotificationStatus = "unread" | "read";
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  description: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  status: NotificationStatus;
+  dueDate?: string;        // ISO
+  createdAt: string;       // ISO
+  // Reference for click-through
+  refType?: "wife" | "child" | "parent" | "sibling" | "household" | "loan" | "zakat" | "event" | "rate";
+  refId?: string;
+  // For dedupe — if same key already exists & unread, do not re-create
+  dedupeKey?: string;
 }
 
 export interface Wife {
