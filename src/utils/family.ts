@@ -253,8 +253,8 @@ export const runRecurringEngine = () => {
 
 // ---------- Calculations ----------
 
-export const sumExpenses = (entries: { amount: number }[]) =>
-  entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+export const sumExpenses = (entries: { amount: number; hidden?: boolean }[]) =>
+  entries.reduce((s, e) => s + (e.hidden ? 0 : (Number(e.amount) || 0)), 0);
 
 export const wifeTotal = (data: FamilyData, wifeId: string) => {
   const wife = data.wives.find(w => w.id === wifeId);
