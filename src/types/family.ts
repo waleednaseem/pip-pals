@@ -14,6 +14,7 @@ export interface ExpenseEntry {
   recurrenceFreq?: RecurrenceFreq;
   nextDueDate?: string;      // ISO — next auto-generation date
   parentRecurringId?: string; // if generated from a template
+  hidden?: boolean;          // ghosted — visible but excluded from calculations
   // Linkage so notifications can deep-link
   ownerType?: "wife" | "child" | "parent" | "sibling" | "household";
   ownerId?: string;
