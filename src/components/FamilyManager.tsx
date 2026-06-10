@@ -10,8 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Users, Baby, Heart, UserPlus, Home, CalendarDays, Wallet, Sparkles,
   Plus, Trash2, Check, X, AlertCircle, PieChart as PieIcon, ArrowDownCircle, ArrowUpCircle,
-  Tag, RefreshCw, Eye,
-
+  Tag, RefreshCw,
 } from "lucide-react";
 import { PieChart as RPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
@@ -276,7 +275,6 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
                 <div
                   onClick={(ev) => { if ((ev.target as HTMLElement).closest("button,input") ) return; togglePaid(e.id); }}
                   className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/40">
-                  <Eye className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium break-words ${st === "paid" ? "line-through opacity-70" : ""}`}>{e.description}</div>
                     <div className="text-[10px] text-muted-foreground">
