@@ -110,6 +110,7 @@ export interface HouseholdExpense {
   date: string;
   recurring?: boolean;
   paid?: boolean;
+  hidden?: boolean; // ghosted — excluded from calculations
   notes?: string;
 }
 
@@ -119,6 +120,7 @@ export interface FamilyEvent {
   date: string;
   amount: number;
   assignedTo?: { type: "wife" | "child" | "parent" | "sibling" | "household"; id?: string };
+  hidden?: boolean; // ghosted — excluded from calculations
   notes?: string;
 }
 
