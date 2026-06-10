@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Users, Baby, Heart, UserPlus, Home, CalendarDays, Wallet, Sparkles,
   Plus, Trash2, Check, X, AlertCircle, PieChart as PieIcon, ArrowDownCircle, ArrowUpCircle,
-  Tag, RefreshCw,
+  Tag, RefreshCw, Eye,
+
 } from "lucide-react";
 import { PieChart as RPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
