@@ -14,6 +14,7 @@ export interface ExpenseEntry {
   recurrenceFreq?: RecurrenceFreq;
   nextDueDate?: string;      // ISO — next auto-generation date
   parentRecurringId?: string; // if generated from a template
+  hidden?: boolean;          // ghosted — visible but excluded from calculations
   // Linkage so notifications can deep-link
   ownerType?: "wife" | "child" | "parent" | "sibling" | "household";
   ownerId?: string;
@@ -109,6 +110,7 @@ export interface HouseholdExpense {
   date: string;
   recurring?: boolean;
   paid?: boolean;
+  hidden?: boolean; // ghosted — excluded from calculations
   notes?: string;
 }
 
@@ -118,6 +120,7 @@ export interface FamilyEvent {
   date: string;
   amount: number;
   assignedTo?: { type: "wife" | "child" | "parent" | "sibling" | "household"; id?: string };
+  hidden?: boolean; // ghosted — excluded from calculations
   notes?: string;
 }
 

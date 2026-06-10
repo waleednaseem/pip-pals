@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Users, Baby, Heart, UserPlus, Home, CalendarDays, Wallet, Sparkles,
   Plus, Trash2, Check, X, AlertCircle, PieChart as PieIcon, ArrowDownCircle, ArrowUpCircle,
-  Tag, RefreshCw,
+  Tag, RefreshCw, Eye, EyeOff,
 } from "lucide-react";
 import { PieChart as RPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
@@ -220,6 +220,9 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
       ? { ...e, paid: !e.paid, paidAmount: !e.paid ? e.amount : 0 }
       : e));
 
+  const toggleHidden = (id: string) =>
+    onChange(entries.map(e => e.id === id ? { ...e, hidden: !e.hidden } : e));
+
   const setPartial = (id: string) => {
     const a = parseFloat(partialAmt);
     if (isNaN(a) || a < 0) return;
@@ -233,6 +236,7 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
 
   const total = sumExpenses(entries);
   const paidTotal = entries.reduce((s, e) => {
+    if (e.hidden) return s;
     if (e.paid) return s + e.amount;
     return s + (e.paidAmount || 0);
   }, 0);
@@ -268,13 +272,17 @@ const ExpenseListEditor = ({ entries, currency, onChange, categories, compact }:
             const remain = e.amount - (e.paidAmount || (e.paid ? e.amount : 0));
             return (
               <div key={e.id} className={`rounded border ${
-                st === "paid" ? "bg-emerald-500/5 border-emerald-500/30"
+                e.hidden ? "opacity-40 grayscale border-dashed border-border/30"
+                  : st === "paid" ? "bg-emerald-500/5 border-emerald-500/30"
                   : st === "partial" ? "bg-amber-500/5 border-amber-500/30"
                   : "border-border/50"
               }`}>
                 <div
                   onClick={(ev) => { if ((ev.target as HTMLElement).closest("button,input") ) return; togglePaid(e.id); }}
                   className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/40">
+                  <Button size="icon" variant="ghost" onClick={() => toggleHidden(e.id)} className="h-6 w-6 text-muted-foreground shrink-0" title={e.hidden ? "Show in calculations" : "Hide from calculations"}>
+                    {e.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </Button>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium break-words ${st === "paid" ? "line-through opacity-70" : ""}`}>{e.description}</div>
                     <div className="text-[10px] text-muted-foreground">
@@ -602,11 +610,12 @@ const HouseholdSection = ({ data, setData, currency }: any) => {
     setAmt(""); setLabel("");
   };
   const togglePaid = (id: string) => setData({ ...data, household: data.household.map((h: HouseholdExpense) => h.id === id ? { ...h, paid: !h.paid } : h) });
+  const toggleHidden = (id: string) => setData({ ...data, household: data.household.map((h: HouseholdExpense) => h.id === id ? { ...h, hidden: !h.hidden } : h) });
   const remove = (id: string) => setData({ ...data, household: data.household.filter((h: HouseholdExpense) => h.id !== id) });
 
   const cats: HouseholdExpense["category"][] = ["grocery", "utilities", "rent", "staff", "maintenance", "vehicle", "other"];
-  const total = data.household.reduce((s: number, h: HouseholdExpense) => s + h.amount, 0);
-  const paid = data.household.filter((h: HouseholdExpense) => h.paid).reduce((s: number, h: HouseholdExpense) => s + h.amount, 0);
+  const total = data.household.reduce((s: number, h: HouseholdExpense) => s + (h.hidden ? 0 : h.amount), 0);
+  const paid = data.household.filter((h: HouseholdExpense) => h.paid && !h.hidden).reduce((s: number, h: HouseholdExpense) => s + h.amount, 0);
 
   return (
     <>
@@ -635,7 +644,10 @@ const HouseholdSection = ({ data, setData, currency }: any) => {
           {data.household.slice().reverse().map((h: HouseholdExpense) => (
             <div key={h.id}
               onClick={(ev) => { if ((ev.target as HTMLElement).closest("button")) return; togglePaid(h.id); }}
-              className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-muted/40 ${h.paid ? "bg-emerald-500/5 border-emerald-500/30" : "border-border/50"}`}>
+              className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-muted/40 ${h.hidden ? "opacity-40 grayscale border-dashed border-border/30" : h.paid ? "bg-emerald-500/5 border-emerald-500/30" : "border-border/50"}`}>
+              <Button size="icon" variant="ghost" onClick={(ev) => { ev.stopPropagation(); toggleHidden(h.id); }} className="h-6 w-6 text-muted-foreground shrink-0" title={h.hidden ? "Show in calculations" : "Hide from calculations"}>
+                {h.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              </Button>
               <Badge variant="outline" className="text-[9px] capitalize">{h.category}</Badge>
               <div className="flex-1 min-w-0">
                 <div className={`text-sm font-medium break-words ${h.paid ? "line-through opacity-70" : ""}`}>{h.label}</div>
@@ -672,7 +684,8 @@ const EventsSection = ({ data, setData, currency }: any) => {
     setTitle(""); setAmt("");
   };
   const remove = (id: string) => setData({ ...data, events: data.events.filter((e: FamilyEvent) => e.id !== id) });
-  const total = data.events.reduce((s: number, e: FamilyEvent) => s + e.amount, 0);
+  const toggleHidden = (id: string) => setData({ ...data, events: data.events.map((e: FamilyEvent) => e.id === id ? { ...e, hidden: !e.hidden } : e) });
+  const total = data.events.reduce((s: number, e: FamilyEvent) => s + (e.hidden ? 0 : e.amount), 0);
 
   return (
     <>
@@ -692,7 +705,10 @@ const EventsSection = ({ data, setData, currency }: any) => {
         <CardContent className="space-y-1">
           {data.events.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No events recorded.</p>}
           {data.events.slice().sort((a: FamilyEvent, b: FamilyEvent) => b.date.localeCompare(a.date)).map((e: FamilyEvent) => (
-            <div key={e.id} className="flex items-center gap-2 p-2 rounded border border-border/50">
+            <div key={e.id} className={`flex items-center gap-2 p-2 rounded border ${e.hidden ? "opacity-40 grayscale border-dashed border-border/30" : "border-border/50"}`}>
+              <Button size="icon" variant="ghost" onClick={() => toggleHidden(e.id)} className="h-6 w-6 text-muted-foreground shrink-0" title={e.hidden ? "Show in calculations" : "Hide from calculations"}>
+                {e.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              </Button>
               <CalendarDays className="h-4 w-4 text-muted-foreground" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium break-words">{e.title}</div>

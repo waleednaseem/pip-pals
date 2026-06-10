@@ -130,6 +130,10 @@ const processOwnerExpenses = (
   let created = 0;
   const next: ExpenseEntry[] = [];
   for (const e of list) {
+    if (e.hidden) {
+      next.push(e);
+      continue;
+    }
     if (e.recurring && e.recurrenceFreq && !e.parentRecurringId) {
       let due = e.nextDueDate || addInterval(e.date, e.recurrenceFreq);
       let cursor = due;
@@ -165,7 +169,7 @@ const processOwnerExpenses = (
       next.push(e);
     }
 
-    // Overdue notification (>7 days since date, still unpaid, not a template)
+    // Overdue notification (>7 days since date, still unpaid, not a template, not hidden)
     if (!e.paid && !e.recurring && e.amount > 0) {
       const ageDays = (Date.now() - new Date(e.date).getTime()) / 86400000;
       if (ageDays > 7) {
@@ -253,8 +257,8 @@ export const runRecurringEngine = () => {
 
 // ---------- Calculations ----------
 
-export const sumExpenses = (entries: { amount: number }[]) =>
-  entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+export const sumExpenses = (entries: { amount: number; hidden?: boolean }[]) =>
+  entries.reduce((s, e) => s + (e.hidden ? 0 : (Number(e.amount) || 0)), 0);
 
 export const wifeTotal = (data: FamilyData, wifeId: string) => {
   const wife = data.wives.find(w => w.id === wifeId);
