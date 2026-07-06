@@ -1147,6 +1147,14 @@ const SalaryCalculator = () => {
               <span className="text-sm text-muted-foreground">Remaining</span>
               <span className="font-medium">{remaining.toLocaleString()}</span>
             </div>
+            {totalUsed > salary && (
+              <div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1">
+                <span className="text-sm font-medium text-red-500">Over Expense</span>
+                <span className="font-semibold text-red-500">
+                  -{(totalUsed - salary).toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
