@@ -1341,6 +1341,26 @@ export const Lifeline = ({}: LifelineProps) => {
                   <p className="text-xs text-muted-foreground">(≈{formatCurrency(remaining, data.settings.currency)})</p>
                 </div>
               </div>
+              {(() => {
+                const extra = Math.max(0, extExpenses - totalBudget);
+                if (extra <= 0) return null;
+                return (
+                  <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <AlertCircle className="h-3.5 w-3.5 text-orange-600" />
+                        <p className="text-xs text-orange-600 font-medium">Extra Over Budget</p>
+                      </div>
+                      <p className="text-sm font-bold text-orange-700">
+                        {formatCurrency(toLocal(extra), extConfig.currency)}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-right">
+                      (≈{formatCurrency(extra, data.settings.currency)})
+                    </p>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         )}
