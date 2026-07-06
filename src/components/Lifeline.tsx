@@ -1322,7 +1322,7 @@ export const Lifeline = ({}: LifelineProps) => {
                 </div>
                 <Progress value={progressPercent} className="h-2" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="p-2 rounded bg-muted/50">
                   <p className="text-xs text-muted-foreground">Monthly Budget</p>
                   <p className="text-sm font-semibold">{formatCurrency(toLocal(monthlyBudget), extConfig.currency)}</p>
@@ -1340,18 +1340,27 @@ export const Lifeline = ({}: LifelineProps) => {
                   </p>
                   <p className="text-xs text-muted-foreground">(≈{formatCurrency(remaining, data.settings.currency)})</p>
                 </div>
+                <div className="p-2 rounded bg-red-500/10">
+                  <p className="text-xs text-red-600">Extra</p>
+                  <p className="text-sm font-semibold text-red-700">
+                    {formatCurrency(toLocal(Math.max(0, -remaining)), extConfig.currency)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    (≈{formatCurrency(Math.max(0, -remaining), data.settings.currency)})
+                  </p>
+                </div>
               </div>
               {(() => {
                 const extra = Math.max(0, extExpenses - totalBudget);
                 if (extra <= 0) return null;
                 return (
-                  <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20">
+                  <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <AlertCircle className="h-3.5 w-3.5 text-orange-600" />
-                        <p className="text-xs text-orange-600 font-medium">Extra Over Budget</p>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                        <p className="text-xs text-red-600 font-medium">Extra Over Budget</p>
                       </div>
-                      <p className="text-sm font-bold text-orange-700">
+                      <p className="text-sm font-bold text-red-700">
                         {formatCurrency(toLocal(extra), extConfig.currency)}
                       </p>
                     </div>
