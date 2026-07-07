@@ -1129,12 +1129,12 @@ const SalaryCalculator = () => {
               placeholder="Enter your salary"
             />
             <div className="relative h-3 w-full rounded-full bg-muted overflow-hidden">
-              {expenses.map((e) => {
-                const width = Math.max(0, Math.min(100 - offset, pct(e.amount)));
+              {expenses.filter(e => !e.hidden).map((e) => {
+                const width = Math.max(0, Math.min(100 - offset, pct(e.amount, e.hidden)));
                 const segment = (
                   <div
                     key={e.id}
-                    className={`${e.color} absolute h-full`}
+                    className={`${e.color} absolute h-full ${e.hidden ? "opacity-40 grayscale" : ""}`}
                     style={{ left: `${offset}%`, width: `${width}%` }}
                   />
                 );
@@ -1143,11 +1143,11 @@ const SalaryCalculator = () => {
               })}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              {expenses.map((e) => (
+              {expenses.filter(e => !e.hidden).map((e) => (
                 <div key={e.id} className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${e.color}`} />
                   <Badge variant="outline">
-                    {e.name} · {e.amount.toLocaleString()} ({Math.round(pct(e.amount))}%)
+                    {e.name} · {e.amount.toLocaleString()} ({Math.round(pct(e.amount, e.hidden))}%)
                   </Badge>
                 </div>
               ))}
