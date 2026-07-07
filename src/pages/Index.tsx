@@ -1368,6 +1368,7 @@ interface SubExpenseRowProps {
   onRemove: (id: string) => void;
   onUpdateAmount: (id: string, amount: number) => void;
   onTogglePaid: (id: string) => void;
+  onToggleHidden: (id: string) => void;
 }
 
 const SubExpenseRow = ({
@@ -1383,6 +1384,7 @@ const SubExpenseRow = ({
   onRemove,
   onUpdateAmount,
   onTogglePaid,
+  onToggleHidden,
 }: SubExpenseRowProps) => {
   const hasChildren = node.subExpenses.length > 0;
   const isPlus = !hasChildren && node.amount > 0;
