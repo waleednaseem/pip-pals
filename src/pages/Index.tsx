@@ -1303,6 +1303,7 @@ const SalaryCalculator = () => {
                         onRemove={removeNode}
                         onUpdateAmount={updateNodeAmount}
                         onTogglePaid={togglePaid}
+                        onToggleHidden={toggleHidden}
                       />
                     ))}
 
