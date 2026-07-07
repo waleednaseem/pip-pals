@@ -1448,6 +1448,7 @@ const SubExpenseRow = ({
               onRemove={onRemove}
               onUpdateAmount={onUpdateAmount}
               onTogglePaid={onTogglePaid}
+              onToggleHidden={onToggleHidden}
             />
           ))}
         </div>
