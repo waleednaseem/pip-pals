@@ -496,6 +496,7 @@ const SalaryCalculator = () => {
   // For nodes with sub-expenses, recurse into children (parent paid flag is ignored).
   // Negative items (refunds/credits) are excluded from both buckets.
   const sumPaidUnpaidSub = (s: SubExpense): { paid: number; unpaid: number } => {
+    if (s.hidden) return { paid: 0, unpaid: 0 };
     if (s.subExpenses.length > 0) {
       return s.subExpenses.reduce(
         (acc, c) => {
@@ -513,6 +514,7 @@ const SalaryCalculator = () => {
 
   const { paidTotal, unpaidTotal } = expenses.reduce(
     (acc, e) => {
+      if (e.hidden) return acc;
       if (e.allowSubExpenses && e.subExpenses.length > 0) {
         const r = e.subExpenses.reduce(
           (a, c) => {
