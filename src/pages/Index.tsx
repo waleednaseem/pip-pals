@@ -1236,44 +1236,55 @@ const SalaryCalculator = () => {
             const isPlus = !hasSubs && e.amount > 0;
             const canAddSub = hasSubs; // only when added with amount 0
             return (
-              <div
-                key={e.id}
-                className={`rounded-md border p-3 space-y-3 transition-colors ${
-                  isPlus ? "cursor-pointer hover:bg-muted/40" : ""
-                } ${e.paid && isPlus ? "bg-emerald-500/5 border-emerald-500/30" : ""}`}
-                onClick={(ev) => {
-                  if (!isPlus) return;
-                  // ignore clicks on inputs/buttons
-                  const target = ev.target as HTMLElement;
-                  if (target.closest("input,button,a")) return;
-                  togglePaid(e.id);
-                }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <span className={`h-3 w-3 rounded-full ${e.color} shrink-0 mt-1`} />
-                    <div className={`font-medium text-sm break-words min-w-0 flex-1 ${e.paid ? "line-through text-muted-foreground" : ""}`}>
-                      {e.name}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-xs text-muted-foreground">{Math.round(pct(e.amount))}%</div>
-                    {hasSubs ? (
-                      <div className="font-semibold text-sm">{e.amount.toLocaleString()}</div>
-                    ) : (
-                      <Input
-                        type="number"
-                        value={e.amount === 0 ? "" : e.amount}
-                        onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
-                        onClick={(ev) => ev.stopPropagation()}
-                        className="w-24 h-8 text-right font-semibold"
-                      />
-                    )}
-                    <Button variant="ghost" size="icon" onClick={(ev) => { ev.stopPropagation(); removeExpense(e.id); }}>
-                      <Trash className="h-4 w-4" />
-                    </Button>
+            <div
+              key={e.id}
+              className={`rounded-md border p-3 space-y-3 transition-colors ${
+                e.hidden ? "opacity-40 grayscale border-dashed border-border/30" : ""
+              } ${
+                isPlus ? "cursor-pointer hover:bg-muted/40" : ""
+              } ${e.paid && isPlus ? "bg-emerald-500/5 border-emerald-500/30" : ""}`}
+              onClick={(ev) => {
+                if (!isPlus) return;
+                // ignore clicks on inputs/buttons
+                const target = ev.target as HTMLElement;
+                if (target.closest("input,button,a")) return;
+                togglePaid(e.id);
+              }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground"
+                    title={e.hidden ? "Include in calculations" : "Hide from calculations"}
+                    onClick={(ev) => { ev.stopPropagation(); toggleHidden(e.id); }}
+                  >
+                    {e.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </Button>
+                  <span className={`h-3 w-3 rounded-full ${e.color} shrink-0 mt-1`} />
+                  <div className={`font-medium text-sm break-words min-w-0 flex-1 ${e.paid ? "line-through text-muted-foreground" : ""}`}>
+                    {e.name}
                   </div>
                 </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-xs text-muted-foreground">{Math.round(pct(e.amount, e.hidden))}%</div>
+                  {hasSubs ? (
+                    <div className="font-semibold text-sm">{e.amount.toLocaleString()}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      value={e.amount === 0 ? "" : e.amount}
+                      onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
+                      onClick={(ev) => ev.stopPropagation()}
+                      className="w-24 h-8 text-right font-semibold"
+                    />
+                  )}
+                  <Button variant="ghost" size="icon" onClick={(ev) => { ev.stopPropagation(); removeExpense(e.id); }}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
                 {(canAddSub || e.subExpenses.length > 0) && (
                   <div className="pl-6 space-y-2" onClick={(ev) => ev.stopPropagation()}>
