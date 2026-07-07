@@ -674,6 +674,15 @@ const SalaryCalculator = () => {
     );
   };
 
+  // Toggle hidden (ghost) status on any node
+  const toggleHidden = (id: string) => {
+    updateNodeById(
+      id,
+      (n) => ({ ...n, hidden: !n.hidden }),
+      (e) => ({ ...e, hidden: !e.hidden }),
+    );
+  };
+
   // Export to PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
