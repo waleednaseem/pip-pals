@@ -437,8 +437,8 @@ const SalaryCalculator = () => {
       timestamp: now.getTime(),
       salary,
       expenses: JSON.parse(JSON.stringify(expenses)),
-      totalExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
-      remaining: Math.max(0, salary - expenses.reduce((sum, e) => sum + e.amount, 0)),
+      totalExpenses: totalUsed,
+      remaining: Math.max(0, salary - totalUsed),
     };
 
     const newHistory = [entry, ...history];
@@ -610,6 +610,7 @@ const SalaryCalculator = () => {
         amount: amountNum, 
         color,
         paid: false,
+        hidden: false,
         subExpenses: [],
         allowSubExpenses
       },
@@ -633,6 +634,7 @@ const SalaryCalculator = () => {
       name: newSubName.trim(),
       amount: amountNum,
       paid: false,
+      hidden: false,
       subExpenses: [],
     };
 
