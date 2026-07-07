@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw, PlusCircle, Bell } from "lucide-react";
+import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, RotateCcw, PlusCircle, Bell, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -324,6 +324,7 @@ interface SubExpense {
   name: string;
   amount: number;
   paid?: boolean;
+  hidden?: boolean;
   subExpenses: SubExpense[];
 }
 
@@ -333,6 +334,7 @@ interface ExpenseItem {
   amount: number;
   color: string;
   paid?: boolean;
+  hidden?: boolean;
   subExpenses: SubExpense[];
   allowSubExpenses: boolean;
 }
@@ -435,8 +437,8 @@ const SalaryCalculator = () => {
       timestamp: now.getTime(),
       salary,
       expenses: JSON.parse(JSON.stringify(expenses)),
-      totalExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
-      remaining: Math.max(0, salary - expenses.reduce((sum, e) => sum + e.amount, 0)),
+      totalExpenses: totalUsed,
+      remaining: Math.max(0, salary - totalUsed),
     };
 
     const newHistory = [entry, ...history];
@@ -486,14 +488,15 @@ const SalaryCalculator = () => {
     "bg-cyan-500",
   ];
 
-  const totalUsed = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalUsed = expenses.reduce((sum, e) => sum + (e.hidden ? 0 : e.amount), 0);
   const remaining = Math.max(0, salary - totalUsed);
-  const pct = (amount: number) => (salary > 0 ? (amount / salary) * 100 : 0);
+  const pct = (amount: number, hidden?: boolean) => (salary > 0 && !hidden ? (amount / salary) * 100 : 0);
 
   // Paid/Unpaid breakdown — only counts plus (>0) leaf items.
   // For nodes with sub-expenses, recurse into children (parent paid flag is ignored).
   // Negative items (refunds/credits) are excluded from both buckets.
   const sumPaidUnpaidSub = (s: SubExpense): { paid: number; unpaid: number } => {
+    if (s.hidden) return { paid: 0, unpaid: 0 };
     if (s.subExpenses.length > 0) {
       return s.subExpenses.reduce(
         (acc, c) => {
@@ -511,6 +514,7 @@ const SalaryCalculator = () => {
 
   const { paidTotal, unpaidTotal } = expenses.reduce(
     (acc, e) => {
+      if (e.hidden) return acc;
       if (e.allowSubExpenses && e.subExpenses.length > 0) {
         const r = e.subExpenses.reduce(
           (a, c) => {
@@ -538,7 +542,7 @@ const SalaryCalculator = () => {
   const recomputeSub = (s: SubExpense): SubExpense => {
     if (s.subExpenses && s.subExpenses.length > 0) {
       const subs = s.subExpenses.map(recomputeSub);
-      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      const total = subs.reduce((sum, x) => sum + (x.hidden ? 0 : x.amount), 0);
       return { ...s, subExpenses: subs, amount: total };
     }
     return s;
@@ -606,6 +610,7 @@ const SalaryCalculator = () => {
         amount: amountNum, 
         color,
         paid: false,
+        hidden: false,
         subExpenses: [],
         allowSubExpenses
       },
@@ -629,6 +634,7 @@ const SalaryCalculator = () => {
       name: newSubName.trim(),
       amount: amountNum,
       paid: false,
+      hidden: false,
       subExpenses: [],
     };
 
@@ -665,6 +671,15 @@ const SalaryCalculator = () => {
       id,
       (n) => ({ ...n, paid: !n.paid }),
       (e) => ({ ...e, paid: !e.paid }),
+    );
+  };
+
+  // Toggle hidden (ghost) status on any node
+  const toggleHidden = (id: string) => {
+    updateNodeById(
+      id,
+      (n) => ({ ...n, hidden: !n.hidden }),
+      (e) => ({ ...e, hidden: !e.hidden }),
     );
   };
 
@@ -1114,12 +1129,12 @@ const SalaryCalculator = () => {
               placeholder="Enter your salary"
             />
             <div className="relative h-3 w-full rounded-full bg-muted overflow-hidden">
-              {expenses.map((e) => {
-                const width = Math.max(0, Math.min(100 - offset, pct(e.amount)));
+              {expenses.filter(e => !e.hidden).map((e) => {
+                const width = Math.max(0, Math.min(100 - offset, pct(e.amount, e.hidden)));
                 const segment = (
                   <div
                     key={e.id}
-                    className={`${e.color} absolute h-full`}
+                    className={`${e.color} absolute h-full ${e.hidden ? "opacity-40 grayscale" : ""}`}
                     style={{ left: `${offset}%`, width: `${width}%` }}
                   />
                 );
@@ -1128,11 +1143,11 @@ const SalaryCalculator = () => {
               })}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              {expenses.map((e) => (
+              {expenses.filter(e => !e.hidden).map((e) => (
                 <div key={e.id} className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${e.color}`} />
                   <Badge variant="outline">
-                    {e.name} · {e.amount.toLocaleString()} ({Math.round(pct(e.amount))}%)
+                    {e.name} · {e.amount.toLocaleString()} ({Math.round(pct(e.amount, e.hidden))}%)
                   </Badge>
                 </div>
               ))}
@@ -1221,44 +1236,55 @@ const SalaryCalculator = () => {
             const isPlus = !hasSubs && e.amount > 0;
             const canAddSub = hasSubs; // only when added with amount 0
             return (
-              <div
-                key={e.id}
-                className={`rounded-md border p-3 space-y-3 transition-colors ${
-                  isPlus ? "cursor-pointer hover:bg-muted/40" : ""
-                } ${e.paid && isPlus ? "bg-emerald-500/5 border-emerald-500/30" : ""}`}
-                onClick={(ev) => {
-                  if (!isPlus) return;
-                  // ignore clicks on inputs/buttons
-                  const target = ev.target as HTMLElement;
-                  if (target.closest("input,button,a")) return;
-                  togglePaid(e.id);
-                }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <span className={`h-3 w-3 rounded-full ${e.color} shrink-0 mt-1`} />
-                    <div className={`font-medium text-sm break-words min-w-0 flex-1 ${e.paid ? "line-through text-muted-foreground" : ""}`}>
-                      {e.name}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-xs text-muted-foreground">{Math.round(pct(e.amount))}%</div>
-                    {hasSubs ? (
-                      <div className="font-semibold text-sm">{e.amount.toLocaleString()}</div>
-                    ) : (
-                      <Input
-                        type="number"
-                        value={e.amount === 0 ? "" : e.amount}
-                        onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
-                        onClick={(ev) => ev.stopPropagation()}
-                        className="w-24 h-8 text-right font-semibold"
-                      />
-                    )}
-                    <Button variant="ghost" size="icon" onClick={(ev) => { ev.stopPropagation(); removeExpense(e.id); }}>
-                      <Trash className="h-4 w-4" />
-                    </Button>
+            <div
+              key={e.id}
+              className={`rounded-md border p-3 space-y-3 transition-colors ${
+                e.hidden ? "opacity-40 grayscale border-dashed border-border/30" : ""
+              } ${
+                isPlus ? "cursor-pointer hover:bg-muted/40" : ""
+              } ${e.paid && isPlus ? "bg-emerald-500/5 border-emerald-500/30" : ""}`}
+              onClick={(ev) => {
+                if (!isPlus) return;
+                // ignore clicks on inputs/buttons
+                const target = ev.target as HTMLElement;
+                if (target.closest("input,button,a")) return;
+                togglePaid(e.id);
+              }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground"
+                    title={e.hidden ? "Include in calculations" : "Hide from calculations"}
+                    onClick={(ev) => { ev.stopPropagation(); toggleHidden(e.id); }}
+                  >
+                    {e.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </Button>
+                  <span className={`h-3 w-3 rounded-full ${e.color} shrink-0 mt-1`} />
+                  <div className={`font-medium text-sm break-words min-w-0 flex-1 ${e.paid ? "line-through text-muted-foreground" : ""}`}>
+                    {e.name}
                   </div>
                 </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-xs text-muted-foreground">{Math.round(pct(e.amount, e.hidden))}%</div>
+                  {hasSubs ? (
+                    <div className="font-semibold text-sm">{e.amount.toLocaleString()}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      value={e.amount === 0 ? "" : e.amount}
+                      onChange={(ev) => updateNodeAmount(e.id, parseFloat(ev.target.value) || 0)}
+                      onClick={(ev) => ev.stopPropagation()}
+                      className="w-24 h-8 text-right font-semibold"
+                    />
+                  )}
+                  <Button variant="ghost" size="icon" onClick={(ev) => { ev.stopPropagation(); removeExpense(e.id); }}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
                 {(canAddSub || e.subExpenses.length > 0) && (
                   <div className="pl-6 space-y-2" onClick={(ev) => ev.stopPropagation()}>
@@ -1277,6 +1303,7 @@ const SalaryCalculator = () => {
                         onRemove={removeNode}
                         onUpdateAmount={updateNodeAmount}
                         onTogglePaid={togglePaid}
+                        onToggleHidden={toggleHidden}
                       />
                     ))}
 
@@ -1341,6 +1368,7 @@ interface SubExpenseRowProps {
   onRemove: (id: string) => void;
   onUpdateAmount: (id: string, amount: number) => void;
   onTogglePaid: (id: string) => void;
+  onToggleHidden: (id: string) => void;
 }
 
 const SubExpenseRow = ({
@@ -1356,6 +1384,7 @@ const SubExpenseRow = ({
   onRemove,
   onUpdateAmount,
   onTogglePaid,
+  onToggleHidden,
 }: SubExpenseRowProps) => {
   const hasChildren = node.subExpenses.length > 0;
   const isPlus = !hasChildren && node.amount > 0;
@@ -1367,6 +1396,8 @@ const SubExpenseRow = ({
     <div className="space-y-2">
       <div
         className={`flex items-start justify-between text-sm p-2 rounded gap-2 transition-colors ${
+          node.hidden ? "opacity-40 grayscale border-dashed border border-border/30" : ""
+        } ${
           isPlus ? "cursor-pointer hover:bg-muted/50 bg-muted/30" : "bg-muted/30"
         } ${node.paid && isPlus ? "bg-emerald-500/10 ring-1 ring-emerald-500/30" : ""}`}
         onClick={(ev) => {
@@ -1376,9 +1407,20 @@ const SubExpenseRow = ({
           onTogglePaid(node.id);
         }}
       >
-        <span className={`text-sm break-words min-w-0 flex-1 ${node.paid ? "line-through text-muted-foreground" : ""}`}>
-          {node.name}
-        </span>
+        <div className="flex items-start gap-2 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 shrink-0 text-muted-foreground"
+            title={node.hidden ? "Include in calculations" : "Hide from calculations"}
+            onClick={(ev) => { ev.stopPropagation(); onToggleHidden(node.id); }}
+          >
+            {node.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </Button>
+          <span className={`text-sm break-words min-w-0 flex-1 ${node.paid ? "line-through text-muted-foreground" : ""}`}>
+            {node.name}
+          </span>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasChildren ? (
             <span className="font-medium text-sm w-20 text-right">{node.amount.toLocaleString()}</span>
@@ -1419,6 +1461,7 @@ const SubExpenseRow = ({
               onRemove={onRemove}
               onUpdateAmount={onUpdateAmount}
               onTogglePaid={onTogglePaid}
+              onToggleHidden={onToggleHidden}
             />
           ))}
         </div>
