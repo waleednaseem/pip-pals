@@ -1396,6 +1396,8 @@ const SubExpenseRow = ({
     <div className="space-y-2">
       <div
         className={`flex items-start justify-between text-sm p-2 rounded gap-2 transition-colors ${
+          node.hidden ? "opacity-40 grayscale border-dashed border border-border/30" : ""
+        } ${
           isPlus ? "cursor-pointer hover:bg-muted/50 bg-muted/30" : "bg-muted/30"
         } ${node.paid && isPlus ? "bg-emerald-500/10 ring-1 ring-emerald-500/30" : ""}`}
         onClick={(ev) => {
@@ -1405,9 +1407,20 @@ const SubExpenseRow = ({
           onTogglePaid(node.id);
         }}
       >
-        <span className={`text-sm break-words min-w-0 flex-1 ${node.paid ? "line-through text-muted-foreground" : ""}`}>
-          {node.name}
-        </span>
+        <div className="flex items-start gap-2 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 shrink-0 text-muted-foreground"
+            title={node.hidden ? "Include in calculations" : "Hide from calculations"}
+            onClick={(ev) => { ev.stopPropagation(); onToggleHidden(node.id); }}
+          >
+            {node.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </Button>
+          <span className={`text-sm break-words min-w-0 flex-1 ${node.paid ? "line-through text-muted-foreground" : ""}`}>
+            {node.name}
+          </span>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasChildren ? (
             <span className="font-medium text-sm w-20 text-right">{node.amount.toLocaleString()}</span>
