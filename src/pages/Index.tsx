@@ -488,9 +488,9 @@ const SalaryCalculator = () => {
     "bg-cyan-500",
   ];
 
-  const totalUsed = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalUsed = expenses.reduce((sum, e) => sum + (e.hidden ? 0 : e.amount), 0);
   const remaining = Math.max(0, salary - totalUsed);
-  const pct = (amount: number) => (salary > 0 ? (amount / salary) * 100 : 0);
+  const pct = (amount: number, hidden?: boolean) => (salary > 0 && !hidden ? (amount / salary) * 100 : 0);
 
   // Paid/Unpaid breakdown — only counts plus (>0) leaf items.
   // For nodes with sub-expenses, recurse into children (parent paid flag is ignored).
@@ -540,7 +540,7 @@ const SalaryCalculator = () => {
   const recomputeSub = (s: SubExpense): SubExpense => {
     if (s.subExpenses && s.subExpenses.length > 0) {
       const subs = s.subExpenses.map(recomputeSub);
-      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      const total = subs.reduce((sum, x) => sum + (x.hidden ? 0 : x.amount), 0);
       return { ...s, subExpenses: subs, amount: total };
     }
     return s;
