@@ -962,7 +962,8 @@ const SalaryCalculator = () => {
   let offset = 0;
 
   return (
-    <Card className="w-full">
+    <>
+      <Card className="w-full">
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4">
           <CardTitle className="text-xl">Expense Calculator</CardTitle>
@@ -1072,15 +1073,6 @@ const SalaryCalculator = () => {
                 className="flex-1 max-w-[200px]"
               />
               <div className="flex flex-wrap items-center gap-2 ml-auto">
-                <Button
-                  onClick={() => setAdding((v) => !v)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-9 p-0 border-0"
-                  size="sm"
-                  title="Add Expense"
-                  aria-label="Add Expense"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
                 <Button
                   variant="ghost"
                   onClick={saveToHistory}
@@ -1356,6 +1348,15 @@ const SalaryCalculator = () => {
         </div>
       </CardContent>
     </Card>
+
+    <Button
+      onClick={() => setAdding((v) => !v)}
+      className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white border-0 p-0 z-50"
+      aria-label="Add Expense"
+    >
+      <Plus className="h-6 w-6" />
+    </Button>
+  </>
   );
 };
 
