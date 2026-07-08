@@ -962,7 +962,8 @@ const SalaryCalculator = () => {
   let offset = 0;
 
   return (
-    <Card className="w-full">
+    <>
+      <Card className="w-full">
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4">
           <CardTitle className="text-xl">Expense Calculator</CardTitle>
