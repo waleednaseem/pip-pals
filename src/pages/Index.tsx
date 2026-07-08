@@ -1073,15 +1073,6 @@ const SalaryCalculator = () => {
               />
               <div className="flex flex-wrap items-center gap-2 ml-auto">
                 <Button
-                  onClick={() => setAdding((v) => !v)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-9 p-0 border-0"
-                  size="sm"
-                  title="Add Expense"
-                  aria-label="Add Expense"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <Button
                   variant="ghost"
                   onClick={saveToHistory}
                   className="h-9 w-9 p-0 border-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
