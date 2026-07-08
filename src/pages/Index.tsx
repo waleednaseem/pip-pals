@@ -1348,6 +1348,15 @@ const SalaryCalculator = () => {
         </div>
       </CardContent>
     </Card>
+
+    <Button
+      onClick={() => setAdding((v) => !v)}
+      className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white border-0 p-0 z-50"
+      aria-label="Add Expense"
+    >
+      <Plus className="h-6 w-6" />
+    </Button>
+  </>
   );
 };
 
