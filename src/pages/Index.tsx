@@ -1127,12 +1127,75 @@ const SalaryCalculator = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 space-y-2">
-            <Input
-              type="number"
-              value={salary ? salary : ""}
-              onChange={(e) => setSalary(parseFloat(e.target.value) || 0)}
-              placeholder="Enter your salary"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={salary ? salary : ""}
+                onChange={(e) => setSalary(parseFloat(e.target.value) || 0)}
+                placeholder="Enter your salary"
+                className="flex-1 max-w-[200px]"
+              />
+              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                <Button
+                  onClick={() => setAdding((v) => !v)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-9 p-0 border-0"
+                  size="sm"
+                  title="Add Expense"
+                  aria-label="Add Expense"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={saveToHistory}
+                  className="h-9 w-9 p-0 border-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  size="sm"
+                  title="Save"
+                  aria-label="Save"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowHistory(!showHistory)}
+                  className={`h-9 px-2 border-0 ${showHistory
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                  }`}
+                  size="sm"
+                  title="History"
+                  aria-label="History"
+                >
+                  <Clock className="h-4 w-4" />
+                  {history.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                      {history.length}
+                    </Badge>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={exportToPDF}
+                  className="h-9 w-9 p-0 border-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  size="sm"
+                  title="Export PDF"
+                  aria-label="Export PDF"
+                >
+                  <FileDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={clearAllData}
+                  className="h-9 w-9 p-0 border-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  size="sm"
+                  title="Clear All"
+                  aria-label="Clear All"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
             <div className="relative h-3 w-full rounded-full bg-muted overflow-hidden">
               {expenses.filter(e => !e.hidden).map((e) => {
                 const width = Math.max(0, Math.min(100 - offset, pct(e.amount, e.hidden)));
