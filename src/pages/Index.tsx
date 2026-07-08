@@ -969,37 +969,40 @@ const SalaryCalculator = () => {
           
           {/* Action Buttons - Professional Design */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Primary Actions */}
-            <Button 
+            {/* Action Buttons - Icon only, borderless */}
+            <Button
               onClick={() => setAdding((v) => !v)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-9 p-0 border-0"
               size="sm"
+              title="Add Expense"
+              aria-label="Add Expense"
             >
               <Plus className="h-4 w-4" />
-              Add Expense
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="ghost"
               onClick={saveToHistory}
-              className="gap-2 border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              className="h-9 w-9 p-0 border-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
               size="sm"
+              title="Save"
+              aria-label="Save"
             >
               <Save className="h-4 w-4" />
-              Save
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="ghost"
               onClick={() => setShowHistory(!showHistory)}
-              className={`gap-2 ${showHistory 
-                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                : "border-purple-300 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+              className={`h-9 px-2 border-0 ${showHistory
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "text-purple-600 hover:bg-purple-50 hover:text-purple-700"
               }`}
               size="sm"
+              title="History"
+              aria-label="History"
             >
               <Clock className="h-4 w-4" />
-              History
               {history.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                   {history.length}
@@ -1007,24 +1010,26 @@ const SalaryCalculator = () => {
               )}
             </Button>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="ghost"
               onClick={exportToPDF}
-              className="gap-2 border-amber-300 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+              className="h-9 w-9 p-0 border-0 text-red-600 hover:bg-red-50 hover:text-red-700"
               size="sm"
+              title="Export PDF"
+              aria-label="Export PDF"
             >
-              <FileText className="h-4 w-4" />
-              Export PDF
+              <FileDown className="h-4 w-4" />
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="ghost"
               onClick={clearAllData}
-              className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="h-9 w-9 p-0 border-0 text-red-600 hover:bg-red-50 hover:text-red-700"
               size="sm"
+              title="Clear All"
+              aria-label="Clear All"
             >
               <RotateCcw className="h-4 w-4" />
-              Clear All
             </Button>
           </div>
         </div>
