@@ -551,7 +551,7 @@ const SalaryCalculator = () => {
   const recomputeExpense = (e: ExpenseItem): ExpenseItem => {
     if (e.allowSubExpenses && e.subExpenses.length > 0) {
       const subs = e.subExpenses.map(recomputeSub);
-      const total = subs.reduce((sum, x) => sum + x.amount, 0);
+      const total = subs.reduce((sum, x) => sum + (x.hidden ? 0 : x.amount), 0);
       return { ...e, subExpenses: subs, amount: total };
     }
     return e;
