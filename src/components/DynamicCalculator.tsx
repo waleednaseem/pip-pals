@@ -242,6 +242,17 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
             </div>
           </div>
         )}
+
+        {/* Re-enter button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReenter}
+          className="w-full h-11 rounded-xl border-0 glass-button bg-muted/30 hover:bg-muted/50 text-foreground gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Re-enter Values
+        </Button>
       </CardContent>
     </Card>
   );
