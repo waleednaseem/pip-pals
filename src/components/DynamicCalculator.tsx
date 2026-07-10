@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TradingPair } from "@/types/calculator";
 import { getPairConfig, TRADING_PAIRS } from "@/utils/pairConfig";
 import {
   calculateProfitFromPipsAndLot,
-  calculateLotSizeFromPipsAndProfit,
   calculatePipsFromLotAndProfit,
 } from "@/utils/calculator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -17,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calculator, X } from "lucide-react";
+import { Calculator, RotateCcw, Target, DollarSign, TrendingUp, Lock } from "lucide-react";
 
 interface DynamicCalculatorProps {
   pair?: TradingPair;
@@ -25,227 +24,220 @@ interface DynamicCalculatorProps {
   exitPrice?: number;
 }
 
+type Mode = "profit" | "pips";
+
 const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorProps) => {
   const [activePair, setActivePair] = useState<TradingPair>(pair || "XAUUSD");
+  const [mode, setMode] = useState<Mode>("profit");
 
   useEffect(() => {
     if (pair) setActivePair(pair);
   }, [pair]);
 
   const config = getPairConfig(activePair);
+
+  // Mode A: Pips + Lot -> Profit (profit locked)
   const [pips, setPips] = useState("");
-  const [lot, setLot] = useState("1");
-  const [profitUSD, setProfitUSD] = useState("");
+  const [lotA, setLotA] = useState("1");
 
-  const isCalculating = useRef(false);
-  const calculationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mode B: Lot + Profit -> Pips (pips locked)
+  const [lotB, setLotB] = useState("1");
+  const [profit, setProfit] = useState("");
 
-  const performCalculation = useCallback(() => {
-    if (isCalculating.current) return;
+  const calculatedProfit = useMemo(() => {
+    const p = parseFloat(pips);
+    const l = parseFloat(lotA);
+    if (isNaN(p) || isNaN(l) || l <= 0) return null;
+    return calculateProfitFromPipsAndLot(p, l, config.pipSize, config.contractSize, entryPrice, exitPrice);
+  }, [pips, lotA, config, entryPrice, exitPrice]);
 
-    const pipsNum = pips.trim() === "" ? null : parseFloat(pips);
-    const lotNum = lot.trim() === "" ? null : parseFloat(lot);
-    const profitNum = profitUSD.trim() === "" ? null : parseFloat(profitUSD);
+  const calculatedPips = useMemo(() => {
+    const l = parseFloat(lotB);
+    const pr = parseFloat(profit);
+    if (isNaN(l) || isNaN(pr) || l <= 0) return null;
+    return calculatePipsFromLotAndProfit(l, pr, config.pipSize, config.contractSize);
+  }, [lotB, profit, config]);
 
-    const hasValidPips = pipsNum !== null && !isNaN(pipsNum) && pipsNum >= 0;
-    const hasValidLot = lotNum !== null && !isNaN(lotNum) && lotNum > 0;
-    const hasValidProfit = profitNum !== null && !isNaN(profitNum);
-
-    const validCount = [hasValidPips, hasValidLot, hasValidProfit].filter(Boolean).length;
-
-    if (validCount !== 2) return;
-
-    isCalculating.current = true;
-
-    try {
-      if (hasValidPips && hasValidLot && !hasValidProfit) {
-        const calculatedProfit = calculateProfitFromPipsAndLot(
-          pipsNum!,
-          lotNum!,
-          config.pipSize,
-          config.contractSize,
-          entryPrice,
-          exitPrice
-        );
-        setProfitUSD(calculatedProfit.toFixed(2));
-      } else if (hasValidPips && hasValidProfit && !hasValidLot) {
-        const calculatedLot = calculateLotSizeFromPipsAndProfit(
-          pipsNum!,
-          profitNum!,
-          config.pipSize,
-          config.contractSize
-        );
-        if (calculatedLot > 0 && !isNaN(calculatedLot) && isFinite(calculatedLot)) {
-          setLot(calculatedLot.toFixed(4));
-        }
-      } else if (hasValidLot && hasValidProfit && !hasValidPips) {
-        const calculatedPips = calculatePipsFromLotAndProfit(
-          lotNum!,
-          profitNum!,
-          config.pipSize,
-          config.contractSize
-        );
-        if (calculatedPips >= 0 && !isNaN(calculatedPips) && isFinite(calculatedPips)) {
-          setPips(calculatedPips.toFixed(2));
-        }
-      }
-    } catch (error) {
-      // Silently handle errors
+  const handleReset = () => {
+    if (mode === "profit") {
+      setPips("");
+      setLotA("1");
+    } else {
+      setLotB("1");
+      setProfit("");
     }
-
-    setTimeout(() => {
-      isCalculating.current = false;
-    }, 50);
-  }, [pips, lot, profitUSD, entryPrice, exitPrice, config.pipSize, config.contractSize]);
-
-  useEffect(() => {
-    if (calculationTimeout.current) {
-      clearTimeout(calculationTimeout.current);
-    }
-
-    calculationTimeout.current = setTimeout(() => {
-      performCalculation();
-    }, 300);
-
-    return () => {
-      if (calculationTimeout.current) {
-        clearTimeout(calculationTimeout.current);
-      }
-    };
-  }, [performCalculation]);
-
-  const handlePipsChange = (value: string) => {
-    setPips(value);
-  };
-
-  const handleLotChange = (value: string) => {
-    setLot(value);
-  };
-
-  const handleProfitChange = (value: string) => {
-    setProfitUSD(value);
-  };
-
-  const handlePipsBlur = () => {
-    if (calculationTimeout.current) {
-      clearTimeout(calculationTimeout.current);
-      calculationTimeout.current = null;
-    }
-    performCalculation();
-  };
-
-  const handleLotBlur = () => {
-    if (calculationTimeout.current) {
-      clearTimeout(calculationTimeout.current);
-      calculationTimeout.current = null;
-    }
-    performCalculation();
-  };
-
-  const handleProfitBlur = () => {
-    if (calculationTimeout.current) {
-      clearTimeout(calculationTimeout.current);
-      calculationTimeout.current = null;
-    }
-    performCalculation();
-  };
-
-  const handleClear = () => {
-    setPips("");
-    setLot("1");
-    setProfitUSD("");
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="glass-card w-full border-0">
+      <CardContent className="p-5 space-y-5">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calculator className="h-5 w-5 text-primary" />
-            Dynamic Calculator
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-xl glass-button flex items-center justify-center">
+              <Calculator className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Dynamic Calculator</h3>
+              <p className="text-[11px] text-muted-foreground">Auto-compute in real time</p>
+            </div>
+          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={handleClear}
-            className="gap-1"
+            onClick={handleReset}
+            className="h-8 w-8 p-0 rounded-full hover:bg-muted/50"
+            title="Reset"
           >
-            <X className="h-4 w-4" />
-            Clear
+            <RotateCcw className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="sidebar-pair">Trading Pair</Label>
-            <Select value={activePair} onValueChange={(v) => setActivePair(v as TradingPair)}>
-              <SelectTrigger id="sidebar-pair">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TRADING_PAIRS.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Pip size: {config.pipSize} · Contract: {config.contractSize.toLocaleString()}
-            </p>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Enter any 2 fields, 3rd calculates automatically
+
+        {/* Pair selector */}
+        <div className="space-y-1.5">
+          <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Trading Pair</Label>
+          <Select value={activePair} onValueChange={(v) => setActivePair(v as TradingPair)}>
+            <SelectTrigger className="glass-input h-10 border-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TRADING_PAIRS.map((p) => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[10px] text-muted-foreground/70 pl-1">
+            Pip {config.pipSize} · Contract {config.contractSize.toLocaleString()}
           </p>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sidebar-pips">Pips</Label>
+        </div>
+
+        {/* Mode toggle */}
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl glass-input">
+          <button
+            onClick={() => setMode("profit")}
+            className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-medium transition-all ${
+              mode === "profit"
+                ? "glass-button text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <DollarSign className="h-3.5 w-3.5" />
+            Find Profit
+          </button>
+          <button
+            onClick={() => setMode("pips")}
+            className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-medium transition-all ${
+              mode === "pips"
+                ? "glass-button text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Target className="h-3.5 w-3.5" />
+            Find Pips
+          </button>
+        </div>
+
+        {/* Mode A: Find Profit */}
+        {mode === "profit" && (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <Target className="h-3 w-3" /> Pips
+              </Label>
               <Input
-                id="sidebar-pips"
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="e.g., 50"
                 value={pips}
-                onChange={(e) => handlePipsChange(e.target.value)}
-                onBlur={handlePipsBlur}
-                className="font-mono-num"
+                onChange={(e) => setPips(e.target.value)}
+                className="glass-input h-11 border-0 font-mono-num text-base"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sidebar-lot">Lot Size</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Lot Size
+              </Label>
               <Input
-                id="sidebar-lot"
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="e.g., 0.01, 0.1, 1"
-                value={lot}
-                onChange={(e) => handleLotChange(e.target.value)}
-                onBlur={handleLotBlur}
-                className="font-mono-num"
+                placeholder="e.g., 1"
+                value={lotA}
+                onChange={(e) => setLotA(e.target.value)}
+                className="glass-input h-11 border-0 font-mono-num text-base"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sidebar-profitUSD">Profit (USD)</Label>
-              <Input
-                id="sidebar-profitUSD"
-                type="number"
-                step="0.01"
-                placeholder="e.g., 100.50 or -100.50"
-                value={profitUSD}
-                onChange={(e) => handleProfitChange(e.target.value)}
-                onBlur={handleProfitBlur}
-                className="font-mono-num"
-              />
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <Lock className="h-3 w-3" /> Profit (USD)
+              </Label>
+              <div className="glass-input h-14 rounded-lg flex items-center justify-between px-4 border-0">
+                <span className={`font-mono-num text-xl font-semibold ${
+                  calculatedProfit === null
+                    ? "text-muted-foreground/50"
+                    : calculatedProfit >= 0
+                    ? "text-[hsl(var(--profit))]"
+                    : "text-[hsl(var(--loss))]"
+                }`}>
+                  {calculatedProfit === null
+                    ? "—"
+                    : `${calculatedProfit >= 0 ? "+" : ""}${calculatedProfit.toFixed(2)}`}
+                </span>
+                <span className="text-xs text-muted-foreground">USD</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Mode B: Find Pips */}
+        {mode === "pips" && (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Lot Size
+              </Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="e.g., 1"
+                value={lotB}
+                onChange={(e) => setLotB(e.target.value)}
+                className="glass-input h-11 border-0 font-mono-num text-base"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <DollarSign className="h-3 w-3" /> Profit (USD)
+              </Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="e.g., 100.50"
+                value={profit}
+                onChange={(e) => setProfit(e.target.value)}
+                className="glass-input h-11 border-0 font-mono-num text-base"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <Lock className="h-3 w-3" /> Pips
+              </Label>
+              <div className="glass-input h-14 rounded-lg flex items-center justify-between px-4 border-0">
+                <span className={`font-mono-num text-xl font-semibold ${
+                  calculatedPips === null ? "text-muted-foreground/50" : "text-primary"
+                }`}>
+                  {calculatedPips === null ? "—" : calculatedPips.toFixed(2)}
+                </span>
+                <span className="text-xs text-muted-foreground">pips</span>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 };
 
 export default DynamicCalculator;
-
