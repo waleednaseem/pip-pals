@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calculator, RotateCcw, Target, DollarSign, TrendingUp, Lock } from "lucide-react";
+import { Calculator, RotateCcw, Target, DollarSign, TrendingUp, Lock, RefreshCw } from "lucide-react";
 
 interface DynamicCalculatorProps {
   pair?: TradingPair;
