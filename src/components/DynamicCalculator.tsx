@@ -68,6 +68,13 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
     }
   };
 
+  const handleReenter = () => {
+    setPips("");
+    setLotA("1");
+    setLotB("1");
+    setProfit("");
+  };
+
   return (
     <Card className="glass-card w-full border-0">
       <CardContent className="p-5 space-y-5">
