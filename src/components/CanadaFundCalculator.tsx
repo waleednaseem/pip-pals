@@ -496,7 +496,7 @@ export default function CanadaFundCalculator() {
 
           {/* Income Summary */}
           {yearlySalary > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Hourly</div>
                 <div className="font-mono font-semibold text-sm">{formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek) * toNum(hoursPerDay)))}</div>
@@ -504,6 +504,10 @@ export default function CanadaFundCalculator() {
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Daily</div>
                 <div className="font-mono font-semibold text-sm">{formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek)))}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 text-center">
+                <div className="text-xs text-muted-foreground">Weekly</div>
+                <div className="font-mono font-semibold text-sm">{formatCurrency(yearlySalary / toNum(weeksPerYear))}</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Monthly</div>
