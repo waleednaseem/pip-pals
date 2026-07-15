@@ -1637,18 +1637,6 @@ export const Lifeline = ({}: LifelineProps) => {
               <p className="text-xs text-muted-foreground">
                 This is the amount you need to cover every month
               </p>
-              {monthlyExpense && parseFloat(monthlyExpense) > 0 && (
-                <div className="flex items-center justify-between p-3 rounded-lg glass-subtle border border-primary/20">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-primary" />
-                    Weekly equivalent
-                  </span>
-                  <span className="text-sm font-semibold text-primary">
-                    {formatCurrency(parseFloat(monthlyExpense) / 4.35, currency)}
-                    <span className="text-xs text-muted-foreground font-normal"> /week</span>
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Country Selection */}
