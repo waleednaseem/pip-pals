@@ -1187,21 +1187,21 @@ const SalaryCalculator = () => {
               />
             </div>
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
-                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide">Paid</div>
-                <div className="font-semibold text-sm text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-md bg-emerald-500/15 border border-emerald-400/30 p-2 text-center">
+                <div className="text-[10px] text-emerald-300 font-medium uppercase tracking-wide">Paid</div>
+                <div className="font-semibold text-sm text-emerald-200">
                   {paidTotal.toLocaleString()}
                 </div>
               </div>
-              <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-center">
-                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wide">Unpaid</div>
-                <div className="font-semibold text-sm text-amber-700 dark:text-amber-300">
+              <div className="rounded-md bg-amber-500/15 border border-amber-400/30 p-2 text-center">
+                <div className="text-[10px] text-amber-300 font-medium uppercase tracking-wide">Unpaid</div>
+                <div className="font-semibold text-sm text-amber-200">
                   {unpaidTotal.toLocaleString()}
                 </div>
               </div>
-              <div className="rounded-md bg-muted/40 border border-border p-2 text-center">
-                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Tracked</div>
-                <div className="font-semibold text-sm">
+              <div className="rounded-md bg-primary/15 border border-primary/30 p-2 text-center">
+                <div className="text-[10px] text-primary font-medium uppercase tracking-wide">Tracked</div>
+                <div className="font-semibold text-sm text-foreground">
                   {trackedTotal.toLocaleString()}
                 </div>
               </div>
