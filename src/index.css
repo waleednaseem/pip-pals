@@ -8,53 +8,54 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 225 35% 12%;
-    --foreground: 210 40% 98%;
+    /* Midnight Aurora — deep indigo with violet + cyan accents */
+    --background: 232 30% 8%;
+    --foreground: 220 20% 96%;
 
-    --card: 225 30% 18%;
-    --card-foreground: 210 40% 98%;
+    --card: 232 26% 13%;
+    --card-foreground: 220 20% 96%;
 
-    --popover: 225 30% 16%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 232 28% 12%;
+    --popover-foreground: 220 20% 96%;
 
-    --primary: 175 85% 45%;
-    --primary-foreground: 225 35% 10%;
+    --primary: 258 90% 66%;
+    --primary-foreground: 232 30% 8%;
 
-    --secondary: 225 25% 22%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 232 22% 18%;
+    --secondary-foreground: 220 20% 96%;
 
-    --muted: 225 20% 25%;
-    --muted-foreground: 215 25% 65%;
+    --muted: 232 18% 20%;
+    --muted-foreground: 220 15% 68%;
 
-    --accent: 175 80% 40%;
-    --accent-foreground: 225 35% 10%;
+    --accent: 190 95% 55%;
+    --accent-foreground: 232 30% 8%;
 
-    --success: 155 75% 45%;
-    --success-foreground: 225 35% 10%;
+    --success: 155 75% 50%;
+    --success-foreground: 232 30% 8%;
 
-    --profit: 155 70% 50%;
-    --loss: 0 80% 60%;
+    --profit: 155 70% 55%;
+    --loss: 0 80% 62%;
 
-    --destructive: 0 80% 55%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 80% 58%;
+    --destructive-foreground: 220 20% 96%;
 
-    --border: 225 25% 30%;
-    --input: 225 25% 20%;
-    --ring: 175 85% 45%;
+    --border: 232 22% 24%;
+    --input: 232 24% 15%;
+    --ring: 258 90% 66%;
 
     --radius: 1rem;
 
-    --chart-1: 175 85% 45%;
-    --chart-2: 155 70% 50%;
-    --chart-3: 280 75% 60%;
-    --chart-4: 45 85% 55%;
-    --chart-5: 0 80% 55%;
+    --chart-1: 258 90% 66%;
+    --chart-2: 190 95% 55%;
+    --chart-3: 155 70% 55%;
+    --chart-4: 45 90% 60%;
+    --chart-5: 330 85% 65%;
 
-    /* Glass effect variables - enhanced for visibility */
-    --glass-bg: 225 35% 20%;
-    --glass-border: 175 60% 50%;
-    --glass-shadow: 225 50% 5%;
-    --glass-highlight: 175 80% 70%;
+    /* Glass effect variables - aurora dark */
+    --glass-bg: 232 28% 16%;
+    --glass-border: 258 80% 70%;
+    --glass-shadow: 232 60% 3%;
+    --glass-highlight: 190 90% 75%;
   }
 }
 
@@ -65,11 +66,11 @@ All colors MUST be HSL.
 
   body {
     @apply text-foreground font-sans antialiased;
-    background: 
-      radial-gradient(ellipse at 0% 0%, hsl(175 85% 45% / 0.15) 0%, transparent 40%),
-      radial-gradient(ellipse at 100% 0%, hsl(280 75% 60% / 0.1) 0%, transparent 40%),
-      radial-gradient(ellipse at 50% 100%, hsl(175 85% 45% / 0.08) 0%, transparent 50%),
-      linear-gradient(180deg, hsl(225 35% 10%) 0%, hsl(225 40% 8%) 100%);
+    background:
+      radial-gradient(ellipse at 0% 0%, hsl(258 90% 60% / 0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 100% 0%, hsl(190 95% 55% / 0.14) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 100%, hsl(258 85% 55% / 0.10) 0%, transparent 55%),
+      linear-gradient(180deg, hsl(232 32% 7%) 0%, hsl(232 38% 5%) 100%);
     background-attachment: fixed;
     min-height: 100vh;
   }
