@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 interface BaseProps {
   symbol: string;
-  height?: number;
+  height?: number | string;
 }
 
 const injectWidgetScript = (

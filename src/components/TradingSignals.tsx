@@ -93,18 +93,22 @@ export default function TradingSignals() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg overflow-hidden border min-h-[620px]">
-            <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30">
+          <div className="rounded-lg overflow-hidden border flex flex-col" style={{ height: 660 }}>
+            <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30 shrink-0">
               {pair.label} — Live Chart
             </div>
-            <TradingViewChart symbol={pair.tvSymbol} height={620} />
+            <div className="flex-1 min-h-0">
+              <TradingViewChart symbol={pair.tvSymbol} height="100%" />
+            </div>
           </div>
 
-          <div className="rounded-lg overflow-hidden border min-h-[520px] flex flex-col">
-            <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30">
+          <div className="rounded-lg overflow-hidden border flex flex-col" style={{ height: 540 }}>
+            <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30 shrink-0">
               Buy / Sell Signal — {pair.label}
             </div>
-            <TradingViewTechnicalAnalysis symbol={pair.tvSymbol} height={500} />
+            <div className="flex-1 min-h-0">
+              <TradingViewTechnicalAnalysis symbol={pair.tvSymbol} height="100%" />
+            </div>
           </div>
 
           {/* Risk briefing */}
