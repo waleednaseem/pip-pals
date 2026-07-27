@@ -21,6 +21,7 @@ import { Lifeline } from "@/components/Lifeline";
 import { TaxHistory } from "@/components/TaxHistory";
 import CanadaFundCalculator from "@/components/CanadaFundCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
+import MarketUpdates from "@/components/MarketUpdates";
 import { GroupExpenses } from "@/components/GroupExpenses";
 import { Notifications } from "@/components/Notifications";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
@@ -152,6 +153,7 @@ const Index = () => {
   const availableTabs = [
     ...(selectedPair ? [{ value: "calculator", label: "Forex Pip Calculator" }] : []),
     { value: "notifications", label: "Notifications" },
+    { value: "market-updates", label: "Market Updates (News & Calendar)" },
     { value: "canada", label: "Financial Plan" },
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
@@ -249,6 +251,10 @@ const Index = () => {
 
           <TabsContent value="converter" className="mt-6">
             <CurrencyConverter />
+          </TabsContent>
+
+          <TabsContent value="market-updates" className="mt-6">
+            <MarketUpdates />
           </TabsContent>
 
           <TabsContent value="dynamic-calc" className="mt-6">
