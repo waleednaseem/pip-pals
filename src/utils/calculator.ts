@@ -96,9 +96,10 @@ export const calculateProfitFromPipsAndLot = (
   pipSize: number,
   contractSize: number,
   entryPrice?: number,
-  exitPrice?: number
+  exitPrice?: number,
+  lotMultiplier: number = 1
 ): number => {
-  const pipValuePerPip = pipSize * lotSize * contractSize;
+  const pipValuePerPip = pipSize * lotSize * contractSize * lotMultiplier;
   const absoluteProfit = pips * pipValuePerPip;
   
   // If we have entry and exit prices, determine sign based on direction
@@ -148,11 +149,12 @@ export const calculatePipsFromLotAndProfit = (
   lotSize: number,
   profit: number,
   pipSize: number,
-  contractSize: number
+  contractSize: number,
+  lotMultiplier: number = 1
 ): number => {
   if (lotSize === 0) return 0;
   const absoluteProfit = Math.abs(profit);
-  const pipValuePerPip = pipSize * lotSize * contractSize;
+  const pipValuePerPip = pipSize * lotSize * contractSize * lotMultiplier;
   if (pipValuePerPip === 0) return 0;
   const pips = absoluteProfit / pipValuePerPip;
   return parseFloat(pips.toFixed(2));

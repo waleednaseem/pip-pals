@@ -25,16 +25,24 @@ interface DynamicCalculatorProps {
 }
 
 type Mode = "profit" | "pips";
+type AccountType = "standard" | "xm_global_micro";
+
+const ACCOUNT_LOT_MULTIPLIER: Record<AccountType, number> = {
+  standard: 1,
+  xm_global_micro: 0.1,
+};
 
 const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorProps) => {
   const [activePair, setActivePair] = useState<TradingPair>(pair || "XAUUSD");
   const [mode, setMode] = useState<Mode>("profit");
+  const [accountType, setAccountType] = useState<AccountType>("standard");
 
   useEffect(() => {
     if (pair) setActivePair(pair);
   }, [pair]);
 
   const config = getPairConfig(activePair);
+  const lotMultiplier = ACCOUNT_LOT_MULTIPLIER[accountType];
 
   // Mode A: Pips + Lot -> Profit (profit locked)
   const [pips, setPips] = useState("");
@@ -48,15 +56,29 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
     const p = parseFloat(pips);
     const l = parseFloat(lotA);
     if (isNaN(p) || isNaN(l) || l <= 0) return null;
-    return calculateProfitFromPipsAndLot(p, l, config.pipSize, config.contractSize, entryPrice, exitPrice);
-  }, [pips, lotA, config, entryPrice, exitPrice]);
+    return calculateProfitFromPipsAndLot(
+      p,
+      l,
+      config.pipSize,
+      config.contractSize,
+      entryPrice,
+      exitPrice,
+      lotMultiplier
+    );
+  }, [pips, lotA, config, entryPrice, exitPrice, lotMultiplier]);
 
   const calculatedPips = useMemo(() => {
     const l = parseFloat(lotB);
     const pr = parseFloat(profit);
     if (isNaN(l) || isNaN(pr) || l <= 0) return null;
-    return calculatePipsFromLotAndProfit(l, pr, config.pipSize, config.contractSize);
-  }, [lotB, profit, config]);
+    return calculatePipsFromLotAndProfit(
+      l,
+      pr,
+      config.pipSize,
+      config.contractSize,
+      lotMultiplier
+    );
+  }, [lotB, profit, config, lotMultiplier]);
 
   const handleReset = () => {
     if (mode === "profit") {
@@ -116,6 +138,28 @@ const DynamicCalculator = ({ pair, entryPrice, exitPrice }: DynamicCalculatorPro
           <p className="text-[10px] text-muted-foreground/70 pl-1">
             Pip {config.pipSize} · Contract {config.contractSize.toLocaleString()}
           </p>
+        </div>
+
+        {/* Account type */}
+        <div className="space-y-1.5">
+          <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Account Type</Label>
+          <Select
+            value={accountType}
+            onValueChange={(v) => setAccountType(v as AccountType)}
+          >
+            <SelectTrigger className="glass-input h-10 border-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">Standard</SelectItem>
+              <SelectItem value="xm_global_micro">XM Global Micro</SelectItem>
+            </SelectContent>
+          </Select>
+          {accountType === "xm_global_micro" && (
+            <p className="text-[10px] text-muted-foreground/70 pl-1">
+              Micro lot · P/L is 10× smaller than Standard
+            </p>
+          )}
         </div>
 
         {/* Mode toggle */}
