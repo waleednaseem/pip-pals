@@ -175,7 +175,8 @@ const GroupDetail = ({ group, onBack, onUpdate, onRemove, toast }: any) => {
     onUpdate({ members: group.members.filter((m: GroupMember) => m.id !== id) });
   };
 
-  const addExpense = (e: GroupExpense) => onUpdate({ expenses: [...group.expenses, e] });
+  const addExpenses = (items: GroupExpense[]) =>
+    onUpdate({ expenses: [...group.expenses, ...items] });
   const removeExpense = (id: string) => onUpdate({ expenses: group.expenses.filter((e: GroupExpense) => e.id !== id) });
 
   const recordSettlement = (fromId: string, toId: string, amount: number) => {
@@ -299,7 +300,7 @@ const GroupDetail = ({ group, onBack, onUpdate, onRemove, toast }: any) => {
       </Card>
 
       {/* Add expense */}
-      <AddExpenseForm group={group} onAdd={addExpense} />
+      <AddExpenseForm group={group} onAdd={addExpenses} />
 
       {/* Expense log */}
       <Card>
@@ -353,38 +354,74 @@ const GroupDetail = ({ group, onBack, onUpdate, onRemove, toast }: any) => {
   );
 };
 
-const AddExpenseForm = ({ group, onAdd }: { group: ExpenseGroup; onAdd: (e: GroupExpense) => void }) => {
+const AddExpenseForm = ({
+  group,
+  onAdd,
+}: {
+  group: ExpenseGroup;
+  onAdd: (items: GroupExpense[]) => void;
+}) => {
   const { toast } = useToast();
   const [desc, setDesc] = useState("");
-  const [amount, setAmount] = useState("");
-  const [payerId, setPayerId] = useState(group.members[0]?.id || "");
   const [mode, setMode] = useState<GroupExpense["splitMode"]>("equal");
-  const [included, setIncluded] = useState<Record<string, boolean>>(
-    Object.fromEntries(group.members.map(m => [m.id, true]))
+  const [included, setIncluded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(group.members.map((m) => [m.id, true]))
   );
+  const [paid, setPaid] = useState<Record<string, string>>({});
   const [custom, setCustom] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (payerId && group.members.some((m) => m.id === payerId)) return;
-    setPayerId(group.members[0]?.id || "");
-  }, [group.members, payerId]);
+    setIncluded((prev) => {
+      const next: Record<string, boolean> = {};
+      group.members.forEach((m) => {
+        next[m.id] = prev[m.id] ?? true;
+      });
+      return next;
+    });
+  }, [group.members]);
+
+  const totalPaid = group.members.reduce((s, m) => s + (parseFloat(paid[m.id] || "0") || 0), 0);
 
   const submit = () => {
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0 || !desc.trim() || !payerId) return;
+    if (!desc.trim()) {
+      toast({ title: "Description required", variant: "destructive" });
+      return;
+    }
 
-    const activeMembers = group.members.filter(m => included[m.id]);
-    if (activeMembers.length === 0) return;
+    const activeMembers = group.members.filter((m) => included[m.id]);
+    if (activeMembers.length === 0) {
+      toast({ title: "Select at least one member", variant: "destructive" });
+      return;
+    }
 
-    let splits;
-    if (mode === "equal") {
-      splits = computeSplits(amt, activeMembers, "equal");
-    } else {
-      const customArr = activeMembers.map(m => ({ memberId: m.id, value: parseFloat(custom[m.id] || "0") || 0 }));
+    const payers = group.members
+      .map((m) => ({ memberId: m.id, amount: parseFloat(paid[m.id] || "0") || 0 }))
+      .filter((p) => p.amount > 0);
+
+    if (payers.length === 0) {
+      toast({
+        title: "Who paid?",
+        description: "Kam az kam ek friend ke paid amount likho.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const billTotal = +payers.reduce((s, p) => s + p.amount, 0).toFixed(2);
+
+    if (mode === "unequal" || mode === "percentage") {
+      const customArr = activeMembers.map((m) => ({
+        memberId: m.id,
+        value: parseFloat(custom[m.id] || "0") || 0,
+      }));
       if (mode === "unequal") {
         const sum = customArr.reduce((s, c) => s + c.value, 0);
-        if (Math.abs(sum - amt) > 0.02) {
-          toast({ title: "Invalid split", description: `Shares must total ${amt.toFixed(2)}`, variant: "destructive" });
+        if (Math.abs(sum - billTotal) > 0.02) {
+          toast({
+            title: "Invalid split",
+            description: `Shares must total ${billTotal.toFixed(2)}`,
+            variant: "destructive",
+          });
           return;
         }
       }
@@ -395,31 +432,69 @@ const AddExpenseForm = ({ group, onAdd }: { group: ExpenseGroup; onAdd: (e: Grou
           return;
         }
       }
-      splits = computeSplits(amt, activeMembers, mode, customArr);
     }
 
-    onAdd({
-      id: uid(), description: desc.trim(), amount: amt, payerId,
-      date: new Date().toISOString(), splitMode: mode, splits,
+    const now = new Date().toISOString();
+    const items: GroupExpense[] = payers.map((p) => {
+      let splits;
+      if (mode === "equal") {
+        splits = computeSplits(p.amount, activeMembers, "equal");
+      } else {
+        const customArr = activeMembers.map((m) => ({
+          memberId: m.id,
+          value: parseFloat(custom[m.id] || "0") || 0,
+        }));
+        // Scale custom split of full bill to this payment's portion
+        const fullSplits = computeSplits(billTotal, activeMembers, mode, customArr);
+        const ratio = billTotal > 0 ? p.amount / billTotal : 0;
+        splits = fullSplits.map((s) => ({
+          memberId: s.memberId,
+          share: +(s.share * ratio).toFixed(2),
+        }));
+        const diff = +(p.amount - splits.reduce((s, x) => s + x.share, 0)).toFixed(2);
+        if (diff !== 0 && splits.length > 0) {
+          splits[splits.length - 1].share = +(splits[splits.length - 1].share + diff).toFixed(2);
+        }
+      }
+
+      return {
+        id: uid(),
+        description: payers.length > 1 ? `${desc.trim()} (paid portion)` : desc.trim(),
+        amount: p.amount,
+        payerId: p.memberId,
+        date: now,
+        splitMode: mode,
+        splits,
+      };
     });
-    setDesc(""); setAmount(""); setCustom({});
+
+    onAdd(items);
+    setDesc("");
+    setPaid({});
+    setCustom({});
+    toast({ title: "Expense added", description: `Total ${fmt(billTotal, group.currency)}` });
   };
 
   return (
     <Card>
-      <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Plus className="h-4 w-4 text-primary" />Add Expense</CardTitle></CardHeader>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Plus className="h-4 w-4 text-primary" />
+          Add Expense
+        </CardTitle>
+      </CardHeader>
       <CardContent className="space-y-2">
         <div className="grid grid-cols-12 gap-2">
-          <Input className="col-span-7" placeholder="Description (e.g. Dinner at KFC)" value={desc} onChange={e => setDesc(e.target.value)} />
-          <Input className="col-span-5" type="number" placeholder={`Amount (${group.currency})`} value={amount} onChange={e => setAmount(e.target.value)} />
-        </div>
-        <div className="grid grid-cols-12 gap-2">
-          <Select value={payerId} onValueChange={setPayerId}>
-            <SelectTrigger className="col-span-7"><SelectValue placeholder="Paid by" /></SelectTrigger>
-            <SelectContent>{group.members.map(m => <SelectItem key={m.id} value={m.id}>Paid by {m.name}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={mode} onValueChange={(v: any) => setMode(v)}>
-            <SelectTrigger className="col-span-5"><SelectValue /></SelectTrigger>
+          <Input
+            className="col-span-8"
+            placeholder="Description (e.g. Dinner at KFC)"
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+          />
+          <Select value={mode} onValueChange={(v: GroupExpense["splitMode"]) => setMode(v)}>
+            <SelectTrigger className="col-span-4">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="equal">Split equally</SelectItem>
               <SelectItem value="unequal">Custom amounts</SelectItem>
@@ -428,24 +503,49 @@ const AddExpenseForm = ({ group, onAdd }: { group: ExpenseGroup; onAdd: (e: Grou
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1">
-          <Label className="text-xs">Split between</Label>
+          <Label className="text-xs">Who paid how much? (0 = nahi diya)</Label>
           <div className="space-y-1">
-            {group.members.map(m => (
+            {group.members.map((m) => (
               <div key={m.id} className="flex items-center gap-2">
-                <input type="checkbox" checked={included[m.id]} onChange={e => setIncluded({ ...included, [m.id]: e.target.checked })} />
-                <span className="text-sm flex-1">{m.name}</span>
+                <input
+                  type="checkbox"
+                  checked={included[m.id] ?? true}
+                  onChange={(e) => setIncluded({ ...included, [m.id]: e.target.checked })}
+                />
+                <span className="text-sm flex-1 truncate">{m.name}</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Paid"
+                  value={paid[m.id] || ""}
+                  onChange={(e) => setPaid({ ...paid, [m.id]: e.target.value })}
+                  className="h-7 w-24 text-xs"
+                />
                 {mode !== "equal" && included[m.id] && (
-                  <Input type="number" placeholder={mode === "percentage" ? "%" : mode === "shares" ? "shares" : group.currency}
-                    value={custom[m.id] || ""} onChange={e => setCustom({ ...custom, [m.id]: e.target.value })}
-                    className="h-7 w-24 text-xs" />
+                  <Input
+                    type="number"
+                    placeholder={mode === "percentage" ? "%" : mode === "shares" ? "shares" : group.currency}
+                    value={custom[m.id] || ""}
+                    onChange={(e) => setCustom({ ...custom, [m.id]: e.target.value })}
+                    className="h-7 w-20 text-xs"
+                  />
                 )}
               </div>
             ))}
           </div>
+          {totalPaid > 0 && (
+            <p className="text-xs text-muted-foreground pt-1">
+              Total paid: <strong>{fmt(totalPaid, group.currency)}</strong>
+            </p>
+          )}
         </div>
-        <Button onClick={submit} className="w-full bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="h-4 w-4 mr-1" />Add Expense
+
+        <Button onClick={submit} className="w-full bg-emerald-600 hover:bg-emerald-700" type="button">
+          <Plus className="h-4 w-4 mr-1" />
+          Add Expense
         </Button>
       </CardContent>
     </Card>
