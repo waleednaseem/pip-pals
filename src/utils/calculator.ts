@@ -7,6 +7,28 @@ import {
 } from "@/types/calculator";
 import { buildDurationDetails } from "@/utils/time";
 
+/** Pip value in account currency (USD assumed for account) */
+const getPipValuePerPip = (
+  pair: TradingPair,
+  pipSize: number,
+  lot: number,
+  contractSize: number,
+  exitPrice: number
+): number => {
+  const base = pipSize * lot * contractSize;
+  if (base <= 0) return 0;
+
+  // USD is quote (EURUSD, GBPUSD, AUDUSD, XAUUSD)
+  if (pair.endsWith("USD") && !pair.startsWith("USD")) {
+    return base;
+  }
+  // USD is base or cross with non-USD quote (USDJPY, USDCHF, EURJPY)
+  if (exitPrice > 0) {
+    return base / exitPrice;
+  }
+  return base;
+};
+
 export const calculateTrade = (
   inputs: CalculatorInputs,
   pair: TradingPair
@@ -20,10 +42,8 @@ export const calculateTrade = (
   const priceDiff = Math.abs(priceB - priceA);
   const pips = parseFloat((priceDiff / pipSize!).toFixed(2));
 
-  // Calculate pip value per pip
-  // For XAUUSD and most instruments where USD is quote currency:
-  // Pip value = pip_size * lot * contract_size
-  const pipValuePerPip = pipSize! * lot * contractSize!;
+  // Calculate pip value per pip (JPY/cross pairs need quote-currency conversion)
+  const pipValuePerPip = getPipValuePerPip(pair, pipSize!, lot, contractSize!, priceB);
   const pipValuePerPipRounded = parseFloat(pipValuePerPip.toFixed(2));
 
   // Calculate profit with correct sign

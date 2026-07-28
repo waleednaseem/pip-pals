@@ -39,7 +39,16 @@ export const getGroupData = (): GroupExpensesData => {
   try {
     const raw = localStorage.getItem(GROUP_KEY);
     if (!raw) return { groups: [] };
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const groups = Array.isArray(parsed?.groups) ? parsed.groups : [];
+    return {
+      groups: groups.map((g: ExpenseGroup) => ({
+        ...g,
+        members: Array.isArray(g.members) ? g.members : [],
+        expenses: Array.isArray(g.expenses) ? g.expenses : [],
+        settlements: Array.isArray(g.settlements) ? g.settlements : [],
+      })),
+    };
   } catch {
     return { groups: [] };
   }
@@ -136,7 +145,7 @@ const processOwnerExpenses = (
       continue;
     }
     if (e.recurring && e.recurrenceFreq && !e.parentRecurringId) {
-      let due = e.nextDueDate || addInterval(e.date, e.recurrenceFreq);
+      const due = e.nextDueDate || addInterval(e.date, e.recurrenceFreq);
       let cursor = due;
       const generated: ExpenseEntry[] = [];
       let safety = 0;
@@ -306,7 +315,12 @@ export const computeSplits = (
 ): { memberId: string; share: number }[] => {
   if (mode === "equal") {
     const per = +(amount / members.length).toFixed(2);
-    return members.map(m => ({ memberId: m.id, share: per }));
+    const splits = members.map((m) => ({ memberId: m.id, share: per }));
+    const diff = +(amount - splits.reduce((s, x) => s + x.share, 0)).toFixed(2);
+    if (diff !== 0 && splits.length > 0) {
+      splits[splits.length - 1].share = +(splits[splits.length - 1].share + diff).toFixed(2);
+    }
+    return splits;
   }
   if (mode === "unequal") {
     return (custom || []).map(c => ({ memberId: c.memberId, share: +c.value.toFixed(2) }));

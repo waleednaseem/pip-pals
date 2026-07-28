@@ -117,7 +117,7 @@ export const buildHQDashboard = (
     w.expenses.forEach((e) => {
       if (e.hidden) return;
       if (e.recurring && !e.parentRecurringId) return;
-      if (isSameMonth(e.date, ym) || !e.date) addFam(resolvePersonCountry(e.country, c), e.amount);
+      if (isSameMonth(e.date, ym)) addFam(resolvePersonCountry(e.country, c), e.amount);
     });
     if (w.monthlyAllowance) addFam(c, w.monthlyAllowance);
   });

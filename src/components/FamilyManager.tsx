@@ -46,8 +46,8 @@ export const FamilyManager = ({ currency }: Props) => {
     const children = data.children.reduce((s, c) => s + sumExpenses(c.expenses) + (c.monthlyFee || 0), 0);
     const parents = data.parents.reduce((s, p) => s + sumExpenses(p.expenses) + (p.monthlyAllowance || 0), 0);
     const siblings = data.siblings.reduce((s, sb) => s + sumExpenses(sb.expenses) + (sb.monthlyAllowance || 0), 0);
-    const household = data.household.reduce((s, h) => s + h.amount, 0);
-    const events = data.events.reduce((s, e) => s + e.amount, 0);
+    const household = data.household.filter((h) => !h.hidden).reduce((s, h) => s + h.amount, 0);
+    const events = data.events.filter((e) => !e.hidden).reduce((s, e) => s + e.amount, 0);
     const loanOwe = data.loans.filter(l => l.type === "borrowed" && l.status === "active").reduce((s, l) => s + loanOutstanding(l), 0);
     const loanLent = data.loans.filter(l => l.type === "lent" && l.status === "active").reduce((s, l) => s + loanOutstanding(l), 0);
     const zakatDue = data.zakat.filter(z => !z.paid).reduce((s, z) => s + z.zakatDue, 0);

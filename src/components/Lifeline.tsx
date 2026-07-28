@@ -153,6 +153,8 @@ export const Lifeline = ({}: LifelineProps) => {
   const [recFreq, setRecFreq] = useState<RecurringFreq>("monthly");
 
   const [hqRefresh, setHqRefresh] = useState(0);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const backupInputRef = useRef<HTMLInputElement>(null);
 
   // Transaction form states
   const [transAmount, setTransAmount] = useState("");
@@ -243,8 +245,13 @@ export const Lifeline = ({}: LifelineProps) => {
     const projectedYearlyIncome =
       incomeBasedYearly > 0 ? incomeBasedYearly : projectedFromEarnings;
     
-    // Current tax bracket based on actual earnings
-    const { rate: currentRate, bracket: currentBracket } = calculateTaxBracket(totalEarnings, countryKey);
+    // Tax bracket from annualized income (not raw period total)
+    const yearlyForBracket =
+      incomeBasedYearly > 0 ? incomeBasedYearly : projectedFromEarnings;
+    const { rate: currentRate, bracket: currentBracket } = calculateTaxBracket(
+      yearlyForBracket,
+      countryKey
+    );
     
     // Projected tax bracket based on annualized income
     const { rate: projectedRate, bracket: projectedBracket } = calculateTaxBracket(projectedYearlyIncome, countryKey);
@@ -399,33 +406,38 @@ export const Lifeline = ({}: LifelineProps) => {
   };
 
   const loadData = async () => {
-    const maintenance = runLifelineMaintenance();
-    const lifelineData = getLifelineData();
-    if (lifelineData) {
-      setData(lifelineData);
-      setIsSetup(true);
-      const rate = await getExchangeRate(lifelineData.settings.currency);
-      setExchangeRate(rate);
-      const calculatedStats = calculateLifelineStats(lifelineData, rate);
-      setStats(calculatedStats);
+    setIsLoadingData(true);
+    try {
+      const maintenance = runLifelineMaintenance();
+      const lifelineData = getLifelineData();
+      if (lifelineData) {
+        setData(lifelineData);
+        setIsSetup(true);
+        const rate = await getExchangeRate(lifelineData.settings.currency);
+        setExchangeRate(rate);
+        const calculatedStats = calculateLifelineStats(lifelineData, rate);
+        setStats(calculatedStats);
 
-      if (lifelineData.settings.externalCountries?.length) {
-        await fetchExternalRates(lifelineData.settings.externalCountries);
-        setActiveExternalTab(lifelineData.settings.externalCountries[0]);
-      }
+        if (lifelineData.settings.externalCountries?.length) {
+          await fetchExternalRates(lifelineData.settings.externalCountries);
+          setActiveExternalTab(lifelineData.settings.externalCountries[0]);
+        }
 
-      if (maintenance.recurring > 0 || maintenance.family > 0) {
-        toast({
-          title: "Lifeline updated",
-          description: [
-            maintenance.recurring > 0 ? `${maintenance.recurring} recurring` : null,
-            maintenance.family > 0 ? `${maintenance.family} family` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ") + " expense(s) added",
-        });
+        if (maintenance.recurring > 0 || maintenance.family > 0) {
+          toast({
+            title: "Lifeline updated",
+            description: [
+              maintenance.recurring > 0 ? `${maintenance.recurring} recurring` : null,
+              maintenance.family > 0 ? `${maintenance.family} family` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") + " expense(s) added",
+          });
+        }
+        setHqRefresh((k) => k + 1);
       }
-      setHqRefresh((k) => k + 1);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -560,6 +572,14 @@ export const Lifeline = ({}: LifelineProps) => {
     if (!data) return;
 
     const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
+    if (!extConfig) {
+      toast({
+        title: "Invalid country",
+        description: "Unknown external country selected",
+        variant: "destructive",
+      });
+      return;
+    }
     const extRate = externalRates[extConfig.currency] || 1;
     const mainCurrencyRate = exchangeRate;
 
@@ -680,6 +700,14 @@ export const Lifeline = ({}: LifelineProps) => {
     if (!data || !stats) return;
 
     const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
+    if (!extConfig) {
+      toast({
+        title: "Invalid country",
+        description: "Unknown external country selected",
+        variant: "destructive",
+      });
+      return;
+    }
     const amount = parseFloat(fundAmount);
 
     // Validate: cannot transfer more than available primary balance
@@ -2012,7 +2040,17 @@ export const Lifeline = ({}: LifelineProps) => {
     );
   }
 
-  if (!stats || !data) return null;
+  if (!stats || !data) {
+    if (isSetup || isLoadingData) {
+      return (
+        <div className="flex items-center justify-center py-20 text-muted-foreground">
+          <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+          Loading Lifeline…
+        </div>
+      );
+    }
+    return null;
+  }
 
   const quotaStatus = stats.progressPercent >= 100 ? "complete" : "active";
 
@@ -2133,9 +2171,17 @@ export const Lifeline = ({}: LifelineProps) => {
                 
                 <div className="text-sm text-muted-foreground">
                   {(() => {
-                    const monthsFilled = Math.floor(stats.remaining / data.settings.monthlyExpense);
-                    const remainingAfterMonths = stats.remaining % data.settings.monthlyExpense;
-                    const weeklyExpense = data.settings.monthlyExpense / 4.35;
+                    const monthly = data.settings.monthlyExpense;
+                    if (!monthly || monthly <= 0) {
+                      return (
+                        <span>
+                          Set a monthly expense target in Edit to see quota breakdown.
+                        </span>
+                      );
+                    }
+                    const monthsFilled = Math.floor(stats.remaining / monthly);
+                    const remainingAfterMonths = stats.remaining % monthly;
+                    const weeklyExpense = monthly / 4.35;
                     const weeksFilled = Math.floor(remainingAfterMonths / weeklyExpense);
                     const remainingAfterWeeks = remainingAfterMonths % weeklyExpense;
                     const dailyExpense = weeklyExpense / 7;

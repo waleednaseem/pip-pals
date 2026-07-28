@@ -39,7 +39,10 @@ export default function TradingSignals() {
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const pair = useMemo(() => SIGNAL_PAIRS.find((p) => p.code === pairCode)!, [pairCode]);
+  const pair = useMemo(
+    () => SIGNAL_PAIRS.find((p) => p.code === pairCode) ?? SIGNAL_PAIRS[0],
+    [pairCode]
+  );
 
   const loadData = async (force = false) => {
     setLoading(true);

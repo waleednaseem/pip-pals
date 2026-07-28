@@ -8,7 +8,11 @@ interface TaxHistoryProps {
 }
 
 export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
-  if (taxPayments.length === 0) {
+  const sorted = [...taxPayments].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  if (sorted.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -26,12 +30,11 @@ export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
     );
   }
 
-  const totalTaxPaidUSD = taxPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const totalTaxPaidLocal = taxPayments.reduce((sum, payment) => sum + payment.amountLocal, 0);
+  const totalTaxPaidUSD = sorted.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const totalTaxPaidLocal = sorted.reduce((sum, payment) => sum + (payment.amountLocal || 0), 0);
 
   return (
     <div className="space-y-4">
-      {/* Summary Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -57,58 +60,53 @@ export const TaxHistory = ({ taxPayments, currency }: TaxHistoryProps) => {
         </CardContent>
       </Card>
 
-      {/* Payment History */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Payment Records</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {taxPayments
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .map((payment) => (
-                <div
-                  key={payment.id}
-                  className="p-4 bg-muted/50 rounded-lg space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">
-                        Tax Payment
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(payment.date).toLocaleDateString()} at{" "}
-                        {new Date(payment.date).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div>
-                      <p className="text-muted-foreground text-xs">USD Amount</p>
-                      <p className="font-semibold text-red-600 dark:text-red-400">
-                        ${payment.amount.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">{currency} Amount</p>
-                      <p className="font-semibold text-red-600 dark:text-red-400">
-                        {currency} {payment.amountLocal.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">Exchange Rate</p>
-                      <p className="font-semibold">
-                        {payment.exchangeRate.toFixed(4)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-2 border-t border-border/50">
+            {sorted.map((payment) => (
+              <div
+                key={payment.id}
+                className="p-4 bg-muted/50 rounded-lg space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-sm">Tax Payment</p>
                     <p className="text-xs text-muted-foreground">
-                      Covered {payment.earningsIds.length} earning(s)
+                      {new Date(payment.date).toLocaleDateString()} at{" "}
+                      {new Date(payment.date).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>
-              ))}
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-xs">USD Amount</p>
+                    <p className="font-semibold text-red-600 dark:text-red-400">
+                      ${(payment.amount ?? 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">{currency} Amount</p>
+                    <p className="font-semibold text-red-600 dark:text-red-400">
+                      {currency} {(payment.amountLocal ?? 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Exchange Rate</p>
+                    <p className="font-semibold">
+                      {(payment.exchangeRate ?? 1).toFixed(4)}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    Covered {(payment.earningsIds || []).length} earning(s)
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

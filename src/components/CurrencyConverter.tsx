@@ -50,6 +50,7 @@ export default function CurrencyConverter() {
     setLoading(true);
     try {
       const response = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       
       if (data.rates) {
@@ -78,9 +79,8 @@ export default function CurrencyConverter() {
 
   const convertedAmount = useMemo(() => {
     const amountNum = parseFloat(amount) || 0;
-    if (!exchangeRates[fromCurrency] || !exchangeRates[toCurrency]) return 0;
+    if (!exchangeRates[fromCurrency] || !exchangeRates[toCurrency]) return null;
     
-    // Convert to USD first, then to target currency
     const inUSD = amountNum / exchangeRates[fromCurrency];
     return inUSD * exchangeRates[toCurrency];
   }, [amount, fromCurrency, toCurrency, exchangeRates]);
@@ -175,7 +175,11 @@ export default function CurrencyConverter() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="text-2xl font-bold font-mono">
-                  {formatCurrency(convertedAmount, toCurrency)}
+                  {convertedAmount == null
+                    ? loading
+                      ? "Loading rates…"
+                      : "—"
+                    : formatCurrency(convertedAmount, toCurrency)}
                 </div>
               </div>
               <Select value={toCurrency} onValueChange={(v) => setToCurrency(v as Currency)}>

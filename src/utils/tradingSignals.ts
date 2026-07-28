@@ -63,7 +63,12 @@ export const filterNewsForPair = (news: NewsItem[], pair: SignalPair): NewsItem[
 };
 
 export const filterCalendarForPair = (events: CalendarEvent[], pair: SignalPair): CalendarEvent[] =>
-  events.filter((e) => pair.currencies.includes(e.country));
+  events.filter((e) => {
+    if (pair.currencies.includes(e.country)) return true;
+    // Gold: USD macro events strongly affect XAU/USD
+    if (pair.currencies.includes("XAU") && e.country === "USD") return true;
+    return false;
+  });
 
 export const getTodaysHighImpactEvents = (events: CalendarEvent[]): CalendarEvent[] => {
   const now = new Date();

@@ -11,7 +11,7 @@ export const PAIR_CONFIGS: Record<TradingPair, PairConfig> = {
 };
 
 export const getPairConfig = (pair: TradingPair): PairConfig => {
-  return PAIR_CONFIGS[pair];
+  return PAIR_CONFIGS[pair] ?? { pipSize: 0.0001, contractSize: 100000 };
 };
 
 export const TRADING_PAIRS: TradingPair[] = [

@@ -1,8 +1,18 @@
 import { TradeEntry, TradingPair } from "@/types/calculator";
+import { PAIR_CONFIGS } from "@/utils/pairConfig";
 
 const STORAGE_KEYS = {
   TRADES: "forex_calculator_trades",
   SELECTED_PAIR: "forex_calculator_pair",
+};
+
+const VALID_PAIRS = new Set<string>(Object.keys(PAIR_CONFIGS));
+
+const signedPips = (trade: TradeEntry): number => {
+  if (trade.direction === "BUY") {
+    return trade.exit > trade.entry ? trade.pips : trade.exit < trade.entry ? -trade.pips : 0;
+  }
+  return trade.entry > trade.exit ? trade.pips : trade.entry < trade.exit ? -trade.pips : 0;
 };
 
 export const saveTradeToStorage = (trade: TradeEntry): void => {
@@ -12,8 +22,15 @@ export const saveTradeToStorage = (trade: TradeEntry): void => {
 };
 
 export const getTradesFromStorage = (): TradeEntry[] => {
-  const stored = localStorage.getItem(STORAGE_KEYS.TRADES);
-  return stored ? JSON.parse(stored) : [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.TRADES);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    localStorage.removeItem(STORAGE_KEYS.TRADES);
+    return [];
+  }
 };
 
 export const clearTradesFromStorage = (): void => {
@@ -21,11 +38,17 @@ export const clearTradesFromStorage = (): void => {
 };
 
 export const saveSelectedPair = (pair: TradingPair): void => {
+  if (!VALID_PAIRS.has(pair)) return;
   localStorage.setItem(STORAGE_KEYS.SELECTED_PAIR, pair);
 };
 
 export const getSelectedPair = (): TradingPair | null => {
-  return localStorage.getItem(STORAGE_KEYS.SELECTED_PAIR) as TradingPair | null;
+  const pair = localStorage.getItem(STORAGE_KEYS.SELECTED_PAIR);
+  if (!pair || !VALID_PAIRS.has(pair)) {
+    if (pair) localStorage.removeItem(STORAGE_KEYS.SELECTED_PAIR);
+    return null;
+  }
+  return pair as TradingPair;
 };
 
 export const clearSelectedPair = (): void => {
@@ -69,8 +92,7 @@ export const exportTradesToCSV = (trades: TradeEntry[]): void => {
     trade.duration ? trade.duration.formatted : "",
   ]);
 
-  // Calculate totals
-  const totalPipsSigned = trades.reduce((sum, trade) => sum + trade.pips, 0);
+  const totalPipsSigned = trades.reduce((sum, trade) => sum + signedPips(trade), 0);
   const totalPipsAbsolute = trades.reduce((sum, trade) => sum + Math.abs(trade.pips), 0);
   const totalProfit = trades.reduce((sum, trade) => sum + trade.profit.amount, 0);
   const currency = trades[0]?.profit.currency || "USD";

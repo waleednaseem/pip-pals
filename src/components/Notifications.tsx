@@ -56,10 +56,23 @@ export const Notifications = ({ onNavigate }: Props) => {
   };
 
   const markRead = (id: string) =>
-    persist(list.map(n => n.id === id ? { ...n, status: "read" } : n));
+    setList((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, status: "read" as const } : n));
+      saveNotifications(next);
+      return next;
+    });
   const remove = (id: string) =>
-    persist(list.filter(n => n.id !== id));
-  const markAllRead = () => persist(list.map(n => ({ ...n, status: "read" as const })));
+    setList((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      saveNotifications(next);
+      return next;
+    });
+  const markAllRead = () =>
+    setList((prev) => {
+      const next = prev.map((n) => ({ ...n, status: "read" as const }));
+      saveNotifications(next);
+      return next;
+    });
   const clearAll = () => { persist([]); toast({ title: "Cleared", description: "All notifications removed" }); };
 
   const filtered = useMemo(() => list.filter(n =>

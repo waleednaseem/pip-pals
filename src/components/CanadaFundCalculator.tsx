@@ -123,6 +123,21 @@ const COUNTRY_TAX_CONFIG = {
   },
 };
 
+type TaxBracket = { min: number; max: number; rate: number; label: string };
+
+const calcProgressiveTax = (income: number, brackets: TaxBracket[]): number => {
+  if (income <= 0) return 0;
+  let tax = 0;
+  for (const b of brackets) {
+    if (income <= b.min) break;
+    const taxable = Math.min(income, b.max) - b.min;
+    if (taxable > 0) tax += taxable * (b.rate / 100);
+  }
+  return tax;
+};
+
+const safeDiv = (num: number, den: number): number => (den > 0 ? num / den : 0);
+
 // Addon expense categories
 const ADDON_OPTIONS = [
   { id: "gym", label: "Gym", icon: Dumbbell, emoji: "🏋️" },
@@ -166,10 +181,8 @@ export default function CanadaFundCalculator() {
   const [addonValues, setAddonValues] = useState<Record<string, string>>({});
   const [addonPopoverOpen, setAddonPopoverOpen] = useState(false);
 
-  // Exchange rates
-  const [cadToAed, setCadToAed] = useState<string>("2.60");
-  const [aedToPkr, setAedToPkr] = useState<string>("77.05");
-  const [cadToUsd, setCadToUsd] = useState<string>("0.71");
+  // Exchange rates (from selected country currency → target)
+  const [fxRates, setFxRates] = useState({ AED: "2.60", PKR: "200.00", USD: "0.71" });
 
   // Collapsible states
   const [showWorkConfig, setShowWorkConfig] = useState(false);
@@ -194,20 +207,20 @@ export default function CanadaFundCalculator() {
     setAddonValues({ ...addonValues, [id]: value });
   };
 
-  // Fetch exchange rates
+  // Fetch exchange rates for selected country currency
   useEffect(() => {
+    const base = COUNTRY_TAX_CONFIG[selectedCountry].currency;
     const fetchExchangeRates = async () => {
       try {
-        const response = await fetch("https://api.exchangerate-api.com/v4/latest/CAD");
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${base}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (data.rates) {
-          setCadToAed(data.rates.AED.toFixed(4));
-          setCadToUsd(data.rates.USD.toFixed(4));
-          const aedResponse = await fetch("https://api.exchangerate-api.com/v4/latest/AED");
-          const aedData = await aedResponse.json();
-          if (aedData.rates) {
-            setAedToPkr(aedData.rates.PKR.toFixed(4));
-          }
+          setFxRates({
+            AED: (data.rates.AED ?? 1).toFixed(4),
+            PKR: (data.rates.PKR ?? 1).toFixed(4),
+            USD: (data.rates.USD ?? 1).toFixed(4),
+          });
         }
       } catch (error) {
         console.error("Failed to fetch exchange rates:", error);
@@ -219,7 +232,7 @@ export default function CanadaFundCalculator() {
       }
     };
     fetchExchangeRates();
-  }, [toast]);
+  }, [selectedCountry, toast]);
 
   // Calculate yearly salary from any input type
   const yearlySalary = useMemo(() => {
@@ -243,12 +256,17 @@ export default function CanadaFundCalculator() {
     return countryConfig.brackets.find(b => yearlySalary >= b.min && yearlySalary < b.max) || countryConfig.brackets[0];
   }, [yearlySalary, countryConfig]);
 
-  const effectiveTaxRate = toNum(taxRate) || applicableBracket.rate;
+  const effectiveTaxRate =
+    yearlySalary > 0 ? (calcProgressiveTax(yearlySalary, countryConfig.brackets) / yearlySalary) * 100 : 0;
 
+  const yearlyTax = calcProgressiveTax(yearlySalary, countryConfig.brackets);
   const monthlySalary = yearlySalary / 12;
-  const taxPerMonth = monthlySalary * (effectiveTaxRate / 100);
+  const taxPerMonth = yearlyTax / 12;
   const netMonthly = monthlySalary - taxPerMonth;
   const netYearly = netMonthly * 12;
+
+  const workDenominator = toNum(weeksPerYear) * toNum(daysPerWeek) * toNum(hoursPerDay);
+  const dayDenominator = toNum(weeksPerYear) * toNum(daysPerWeek);
 
   // Auto-update tax rate when country or salary changes
   useEffect(() => {
@@ -268,9 +286,9 @@ export default function CanadaFundCalculator() {
   const yearlySavings = monthlySavings * 12;
 
   // Currency conversions
-  const yearlyAed = yearlySalary * toNum(cadToAed);
-  const yearlyPkr = yearlyAed * toNum(aedToPkr);
-  const yearlyUsd = yearlySalary * toNum(cadToUsd);
+  const yearlyAed = yearlySalary * toNum(fxRates.AED);
+  const yearlyPkr = yearlySalary * toNum(fxRates.PKR);
+  const yearlyUsd = yearlySalary * toNum(fxRates.USD);
 
   // PDF Export
   const exportToPDF = () => {
@@ -323,15 +341,16 @@ export default function CanadaFundCalculator() {
     addLine("Salary Type", salaryType.charAt(0).toUpperCase() + salaryType.slice(1));
     addLine("Gross Yearly Salary", formatCurrency(yearlySalary, currency), true);
     addLine("Gross Monthly Salary", formatCurrency(monthlySalary, currency));
-    addLine("Hourly Rate", formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek) * toNum(hoursPerDay)), currency));
-    addLine("Daily Rate", formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek)), currency));
+    addLine("Hourly Rate", formatCurrency(safeDiv(yearlySalary, workDenominator), currency));
+    addLine("Daily Rate", formatCurrency(safeDiv(yearlySalary, dayDenominator), currency));
 
     // Tax Section
     addSection("🏛️ TAX BREAKDOWN");
     addLine("Country", `${countryConfig.name}`);
-    addLine("Tax Bracket", `${effectiveTaxRate}%`);
+    addLine("Tax Bracket", `${applicableBracket.rate}% (marginal)`);
+    addLine("Effective Tax Rate", `${effectiveTaxRate.toFixed(1)}%`);
     addLine("Monthly Tax Deduction", formatCurrency(taxPerMonth, currency));
-    addLine("Yearly Tax", formatCurrency(taxPerMonth * 12, currency));
+    addLine("Yearly Tax", formatCurrency(yearlyTax, currency));
     addLine("Net Monthly Income", formatCurrency(netMonthly, currency), true);
     addLine("Net Yearly Income", formatCurrency(netYearly, currency), true);
 
@@ -499,23 +518,23 @@ export default function CanadaFundCalculator() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Hourly</div>
-                <div className="font-mono font-semibold text-sm">{formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek) * toNum(hoursPerDay)))}</div>
+                <div className="font-mono font-semibold text-sm">{formatCurrency(safeDiv(yearlySalary, workDenominator), countryConfig.currency)}</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Daily</div>
-                <div className="font-mono font-semibold text-sm">{formatCurrency(yearlySalary / (toNum(weeksPerYear) * toNum(daysPerWeek)))}</div>
+                <div className="font-mono font-semibold text-sm">{formatCurrency(safeDiv(yearlySalary, dayDenominator), countryConfig.currency)}</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Weekly</div>
-                <div className="font-mono font-semibold text-sm">{formatCurrency(yearlySalary / toNum(weeksPerYear))}</div>
+                <div className="font-mono font-semibold text-sm">{formatCurrency(safeDiv(yearlySalary, toNum(weeksPerYear)), countryConfig.currency)}</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 text-center">
                 <div className="text-xs text-muted-foreground">Monthly</div>
-                <div className="font-mono font-semibold text-sm">{formatCurrency(monthlySalary)}</div>
+                <div className="font-mono font-semibold text-sm">{formatCurrency(monthlySalary, countryConfig.currency)}</div>
               </div>
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-center">
                 <div className="text-xs text-muted-foreground">Yearly</div>
-                <div className="font-mono font-bold text-sm text-primary">{formatCurrency(yearlySalary)}</div>
+                <div className="font-mono font-bold text-sm text-primary">{formatCurrency(yearlySalary, countryConfig.currency)}</div>
               </div>
             </div>
           )}
@@ -579,7 +598,7 @@ export default function CanadaFundCalculator() {
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-              <div className="text-xs text-muted-foreground mb-1">Monthly Tax ({effectiveTaxRate}%)</div>
+              <div className="text-xs text-muted-foreground mb-1">Effective Tax ({effectiveTaxRate.toFixed(1)}%)</div>
               <div className="font-mono font-bold text-destructive">{formatCurrency(taxPerMonth)}</div>
             </div>
             <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
@@ -753,16 +772,16 @@ export default function CanadaFundCalculator() {
                 {/* Exchange Rate Inputs */}
                 <div className="grid grid-cols-3 gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
                   <div className="space-y-1">
-                    <Label className="text-xs">CAD → AED</Label>
-                    <Input type="number" step="any" value={cadToAed} onChange={(e) => setCadToAed(e.target.value)} className="h-9 glass-input font-mono" />
+                    <Label className="text-xs">{countryConfig.currency} → AED</Label>
+                    <Input type="number" step="any" value={fxRates.AED} onChange={(e) => setFxRates({ ...fxRates, AED: e.target.value })} className="h-9 glass-input font-mono" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">AED → PKR</Label>
-                    <Input type="number" step="any" value={aedToPkr} onChange={(e) => setAedToPkr(e.target.value)} className="h-9 glass-input font-mono" />
+                    <Label className="text-xs">{countryConfig.currency} → PKR</Label>
+                    <Input type="number" step="any" value={fxRates.PKR} onChange={(e) => setFxRates({ ...fxRates, PKR: e.target.value })} className="h-9 glass-input font-mono" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">CAD → USD</Label>
-                    <Input type="number" step="any" value={cadToUsd} onChange={(e) => setCadToUsd(e.target.value)} className="h-9 glass-input font-mono" />
+                    <Label className="text-xs">{countryConfig.currency} → USD</Label>
+                    <Input type="number" step="any" value={fxRates.USD} onChange={(e) => setFxRates({ ...fxRates, USD: e.target.value })} className="h-9 glass-input font-mono" />
                   </div>
                 </div>
 

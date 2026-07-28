@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TradingPair, TradeEntry, Totals, CalculatorInputs } from "@/types/calculator";
 import { calculateTrade } from "@/utils/calculator";
 import {
@@ -23,6 +23,7 @@ import CanadaFundCalculator from "@/components/CanadaFundCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import MarketUpdates from "@/components/MarketUpdates";
 import TradingSignals from "@/components/TradingSignals";
+import { getLifelineData } from "@/utils/lifeline";
 import { GroupExpenses } from "@/components/GroupExpenses";
 import { Notifications } from "@/components/Notifications";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
@@ -46,7 +47,9 @@ import {
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
-  const [activeTab, setActiveTab] = useState("calculator");
+  const [activeTab, setActiveTab] = useState(() =>
+    getSelectedPair() ? "calculator" : "canada"
+  );
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [unreadNotif, setUnreadNotif] = useState(0);
   
@@ -110,10 +113,19 @@ const Index = () => {
   };
 
   const handleChangePair = () => {
+    if (trades.length > 0) {
+      const ok = window.confirm(
+        "Pair change karne se saari trade history clear ho jayegi. Continue?"
+      );
+      if (!ok) return;
+    }
     clearSelectedPair();
     clearTradesFromStorage();
     setSelectedPair(null);
     setTrades([]);
+    setActiveTab((tab) =>
+      tab === "calculator" || tab === "totals" ? "pair" : tab
+    );
     toast({
       title: "Pair changed",
       description: "History cleared. Select a new pair to continue",
@@ -168,14 +180,12 @@ const Index = () => {
     { value: "pair", label: "Select Trading Pair" },
   ];
 
-  // Set default tab based on pair selection
+  // Redirect orphan tabs when pair is cleared
   useEffect(() => {
-    if (!selectedPair && activeTab === "calculator") {
+    if (!selectedPair && (activeTab === "calculator" || activeTab === "totals")) {
       setActiveTab("canada");
-    } else if (selectedPair && activeTab !== "calculator") {
-      setActiveTab("calculator");
     }
-  }, [selectedPair]);
+  }, [selectedPair, activeTab]);
 
   const getCurrentTabLabel = () => {
     const tab = availableTabs.find(t => t.value === activeTab);
@@ -289,7 +299,7 @@ const Index = () => {
 
           <TabsContent value="tax" className="mt-6">
             {(() => {
-              const lifelineData = localStorage.getItem("forex-lifeline-data");
+              const lifelineData = getLifelineData();
               if (!lifelineData) {
                 return (
                   <div className="text-center py-12 text-muted-foreground">
@@ -297,11 +307,10 @@ const Index = () => {
                   </div>
                 );
               }
-              const data = JSON.parse(lifelineData);
               return (
                 <TaxHistory 
-                  taxPayments={data.taxPayments || []} 
-                  currency={data.settings?.currency || "USD"} 
+                  taxPayments={lifelineData.taxPayments || []} 
+                  currency={lifelineData.settings.currency || "USD"} 
                 />
               );
             })()}
@@ -383,6 +392,7 @@ const SalaryCalculator = () => {
   const [history, setHistory] = useState<ExpenseHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [viewingEntry, setViewingEntry] = useState<ExpenseHistoryEntry | null>(null);
+  const expenseHydrated = useRef(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -401,15 +411,18 @@ const SalaryCalculator = () => {
     const savedHistory = localStorage.getItem(EXPENSE_HISTORY_KEY);
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed)) setHistory(parsed);
       } catch (e) {
         console.error("Failed to parse expense history:", e);
       }
     }
+    expenseHydrated.current = true;
   }, []);
 
-  // Save to localStorage whenever salary or expenses change
+  // Save to localStorage whenever salary or expenses change (after initial load)
   useEffect(() => {
+    if (!expenseHydrated.current) return;
     const data: ExpenseData = { salary, expenses };
     localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(data));
   }, [salary, expenses]);
@@ -479,6 +492,12 @@ const SalaryCalculator = () => {
 
   // Load history entry
   const loadFromHistory = (entry: ExpenseHistoryEntry) => {
+    if (salary > 0 || expenses.length > 0) {
+      const ok = window.confirm(
+        "Current expense data will be replaced. Continue?"
+      );
+      if (!ok) return;
+    }
     setSalary(entry.salary);
     setExpenses(JSON.parse(JSON.stringify(entry.expenses)));
     setViewingEntry(null);

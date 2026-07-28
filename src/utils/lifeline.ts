@@ -30,9 +30,25 @@ export const getLifelineData = (): LifelineData | null => {
   const stored = localStorage.getItem(LIFELINE_STORAGE_KEY);
   if (!stored) return null;
   try {
-    const data = JSON.parse(stored) as LifelineData;
-    if (!data.recurringExpenses) data.recurringExpenses = [];
-    if (data.settings.autoSyncFamily === undefined) data.settings.autoSyncFamily = true;
+    const raw = JSON.parse(stored) as Partial<LifelineData>;
+    if (!raw?.settings?.currency || !raw.settings.country) {
+      console.error("Lifeline data missing required settings");
+      return null;
+    }
+    const data: LifelineData = {
+      settings: {
+        autoSyncFamily: true,
+        monthlyIncome: 0,
+        ...raw.settings,
+      },
+      transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
+      taxPayments: Array.isArray(raw.taxPayments) ? raw.taxPayments : [],
+      recurringExpenses: Array.isArray(raw.recurringExpenses) ? raw.recurringExpenses : [],
+      externalCountryData: raw.externalCountryData,
+      lastExchangeRateUpdate: raw.lastExchangeRateUpdate,
+      cachedExchangeRate: raw.cachedExchangeRate,
+      lastFamilySyncAt: raw.lastFamilySyncAt,
+    };
     return data;
   } catch {
     console.error("Corrupt lifeline data in localStorage");
@@ -643,10 +659,22 @@ export const downloadLifelineBackup = (): void => {
 export const importLifelineBackup = (raw: string): { ok: boolean; message: string } => {
   try {
     const parsed = JSON.parse(raw) as LifelineBackupPayload;
-    if (!parsed?.lifeline?.settings) {
+    if (!parsed?.lifeline?.settings?.currency) {
       return { ok: false, message: "Invalid backup file" };
     }
-    saveLifelineData(parsed.lifeline);
+    const lifeline: LifelineData = {
+      settings: { autoSyncFamily: true, monthlyIncome: 0, ...parsed.lifeline.settings },
+      transactions: Array.isArray(parsed.lifeline.transactions) ? parsed.lifeline.transactions : [],
+      taxPayments: Array.isArray(parsed.lifeline.taxPayments) ? parsed.lifeline.taxPayments : [],
+      recurringExpenses: Array.isArray(parsed.lifeline.recurringExpenses)
+        ? parsed.lifeline.recurringExpenses
+        : [],
+      externalCountryData: parsed.lifeline.externalCountryData,
+      lastExchangeRateUpdate: parsed.lifeline.lastExchangeRateUpdate,
+      cachedExchangeRate: parsed.lifeline.cachedExchangeRate,
+      lastFamilySyncAt: parsed.lifeline.lastFamilySyncAt,
+    };
+    saveLifelineData(lifeline);
     if (parsed.family) {
       localStorage.setItem(FAMILY_KEY, JSON.stringify(parsed.family));
     }

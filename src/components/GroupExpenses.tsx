@@ -179,6 +179,17 @@ const GroupDetail = ({ group, onBack, onUpdate, onRemove, toast }: any) => {
   const removeExpense = (id: string) => onUpdate({ expenses: group.expenses.filter((e: GroupExpense) => e.id !== id) });
 
   const recordSettlement = (fromId: string, toId: string, amount: number) => {
+    const already = group.settlements.some(
+      (s: GroupSettlement) =>
+        s.fromId === fromId &&
+        s.toId === toId &&
+        Math.abs(s.amount - amount) < 0.02 &&
+        new Date(s.date).toDateString() === new Date().toDateString()
+    );
+    if (already) {
+      toast({ title: "Already recorded", description: "This payment was already marked today.", variant: "destructive" });
+      return;
+    }
     const s: GroupSettlement = { id: uid(), fromId, toId, amount, date: new Date().toISOString() };
     onUpdate({ settlements: [...group.settlements, s] });
     toast({ title: "Settlement recorded" });
@@ -343,6 +354,7 @@ const GroupDetail = ({ group, onBack, onUpdate, onRemove, toast }: any) => {
 };
 
 const AddExpenseForm = ({ group, onAdd }: { group: ExpenseGroup; onAdd: (e: GroupExpense) => void }) => {
+  const { toast } = useToast();
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState("");
   const [payerId, setPayerId] = useState(group.members[0]?.id || "");
@@ -351,6 +363,11 @@ const AddExpenseForm = ({ group, onAdd }: { group: ExpenseGroup; onAdd: (e: Grou
     Object.fromEntries(group.members.map(m => [m.id, true]))
   );
   const [custom, setCustom] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (payerId && group.members.some((m) => m.id === payerId)) return;
+    setPayerId(group.members[0]?.id || "");
+  }, [group.members, payerId]);
 
   const submit = () => {
     const amt = parseFloat(amount);
@@ -364,6 +381,20 @@ const AddExpenseForm = ({ group, onAdd }: { group: ExpenseGroup; onAdd: (e: Grou
       splits = computeSplits(amt, activeMembers, "equal");
     } else {
       const customArr = activeMembers.map(m => ({ memberId: m.id, value: parseFloat(custom[m.id] || "0") || 0 }));
+      if (mode === "unequal") {
+        const sum = customArr.reduce((s, c) => s + c.value, 0);
+        if (Math.abs(sum - amt) > 0.02) {
+          toast({ title: "Invalid split", description: `Shares must total ${amt.toFixed(2)}`, variant: "destructive" });
+          return;
+        }
+      }
+      if (mode === "percentage") {
+        const sum = customArr.reduce((s, c) => s + c.value, 0);
+        if (Math.abs(sum - 100) > 0.5) {
+          toast({ title: "Invalid split", description: "Percentages must total 100%", variant: "destructive" });
+          return;
+        }
+      }
       splits = computeSplits(amt, activeMembers, mode, customArr);
     }
 
