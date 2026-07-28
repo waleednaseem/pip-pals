@@ -25,6 +25,7 @@ import MarketUpdates from "@/components/MarketUpdates";
 import TradingSignals from "@/components/TradingSignals";
 import { getLifelineData } from "@/utils/lifeline";
 import { GroupExpenses } from "@/components/GroupExpenses";
+import { ExpenseDivider } from "@/components/ExpenseDivider";
 import { Notifications } from "@/components/Notifications";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
@@ -175,6 +176,7 @@ const Index = () => {
     { value: "time-convert", label: "Time Conversion" },
     { value: "lifeline", label: "Setup Your Lifeline" },
     { value: "group-expenses", label: "Group Expenses (Friends)" },
+    { value: "expense-divider", label: "Expense Divider" },
     { value: "tax", label: "Tax History" },
     ...(selectedPair ? [{ value: "totals", label: "Totals Summary" }] : []),
     { value: "pair", label: "Select Trading Pair" },
@@ -287,6 +289,10 @@ const Index = () => {
 
           <TabsContent value="group-expenses" className="mt-6">
             <GroupExpenses />
+          </TabsContent>
+
+          <TabsContent value="expense-divider" className="mt-6">
+            <ExpenseDivider />
           </TabsContent>
 
           <TabsContent value="notifications" className="mt-6">
