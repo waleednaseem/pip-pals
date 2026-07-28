@@ -93,21 +93,23 @@ export default function TradingSignals() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg overflow-hidden border flex flex-col" style={{ height: 660 }}>
-            <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30 shrink-0">
-              {pair.label} — Live Chart
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 rounded-lg overflow-hidden border flex flex-col" style={{ height: 520 }}>
+              <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30 shrink-0">
+                {pair.label} — Live Chart
+              </div>
+              <div className="flex-1 min-h-0">
+                <TradingViewChart symbol={pair.tvSymbol} height="100%" />
+              </div>
             </div>
-            <div className="flex-1 min-h-0">
-              <TradingViewChart symbol={pair.tvSymbol} height="100%" />
-            </div>
-          </div>
 
-          <div className="rounded-lg overflow-hidden border flex flex-col" style={{ height: 540 }}>
-            <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30 shrink-0">
-              Buy / Sell Signal — {pair.label}
-            </div>
-            <div className="flex-1 min-h-0">
-              <TradingViewTechnicalAnalysis symbol={pair.tvSymbol} height="100%" />
+            <div className="rounded-lg overflow-hidden border flex flex-col" style={{ height: 520 }}>
+              <div className="px-3 py-2 text-sm font-medium border-b bg-muted/30 shrink-0">
+                Buy / Sell Signal — {pair.label}
+              </div>
+              <div className="flex-1 min-h-0">
+                <TradingViewTechnicalAnalysis symbol={pair.tvSymbol} height="100%" />
+              </div>
             </div>
           </div>
 

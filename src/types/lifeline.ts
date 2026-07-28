@@ -3,8 +3,21 @@ export interface ExternalCountryBudget {
   monthlyBudget: number; // Monthly budget in PRIMARY currency (e.g., CAD)
 }
 
+export type RecurringFreq = "weekly" | "monthly";
+
+export interface LifelineRecurringExpense {
+  id: string;
+  amount: number;
+  description: string;
+  frequency: RecurringFreq;
+  nextDueDate: string; // ISO
+  active: boolean;
+  createdAt: string;
+}
+
 export interface LifelineSettings {
-  monthlyExpense: number; // Monthly expense in selected currency
+  monthlyExpense: number; // Monthly expense target in selected currency
+  monthlyIncome?: number; // Expected monthly income (used for tax bracket estimate)
   currency: string; // Selected currency (e.g., CAD, PKR, EUR)
   country: string; // Selected country (e.g., canada, usa, pakistan)
   taxRate: number; // Tax rate percentage (e.g., 30 for 30%)
@@ -12,6 +25,7 @@ export interface LifelineSettings {
   periodMonths: number; // 1 for monthly, 6 for 6-month tracking
   externalCountries?: string[]; // Additional countries for expense tracking (e.g., ["pakistan", "uae"])
   externalCountryBudgets?: ExternalCountryBudget[]; // Monthly budgets for external countries in PRIMARY currency
+  autoSyncFamily?: boolean; // Auto-pull family expenses into Lifeline
 }
 
 export interface Transaction {
@@ -25,6 +39,11 @@ export interface Transaction {
   exchangeRate?: number; // Exchange rate used for conversion
   country?: string; // Country for this transaction (main or external)
   isExternalExpense?: boolean; // If true, this is a mirror of an external country expense
+  linkedTransactionId?: string; // Links mirrored main↔external transactions for safe deletes
+  /** Origin markers for sync / recurring */
+  source?: "manual" | "family" | "recurring";
+  familyExpenseId?: string; // Dedupes family → lifeline sync
+  recurringId?: string; // Parent recurring template id
 }
 
 export interface TaxPayment {
@@ -48,9 +67,11 @@ export interface LifelineData {
   settings: LifelineSettings;
   transactions: Transaction[];
   taxPayments: TaxPayment[];
+  recurringExpenses?: LifelineRecurringExpense[];
   lastExchangeRateUpdate?: string;
   cachedExchangeRate?: number;
   externalCountryData?: ExternalCountryData[];
+  lastFamilySyncAt?: string;
 }
 
 export interface LifelineStats {
@@ -66,4 +87,13 @@ export interface LifelineStats {
   daysTotal: number;
   daysRemaining: number;
   weeksRemaining: number;
+}
+
+export interface LifelineBackupPayload {
+  version: 1;
+  exportedAt: string;
+  lifeline: LifelineData;
+  family?: unknown;
+  notifications?: unknown;
+  ratesCatalog?: unknown;
 }

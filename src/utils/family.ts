@@ -17,16 +17,17 @@ const emptyFamily: FamilyData = {
   events: [],
   loans: [],
   zakat: [],
+  subscriptions: [],
 };
 
 export const getFamilyData = (): FamilyData => {
   try {
     const raw = localStorage.getItem(FAMILY_KEY);
-    if (!raw) return { ...emptyFamily };
+    if (!raw) return { ...emptyFamily, subscriptions: [] };
     const parsed = JSON.parse(raw);
-    return { ...emptyFamily, ...parsed };
+    return { ...emptyFamily, ...parsed, subscriptions: parsed.subscriptions || [] };
   } catch {
-    return { ...emptyFamily };
+    return { ...emptyFamily, subscriptions: [] };
   }
 };
 
@@ -252,6 +253,26 @@ export const runRecurringEngine = () => {
   });
 
   if (changed) saveFamilyData(data);
+
+  // Subscription due reminders (next 7 days)
+  const fam = getFamilyData();
+  (fam.subscriptions || [])
+    .filter((s) => s.active && s.nextDueDate)
+    .forEach((s) => {
+      const days = (new Date(s.nextDueDate).getTime() - Date.now()) / 86400000;
+      if (days <= 7 && days >= -3) {
+        addNotification({
+          title: days < 0 ? `Overdue: ${s.name}` : `Due soon: ${s.name}`,
+          description: `${s.ownerName || s.category || "Subscription"} — ${s.amount}`,
+          type: "payment",
+          priority: days < 0 ? "high" : "medium",
+          dueDate: s.nextDueDate,
+          refType: "subscription",
+          refId: s.id,
+          dedupeKey: `sub-due-${s.id}-${s.nextDueDate.slice(0, 10)}`,
+        });
+      }
+    });
 };
 
 

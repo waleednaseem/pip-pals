@@ -15,7 +15,7 @@ import {
 import { PieChart as RPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
   FamilyData, Wife, Child, Parent, Sibling, HouseholdExpense, FamilyEvent,
-  Loan, ZakatRecord, ExpenseEntry,
+  Loan, ZakatRecord, ExpenseEntry, FamilyCountryKey, FAMILY_COUNTRY_OPTIONS,
 } from "@/types/family";
 import { getFamilyData, saveFamilyData, sumExpenses, wifeTotal, loanOutstanding, calcZakat, uid, addNotification } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
@@ -340,7 +340,7 @@ const WivesSection = ({ data, setData, currency, toast }: any) => {
 
   const addWife = () => {
     if (!name.trim()) return;
-    const w: Wife = { id: uid(), name: name.trim(), expenses: [], walletBalance: 0, mahrPaid: 0 };
+    const w: Wife = { id: uid(), name: name.trim(), expenses: [], walletBalance: 0, mahrPaid: 0, country: "uae" };
     setData({ ...data, wives: [...data.wives, w] });
     setName("");
     toast({ title: "Wife added", description: `${w.name} added to family.` });
@@ -407,6 +407,12 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">Total: {fmt(total, currency)}</Badge>
+            {wife.country && (
+              <Badge variant="secondary" className="text-xs">
+                {FAMILY_COUNTRY_OPTIONS.find((c) => c.key === wife.country)?.flag}{" "}
+                {FAMILY_COUNTRY_OPTIONS.find((c) => c.key === wife.country)?.label}
+              </Badge>
+            )}
             <Button size="icon" variant="ghost" onClick={onRemove} className="h-8 w-8 text-red-500"><Trash2 className="h-4 w-4" /></Button>
           </div>
         </div>
@@ -414,6 +420,24 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
       <CardContent className="space-y-4">
         {/* Profile fields */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div>
+            <Label className="text-xs">Lives in (Country)</Label>
+            <Select
+              value={wife.country || ""}
+              onValueChange={(v: FamilyCountryKey) => onUpdate({ country: v })}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Assign country" />
+              </SelectTrigger>
+              <SelectContent>
+                {FAMILY_COUNTRY_OPTIONS.map((c) => (
+                  <SelectItem key={c.key} value={c.key}>
+                    {c.flag} {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label className="text-xs">Marriage Date</Label>
             <Input type="date" value={wife.marriageDate || ""} onChange={e => onUpdate({ marriageDate: e.target.value })} className="h-8" /></div>
           <div><Label className="text-xs">Mahr Total</Label>
@@ -501,9 +525,24 @@ const ChildBlock = ({ child, currency, onUpdate, onRemove }: any) => {
             </SelectContent>
           </Select>
         </div>
+        <div>
+          <Label className="text-[10px]">Country</Label>
+          <Select
+            value={child.country || ""}
+            onValueChange={(v: FamilyCountryKey) => onUpdate({ country: v })}
+          >
+            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Inherit mom" /></SelectTrigger>
+            <SelectContent>
+              {FAMILY_COUNTRY_OPTIONS.map((c) => (
+                <SelectItem key={c.key} value={c.key}>{c.flag} {c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div><Label className="text-[10px]">School</Label><Input value={child.schoolName || ""} onChange={e => onUpdate({ schoolName: e.target.value })} className="h-7 text-xs" /></div>
         <div><Label className="text-[10px]">Class</Label><Input value={child.schoolClass || ""} onChange={e => onUpdate({ schoolClass: e.target.value })} className="h-7 text-xs" /></div>
-        <div className="col-span-2 md:col-span-1"><Label className="text-[10px]">Monthly Fee</Label><Input type="number" value={child.monthlyFee ?? ""} onChange={e => onUpdate({ monthlyFee: parseFloat(e.target.value) || 0 })} className="h-7 text-xs" /></div>
+        <div><Label className="text-[10px]">Monthly Fee</Label><Input type="number" value={child.monthlyFee ?? ""} onChange={e => onUpdate({ monthlyFee: parseFloat(e.target.value) || 0 })} className="h-7 text-xs" /></div>
+        <div><Label className="text-[10px]">Fee due day (1–28)</Label><Input type="number" min={1} max={28} value={child.feeDueDay ?? ""} onChange={e => onUpdate({ feeDueDay: Math.min(28, Math.max(1, parseInt(e.target.value) || 1)) })} className="h-7 text-xs" /></div>
       </div>
       <QuickExpenseAdder
         scope="child"
@@ -529,7 +568,13 @@ const PersonSection = ({ data, setData, currency, kind }: any) => {
 
   const add = () => {
     if (!name.trim()) return;
-    const item: any = { id: uid(), name: name.trim(), relation, expenses: [] };
+    const item: any = {
+      id: uid(),
+      name: name.trim(),
+      relation,
+      expenses: [],
+      country: kind === "parents" || kind === "siblings" ? "pakistan" : undefined,
+    };
     setData({ ...data, [kind]: [...list, item] });
     setName("");
   };
@@ -572,9 +617,23 @@ const PersonSection = ({ data, setData, currency, kind }: any) => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Country</Label>
+                  <Select
+                    value={p.country || "pakistan"}
+                    onValueChange={(v: FamilyCountryKey) => update(p.id, { country: v })}
+                  >
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FAMILY_COUNTRY_OPTIONS.map((c) => (
+                        <SelectItem key={c.key} value={c.key}>{c.flag} {c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><Label className="text-xs">Monthly Allowance</Label>
                   <Input type="number" value={p.monthlyAllowance ?? ""} onChange={e => update(p.id, { monthlyAllowance: parseFloat(e.target.value) || 0 })} className="h-8" /></div>
-                <div><Label className="text-xs">Notes</Label>
+                <div className="col-span-2"><Label className="text-xs">Notes</Label>
                   <Input value={p.notes || ""} onChange={e => update(p.id, { notes: e.target.value })} className="h-8" /></div>
               </div>
               <ExpenseListEditor entries={p.expenses} currency={currency} onChange={ne => update(p.id, { expenses: ne })}
@@ -601,11 +660,21 @@ const HouseholdSection = ({ data, setData, currency }: any) => {
   const [label, setLabel] = useState("");
   const [cat, setCat] = useState<HouseholdExpense["category"]>("grocery");
   const [recurring, setRecurring] = useState(false);
+  const [country, setCountry] = useState<FamilyCountryKey>("canada");
 
   const add = () => {
     const a = parseFloat(amt);
     if (!a || a <= 0 || !label.trim()) return;
-    const h: HouseholdExpense = { id: uid(), category: cat, label: label.trim(), amount: a, date: new Date().toISOString(), recurring, paid: false };
+    const h: HouseholdExpense = {
+      id: uid(),
+      category: cat,
+      label: label.trim(),
+      amount: a,
+      date: new Date().toISOString(),
+      recurring,
+      paid: false,
+      country,
+    };
     setData({ ...data, household: [...data.household, h] });
     setAmt(""); setLabel("");
   };
@@ -630,8 +699,18 @@ const HouseholdSection = ({ data, setData, currency }: any) => {
             <Input className="col-span-5" placeholder="Label (e.g. Bijli bill)" value={label} onChange={e => setLabel(e.target.value)} />
             <Input className="col-span-3" type="number" placeholder={`Amount (${currency})`} value={amt} onChange={e => setAmt(e.target.value)} />
           </div>
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />Recurring monthly</label>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />Recurring monthly</label>
+              <Select value={country} onValueChange={(v: FamilyCountryKey) => setCountry(v)}>
+                <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FAMILY_COUNTRY_OPTIONS.map((c) => (
+                    <SelectItem key={c.key} value={c.key}>{c.flag} {c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={add} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="h-4 w-4 mr-1" />Add</Button>
           </div>
         </CardContent>

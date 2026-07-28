@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,25 +6,37 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download, Globe, PieChart, ArrowUpRight, ArrowDownRight, Heart } from "lucide-react";
+import { Activity, PlusCircle, Trash2, TrendingUp, TrendingDown, Target, Calendar, DollarSign, AlertCircle, Settings2, Download, Globe, PieChart, ArrowUpRight, ArrowDownRight, Heart, Upload, RefreshCw, Repeat, Pencil, LayoutDashboard, CalendarDays } from "lucide-react";
 import { FamilyManager } from "@/components/FamilyManager";
+import LifelineHQ from "@/components/LifelineHQ";
+import FamilyCalendarView from "@/components/FamilyCalendarView";
+import SubscriptionsManager from "@/components/SubscriptionsManager";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import jsPDF from "jspdf";
-import { LifelineData, Transaction, LifelineStats, ExternalCountryData } from "@/types/lifeline";
+import { LifelineData, Transaction, LifelineStats, ExternalCountryData, RecurringFreq } from "@/types/lifeline";
 import {
   getLifelineData,
   initializeLifeline,
   addTransaction,
-  deleteTransaction,
   calculateLifelineStats,
   formatCurrency,
   getExchangeRate,
   calculateTaxOwed,
   payTax,
   saveLifelineData,
+  updateLifelineSettings,
+  downloadLifelineBackup,
+  importLifelineBackup,
+  runLifelineMaintenance,
+  syncFamilyExpensesToLifeline,
+  addRecurringExpense,
+  removeRecurringExpense,
+  toggleRecurringExpense,
 } from "@/utils/lifeline";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 // Country tax configurations
 const COUNTRY_TAX_CONFIG = {
@@ -122,10 +134,25 @@ export const Lifeline = ({}: LifelineProps) => {
 
   // Setup form states
   const [monthlyExpense, setMonthlyExpense] = useState("");
+  const [monthlyIncome, setMonthlyIncome] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<CountryKey>("canada");
   const [periodMonths, setPeriodMonths] = useState("1");
   const [selectedExternalCountries, setSelectedExternalCountries] = useState<CountryKey[]>([]);
   const [externalBudgets, setExternalBudgets] = useState<Record<string, string>>({});
+
+  // Edit settings dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState("");
+  const [editIncome, setEditIncome] = useState("");
+  const [editPeriod, setEditPeriod] = useState("1");
+  const [editAutoSync, setEditAutoSync] = useState(true);
+
+  // Recurring form
+  const [recAmount, setRecAmount] = useState("");
+  const [recDesc, setRecDesc] = useState("");
+  const [recFreq, setRecFreq] = useState<RecurringFreq>("monthly");
+
+  const [hqRefresh, setHqRefresh] = useState(0);
 
   // Transaction form states
   const [transAmount, setTransAmount] = useState("");
@@ -151,24 +178,25 @@ export const Lifeline = ({}: LifelineProps) => {
       .map(([key, config]) => ({ key: key as CountryKey, ...config }));
   }, [selectedCountry]);
 
-  // Calculate effective tax rate based on yearly income and country (for setup)
+  // Tax bracket from monthly INCOME (not expense)
   const { calculatedTaxRate, applicableBracket } = useMemo(() => {
-    if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) {
+    const income = parseFloat(monthlyIncome);
+    if (!monthlyIncome || income <= 0) {
       return { calculatedTaxRate: 0, applicableBracket: null };
     }
-    const yearlyIncome = parseFloat(monthlyExpense) * 12;
+    const yearlyIncome = income * 12;
     const { rate, bracket } = calculateTaxBracket(yearlyIncome, selectedCountry);
-    return { 
-      calculatedTaxRate: rate, 
-      applicableBracket: bracket
+    return {
+      calculatedTaxRate: rate,
+      applicableBracket: bracket,
     };
-  }, [monthlyExpense, selectedCountry]);
+  }, [monthlyIncome, selectedCountry]);
 
-  // Calculate yearly income for display in setup
+  // Yearly income for display in setup
   const yearlyIncome = useMemo(() => {
-    if (!monthlyExpense || parseFloat(monthlyExpense) <= 0) return 0;
-    return parseFloat(monthlyExpense) * 12;
-  }, [monthlyExpense]);
+    if (!monthlyIncome || parseFloat(monthlyIncome) <= 0) return 0;
+    return parseFloat(monthlyIncome) * 12;
+  }, [monthlyIncome]);
 
   // Calculate LIVE tax bracket based on actual earnings (for dashboard)
   const liveTaxInfo = useMemo(() => {
@@ -208,9 +236,12 @@ export const Lifeline = ({}: LifelineProps) => {
     // Total earnings so far
     const totalEarnings = stats.totalEarned;
     
-    // Annualize based on period
+    // Annualize based on period — prefer configured monthly income when available
     const daysElapsed = Math.max(stats.daysElapsed, 1);
-    const projectedYearlyIncome = (totalEarnings / daysElapsed) * 365;
+    const projectedFromEarnings = (totalEarnings / daysElapsed) * 365;
+    const incomeBasedYearly = (data.settings.monthlyIncome || 0) * 12;
+    const projectedYearlyIncome =
+      incomeBasedYearly > 0 ? incomeBasedYearly : projectedFromEarnings;
     
     // Current tax bracket based on actual earnings
     const { rate: currentRate, bracket: currentBracket } = calculateTaxBracket(totalEarnings, countryKey);
@@ -332,17 +363,13 @@ export const Lifeline = ({}: LifelineProps) => {
           .reduce((sum, t) => sum + t.amount, 0);
         
         if (extEarnings > 0) {
-          // Convert to main currency for comparison
-          const extRate = externalRates[extConfig.currency] || 1;
-          const mainRate = exchangeRate;
-          const earningsInMainCurrency = (extEarnings / extRate) * mainRate;
-          
+          // External amounts are already stored in primary currency
           distribution.push({
             name: extConfig.name,
-            value: earningsInMainCurrency,
+            value: extEarnings,
             flag: extConfig.flag,
             originalValue: extEarnings,
-            originalCurrency: extConfig.currency,
+            originalCurrency: data.settings.currency,
           });
         }
       });
@@ -372,6 +399,7 @@ export const Lifeline = ({}: LifelineProps) => {
   };
 
   const loadData = async () => {
+    const maintenance = runLifelineMaintenance();
     const lifelineData = getLifelineData();
     if (lifelineData) {
       setData(lifelineData);
@@ -381,11 +409,23 @@ export const Lifeline = ({}: LifelineProps) => {
       const calculatedStats = calculateLifelineStats(lifelineData, rate);
       setStats(calculatedStats);
 
-      // Load external rates
       if (lifelineData.settings.externalCountries?.length) {
         await fetchExternalRates(lifelineData.settings.externalCountries);
         setActiveExternalTab(lifelineData.settings.externalCountries[0]);
       }
+
+      if (maintenance.recurring > 0 || maintenance.family > 0) {
+        toast({
+          title: "Lifeline updated",
+          description: [
+            maintenance.recurring > 0 ? `${maintenance.recurring} recurring` : null,
+            maintenance.family > 0 ? `${maintenance.family} family` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") + " expense(s) added",
+        });
+      }
+      setHqRefresh((k) => k + 1);
     }
   };
 
@@ -407,6 +447,7 @@ export const Lifeline = ({}: LifelineProps) => {
 
     const settings = {
       monthlyExpense: parseFloat(monthlyExpense),
+      monthlyIncome: parseFloat(monthlyIncome) || 0,
       currency: currency,
       country: selectedCountry,
       startDate: new Date().toISOString(),
@@ -414,6 +455,7 @@ export const Lifeline = ({}: LifelineProps) => {
       taxRate: calculatedTaxRate,
       externalCountries: selectedExternalCountries,
       externalCountryBudgets,
+      autoSyncFamily: true,
     };
 
     initializeLifeline(settings);
@@ -593,10 +635,13 @@ export const Lifeline = ({}: LifelineProps) => {
       });
     }
 
-    // If expense, also deduct from main country transactions
+    // If expense, also deduct from main country transactions (linked for safe delete)
     if (extTransType === "expense") {
+      const mirrorId = uuidv4();
+      transaction.linkedTransactionId = mirrorId;
+
       const mainExpenseTransaction: Transaction = {
-        id: uuidv4(),
+        id: mirrorId,
         amount: amountInPrimary,
         amountUSD: amountInPrimary / mainCurrencyRate,
         description: `${extConfig.flag} ${extTransDescription} (≈${formatCurrency(amountInLocal, extConfig.currency)})`,
@@ -605,6 +650,7 @@ export const Lifeline = ({}: LifelineProps) => {
         exchangeRate: mainCurrencyRate,
         country: data.settings.country,
         isExternalExpense: true,
+        linkedTransactionId: transaction.id,
       };
       updatedData.transactions.push(mainExpenseTransaction);
     }
@@ -631,7 +677,7 @@ export const Lifeline = ({}: LifelineProps) => {
       return;
     }
 
-    if (!data) return;
+    if (!data || !stats) return;
 
     const extConfig = COUNTRY_TAX_CONFIG[extCountry as CountryKey];
     const amount = parseFloat(fundAmount);
@@ -646,9 +692,12 @@ export const Lifeline = ({}: LifelineProps) => {
       return;
     }
 
+    const mainId = uuidv4();
+    const extId = uuidv4();
+
     // 1. Create Expense in Primary Country
     const mainTransaction: Transaction = {
-      id: uuidv4(),
+      id: mainId,
       amount: amount,
       amountUSD: data.settings.currency !== "USD" ? amount / exchangeRate : amount,
       description: `Fund Transfer to ${extConfig.name} ${extConfig.flag}`,
@@ -656,6 +705,7 @@ export const Lifeline = ({}: LifelineProps) => {
       type: "expense",
       exchangeRate: data.settings.currency !== "USD" ? exchangeRate : undefined,
       country: data.settings.country,
+      linkedTransactionId: extId,
     };
 
     // 2. Add Fund (Earning) to Sub Country
@@ -663,7 +713,7 @@ export const Lifeline = ({}: LifelineProps) => {
     const mainCurrencyRate = exchangeRate;
 
     const extTransaction: Transaction = {
-      id: uuidv4(),
+      id: extId,
       amount: amount, // Stored in PRIMARY currency
       amountUSD: amount / mainCurrencyRate,
       description: "Fund Received from Primary",
@@ -671,6 +721,7 @@ export const Lifeline = ({}: LifelineProps) => {
       type: "earning", // Treating Fund as Earning for the Sub Country
       exchangeRate: extRate,
       country: extCountry,
+      linkedTransactionId: mainId,
     };
 
     const currentData = getLifelineData();
@@ -716,8 +767,32 @@ export const Lifeline = ({}: LifelineProps) => {
     const extIndex = updatedData.externalCountryData?.findIndex(e => e.country === extCountry);
     
     if (extIndex !== undefined && extIndex >= 0 && updatedData.externalCountryData) {
-      updatedData.externalCountryData[extIndex].transactions = 
+      const removed = updatedData.externalCountryData[extIndex].transactions.find(t => t.id === transId);
+      updatedData.externalCountryData[extIndex].transactions =
         updatedData.externalCountryData[extIndex].transactions.filter(t => t.id !== transId);
+
+      // Also remove linked main-country mirror (expense or fund transfer)
+      if (removed?.linkedTransactionId) {
+        updatedData.transactions = updatedData.transactions.filter(
+          t => t.id !== removed.linkedTransactionId
+        );
+      } else if (removed) {
+        // Legacy fallback (pre-link data): match fund transfer / mirrored expense loosely
+        updatedData.transactions = updatedData.transactions.filter(t => {
+          if (removed.description === "Fund Received from Primary") {
+            return !(
+              t.type === "expense" &&
+              t.amount === removed.amount &&
+              t.description.startsWith("Fund Transfer to")
+            );
+          }
+          if (removed.type === "expense") {
+            return !(t.isExternalExpense && t.amount === removed.amount && t.date === removed.date);
+          }
+          return true;
+        });
+      }
+
       saveLifelineData(updatedData);
       loadData();
       
@@ -729,7 +804,23 @@ export const Lifeline = ({}: LifelineProps) => {
   };
 
   const handleDeleteTransaction = (id: string) => {
-    deleteTransaction(id);
+    if (!data) return;
+
+    const removed = data.transactions.find(t => t.id === id);
+    const updatedData = { ...data };
+    updatedData.transactions = updatedData.transactions.filter(t => t.id !== id);
+
+    // If deleting a mirrored / fund-transfer main tx, remove linked external tx too
+    if (removed?.linkedTransactionId && updatedData.externalCountryData) {
+      updatedData.externalCountryData = updatedData.externalCountryData.map(ext => ({
+        ...ext,
+        transactions: ext.transactions.filter(
+          t => t.id !== removed.linkedTransactionId && t.linkedTransactionId !== id
+        ),
+      }));
+    }
+
+    saveLifelineData(updatedData);
     loadData();
     
     toast({
@@ -776,12 +867,87 @@ export const Lifeline = ({}: LifelineProps) => {
     setStats(null);
     setIsSetup(false);
     setMonthlyExpense("");
+    setMonthlyIncome("");
     setSelectedExternalCountries([]);
     
     toast({
       title: "Lifeline Reset",
       description: "All data has been cleared",
     });
+  };
+
+  const openEditSettings = () => {
+    if (!data) return;
+    setEditExpense(String(data.settings.monthlyExpense || ""));
+    setEditIncome(String(data.settings.monthlyIncome || ""));
+    setEditPeriod(String(data.settings.periodMonths || 1));
+    setEditAutoSync(data.settings.autoSyncFamily !== false);
+    setEditOpen(true);
+  };
+
+  const handleSaveSettings = () => {
+    const expense = parseFloat(editExpense);
+    const income = parseFloat(editIncome) || 0;
+    if (!expense || expense <= 0) {
+      toast({ title: "Invalid expense", description: "Enter a valid monthly expense", variant: "destructive" });
+      return;
+    }
+    const countryKey = (data?.settings.country || selectedCountry) as CountryKey;
+    const yearly = income > 0 ? income * 12 : 0;
+    const { rate } = yearly > 0 ? calculateTaxBracket(yearly, countryKey) : { rate: data?.settings.taxRate ?? 0 };
+
+    updateLifelineSettings({
+      monthlyExpense: expense,
+      monthlyIncome: income,
+      periodMonths: parseInt(editPeriod) || 1,
+      taxRate: rate,
+      autoSyncFamily: editAutoSync,
+    });
+    setEditOpen(false);
+    loadData();
+    toast({ title: "Settings updated", description: "Targets saved — transactions kept" });
+  };
+
+  const handleExportBackup = () => {
+    try {
+      downloadLifelineBackup();
+      toast({ title: "Backup downloaded", description: "Use this JSON to restore on any device" });
+    } catch {
+      toast({ title: "Export failed", variant: "destructive" });
+    }
+  };
+
+  const handleImportBackup = async (file: File) => {
+    const text = await file.text();
+    const result = importLifelineBackup(text);
+    if (result.ok) {
+      await loadData();
+      toast({ title: "Restored", description: result.message });
+    } else {
+      toast({ title: "Import failed", description: result.message, variant: "destructive" });
+    }
+  };
+
+  const handleSyncFamily = () => {
+    const n = syncFamilyExpensesToLifeline();
+    loadData();
+    toast({
+      title: n > 0 ? "Family synced" : "Already up to date",
+      description: n > 0 ? `${n} expense(s) added` : "No new family expenses",
+    });
+  };
+
+  const handleAddRecurring = () => {
+    const amount = parseFloat(recAmount);
+    if (!amount || amount <= 0 || !recDesc.trim()) {
+      toast({ title: "Invalid recurring", description: "Amount + description required", variant: "destructive" });
+      return;
+    }
+    addRecurringExpense({ amount, description: recDesc.trim(), frequency: recFreq });
+    setRecAmount("");
+    setRecDesc("");
+    loadData();
+    toast({ title: "Recurring added", description: `${recFreq} — ${formatCurrency(amount, data?.settings.currency || currency)}` });
   };
 
   const toggleExternalCountry = (country: CountryKey) => {
@@ -1639,6 +1805,30 @@ export const Lifeline = ({}: LifelineProps) => {
               </p>
             </div>
 
+            {/* Monthly Income Input — used for tax bracket */}
+            <div className="space-y-3">
+              <Label htmlFor="monthly-income" className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Monthly Income (for tax)
+              </Label>
+              <div className="relative">
+                <Input
+                  id="monthly-income"
+                  type="number"
+                  placeholder="Expected monthly income..."
+                  value={monthlyIncome}
+                  onChange={(e) => setMonthlyIncome(e.target.value)}
+                  className="h-14 text-lg pl-4 pr-16"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  {currency}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Used only to estimate your tax bracket — not your expense target
+              </p>
+            </div>
+
             {/* Country Selection */}
             <div className="space-y-3">
               <Label className="text-sm font-medium flex items-center gap-2">
@@ -1735,7 +1925,7 @@ export const Lifeline = ({}: LifelineProps) => {
                 <span className="text-xl font-bold text-primary">{calculatedTaxRate}%</span>
               </div>
               
-              {monthlyExpense && parseFloat(monthlyExpense) > 0 && (
+              {monthlyIncome && parseFloat(monthlyIncome) > 0 && (
                 <div className="space-y-2 pt-2 border-t border-border/30">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Yearly Income</span>
@@ -1846,6 +2036,31 @@ export const Lifeline = ({}: LifelineProps) => {
           <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
             {usdToLocalDisplay}
           </div>
+          <Button variant="outline" size="sm" onClick={openEditSettings} title="Edit settings">
+            <Pencil className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleSyncFamily} title="Sync family expenses">
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Sync Family
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleExportBackup} title="Download JSON backup">
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => backupInputRef.current?.click()} title="Restore JSON backup">
+            <Upload className="h-4 w-4" />
+          </Button>
+          <input
+            ref={backupInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImportBackup(f);
+              e.target.value = "";
+            }}
+          />
           <Button variant="outline" size="icon" onClick={exportToPDF} title="Export PDF">
             <Download className="h-4 w-4" />
           </Button>
@@ -1856,8 +2071,12 @@ export const Lifeline = ({}: LifelineProps) => {
       </div>
 
       {/* Main Tabs for Countries */}
-      <Tabs defaultValue="main" className="w-full">
+      <Tabs defaultValue="hq" className="w-full">
         <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="hq" className="flex-1 min-w-[100px] gap-1">
+            <LayoutDashboard className="h-4 w-4" />
+            HQ
+          </TabsTrigger>
           <TabsTrigger value="main" className="flex-1 min-w-[100px] gap-1">
             {savedCountryConfig.flag} {savedCountryConfig.name}
           </TabsTrigger>
@@ -1873,6 +2092,14 @@ export const Lifeline = ({}: LifelineProps) => {
             <PieChart className="h-4 w-4" />
             Analytics
           </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex-1 min-w-[100px] gap-1">
+            <CalendarDays className="h-4 w-4" />
+            Calendar
+          </TabsTrigger>
+          <TabsTrigger value="subscriptions" className="flex-1 min-w-[100px] gap-1">
+            <Repeat className="h-4 w-4" />
+            Subs
+          </TabsTrigger>
           <TabsTrigger value="family" className="flex-1 min-w-[100px] gap-1">
             <Heart className="h-4 w-4" />
             Family
@@ -1880,6 +2107,10 @@ export const Lifeline = ({}: LifelineProps) => {
         </TabsList>
 
         {/* Main Country Tab */}
+        <TabsContent value="hq" className="mt-4 space-y-4">
+          <LifelineHQ lifeline={data} refreshKey={hqRefresh} />
+        </TabsContent>
+
         <TabsContent value="main" className="mt-4 space-y-4">
           {/* Progress Card */}
           <Card>
@@ -2154,6 +2385,95 @@ export const Lifeline = ({}: LifelineProps) => {
             </Card>
           )}
 
+          {/* Recurring Expenses */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-primary" />
+                Recurring Expenses + Reminders
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <Input
+                  type="number"
+                  placeholder="Amount"
+                  value={recAmount}
+                  onChange={(e) => setRecAmount(e.target.value)}
+                />
+                <Input
+                  placeholder="Description (rent, utilities…)"
+                  value={recDesc}
+                  onChange={(e) => setRecDesc(e.target.value)}
+                  className="md:col-span-1"
+                />
+                <Select value={recFreq} onValueChange={(v) => setRecFreq(v as RecurringFreq)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleAddRecurring}>
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Due items auto-post to Lifeline and create Notifications reminders.
+              </p>
+              <div className="space-y-2">
+                {(data.recurringExpenses || []).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">No recurring expenses yet</p>
+                )}
+                {(data.recurringExpenses || []).map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/50">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{r.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(r.amount, data.settings.currency)} · {r.frequency} · next{" "}
+                        {new Date(r.nextDueDate).toLocaleDateString()}
+                        {!r.active && " · paused"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          toggleRecurringExpense(r.id);
+                          loadData();
+                        }}
+                      >
+                        {r.active ? "Pause" : "Resume"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          removeRecurringExpense(r.id);
+                          loadData();
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Device sync tip */}
+          <Card className="border-dashed">
+            <CardContent className="pt-4 text-sm text-muted-foreground">
+              <strong className="text-foreground">Device sync:</strong> Download JSON backup (↑), then Upload on another browser/device.
+              Full cloud sync needs a backend account (not available free yet). Family expenses auto-sync when enabled in Edit.
+            </CardContent>
+          </Card>
+
           {/* Add Transaction Card */}
           <Card>
             <CardHeader>
@@ -2381,11 +2701,66 @@ export const Lifeline = ({}: LifelineProps) => {
           </div>
         </TabsContent>
 
+        <TabsContent value="calendar" className="mt-4 space-y-4">
+          <FamilyCalendarView currency={data.settings.currency} refreshKey={hqRefresh} />
+        </TabsContent>
+
+        <TabsContent value="subscriptions" className="mt-4 space-y-4">
+          <SubscriptionsManager
+            currency={data.settings.currency}
+            onChanged={() => setHqRefresh((k) => k + 1)}
+          />
+        </TabsContent>
+
         {/* Family / Loans / Zakat Tab */}
         <TabsContent value="family" className="mt-4 space-y-4">
           <FamilyManager currency={data.settings.currency} />
         </TabsContent>
       </Tabs>
+
+      {/* Edit settings (keeps transactions) */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Lifeline Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Monthly Expense Target</Label>
+              <Input type="number" value={editExpense} onChange={(e) => setEditExpense(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Monthly Income (tax bracket)</Label>
+              <Input type="number" value={editIncome} onChange={(e) => setEditIncome(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tracking Period (months)</Label>
+              <Select value={editPeriod} onValueChange={setEditPeriod}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Month</SelectItem>
+                  <SelectItem value="3">3 Months</SelectItem>
+                  <SelectItem value="6">6 Months</SelectItem>
+                  <SelectItem value="12">12 Months</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label>Auto-sync Family expenses</Label>
+                <p className="text-xs text-muted-foreground">Pull family spend into Lifeline on open</p>
+              </div>
+              <Switch checked={editAutoSync} onCheckedChange={setEditAutoSync} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveSettings}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

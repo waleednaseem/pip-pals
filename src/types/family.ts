@@ -2,6 +2,9 @@
 
 export type RecurrenceFreq = "weekly" | "monthly" | "yearly";
 
+/** Aligns with Lifeline COUNTRY_TAX_CONFIG keys */
+export type FamilyCountryKey = "canada" | "usa" | "pakistan" | "uae" | "ksa";
+
 export interface ExpenseEntry {
   id: string;
   amount: number;
@@ -18,6 +21,7 @@ export interface ExpenseEntry {
   // Linkage so notifications can deep-link
   ownerType?: "wife" | "child" | "parent" | "sibling" | "household";
   ownerId?: string;
+  country?: FamilyCountryKey; // override owner country for this expense
 }
 
 // ---------------- Rates / Prices Catalog ----------------
@@ -53,7 +57,7 @@ export interface AppNotification {
   dueDate?: string;        // ISO
   createdAt: string;       // ISO
   // Reference for click-through
-  refType?: "wife" | "child" | "parent" | "sibling" | "household" | "loan" | "zakat" | "event" | "rate";
+  refType?: "wife" | "child" | "parent" | "sibling" | "household" | "loan" | "zakat" | "event" | "rate" | "subscription";
   refId?: string;
   // For dedupe — if same key already exists & unread, do not re-create
   dedupeKey?: string;
@@ -62,6 +66,8 @@ export interface AppNotification {
 export interface Wife {
   id: string;
   name: string;
+  /** Where she lives / expenses should be attributed */
+  country?: FamilyCountryKey;
   marriageDate?: string;
   mahrTotal?: number;
   mahrPaid?: number;
@@ -75,11 +81,14 @@ export interface Child {
   id: string;
   motherId: string; // Wife.id
   name: string;
+  /** Defaults to mother's country if unset */
+  country?: FamilyCountryKey;
   dob?: string;
   gender?: "male" | "female";
   schoolName?: string;
   schoolClass?: string;
   monthlyFee?: number;
+  feeDueDay?: number; // 1–28 day of month fee is due
   notes?: string;
   expenses: ExpenseEntry[];
 }
@@ -88,6 +97,7 @@ export interface Parent {
   id: string;
   name: string;
   relation: "father" | "mother";
+  country?: FamilyCountryKey;
   monthlyAllowance?: number;
   notes?: string;
   expenses: ExpenseEntry[];
@@ -97,6 +107,7 @@ export interface Sibling {
   id: string;
   name: string;
   relation: "brother" | "sister";
+  country?: FamilyCountryKey;
   monthlyAllowance?: number;
   notes?: string;
   expenses: ExpenseEntry[];
@@ -108,6 +119,7 @@ export interface HouseholdExpense {
   label: string;
   amount: number;
   date: string;
+  country?: FamilyCountryKey;
   recurring?: boolean;
   paid?: boolean;
   hidden?: boolean; // ghosted — excluded from calculations
@@ -119,9 +131,27 @@ export interface FamilyEvent {
   title: string;
   date: string;
   amount: number;
+  country?: FamilyCountryKey;
   assignedTo?: { type: "wife" | "child" | "parent" | "sibling" | "household"; id?: string };
   hidden?: boolean; // ghosted — excluded from calculations
   notes?: string;
+}
+
+/** Recurring subscriptions / fees (Netflix, school, tuition, etc.) */
+export interface FamilySubscription {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: RecurrenceFreq;
+  nextDueDate: string;
+  country?: FamilyCountryKey;
+  ownerType?: "wife" | "child" | "parent" | "sibling" | "household" | "self";
+  ownerId?: string;
+  ownerName?: string;
+  category?: string; // school_fee | streaming | tuition | insurance | other
+  active: boolean;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface LoanPayment {
@@ -162,6 +192,7 @@ export interface FamilyData {
   events: FamilyEvent[];
   loans: Loan[];
   zakat: ZakatRecord[];
+  subscriptions?: FamilySubscription[];
 }
 
 // ---------------- Group Expenses (Splitwise-style) ----------------
@@ -209,3 +240,15 @@ export interface ExpenseGroup {
 export interface GroupExpensesData {
   groups: ExpenseGroup[];
 }
+
+export const FAMILY_COUNTRY_OPTIONS: {
+  key: FamilyCountryKey;
+  label: string;
+  flag: string;
+}[] = [
+  { key: "canada", label: "Canada", flag: "🇨🇦" },
+  { key: "uae", label: "Dubai / UAE", flag: "🇦🇪" },
+  { key: "pakistan", label: "Pakistan", flag: "🇵🇰" },
+  { key: "usa", label: "USA", flag: "🇺🇸" },
+  { key: "ksa", label: "Saudi Arabia", flag: "🇸🇦" },
+];

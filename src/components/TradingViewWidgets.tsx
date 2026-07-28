@@ -67,7 +67,7 @@ export const TradingViewTechnicalAnalysis = ({ symbol, height = 500 }: BaseProps
         height: "100%",
         symbol,
         showIntervalTabs: true,
-        displayMode: "multiple",
+        displayMode: "single",
         locale: "en",
         colorTheme: "dark",
       }
