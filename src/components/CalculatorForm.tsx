@@ -89,74 +89,50 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full card-accent-top">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <Calculator className="h-6 w-6 text-primary" />
-            Calculate Trade
-          </CardTitle>
-          <div className="text-2xl font-bold text-primary">{pair}</div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[hsl(199_100%_50%/0.12)] border border-[hsl(199_100%_50%/0.2)]">
+              <Calculator className="h-4 w-4 text-[hsl(199_100%_55%)]" />
+            </div>
+            <CardTitle className="text-sm font-semibold">Calculate Trade</CardTitle>
+          </div>
+          <span className="badge-cyan font-mono-num">{pair}</span>
         </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="py-2">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="text-sm">{error}</AlertDescription>
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priceA">Entry Price (Price 1)</Label>
-              <Input
-                id="priceA"
-                type="number"
-                step="any"
-                placeholder="e.g., 1.1000"
-                value={priceA}
-                onChange={(e) => setPriceA(e.target.value)}
-                required
-                className="font-mono-num"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="priceA" className="label-premium">Entry Price</Label>
+              <Input id="priceA" type="number" step="any" placeholder="1.1000" value={priceA}
+                onChange={(e) => setPriceA(e.target.value)} required className="font-mono-num h-10" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priceB">Exit Price (Price 2)</Label>
-              <Input
-                id="priceB"
-                type="number"
-                step="any"
-                placeholder="e.g., 1.1050"
-                value={priceB}
-                onChange={(e) => setPriceB(e.target.value)}
-                required
-                className="font-mono-num"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="priceB" className="label-premium">Exit Price</Label>
+              <Input id="priceB" type="number" step="any" placeholder="1.1050" value={priceB}
+                onChange={(e) => setPriceB(e.target.value)} required className="font-mono-num h-10" />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="lot">Lot Size</Label>
-              <Input
-                id="lot"
-                type="number"
-                step="0.01"
-                placeholder="e.g., 0.01, 0.1, 1"
-                value={lot}
-                onChange={(e) => setLot(e.target.value)}
-                required
-                className="font-mono-num"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="lot" className="label-premium">Lot Size</Label>
+              <Input id="lot" type="number" step="0.01" placeholder="0.01" value={lot}
+                onChange={(e) => setLot(e.target.value)} required className="font-mono-num h-10" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="currency">Account Currency</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="currency" className="label-premium">Account Currency</Label>
               <Select value={accountCurrency} onValueChange={(v) => setAccountCurrency(v as Currency)}>
-                <SelectTrigger id="currency">
+                <SelectTrigger id="currency" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -168,27 +144,16 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="timeValue">Trade Duration</Label>
-              <Input
-                id="timeValue"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                min="0"
-                placeholder="e.g., 90"
-                value={timeValue}
-                onChange={(e) => setTimeValue(e.target.value)}
-                required
-                className="font-mono-num"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="timeValue" className="label-premium">Duration</Label>
+              <Input id="timeValue" type="number" inputMode="decimal" step="any" min="0" placeholder="90"
+                value={timeValue} onChange={(e) => setTimeValue(e.target.value)} required className="font-mono-num h-10" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="timeUnit">Unit</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="timeUnit" className="label-premium">Unit</Label>
               <Select value={timeUnit} onValueChange={(v) => setTimeUnit(v as TimeUnit)}>
-                <SelectTrigger id="timeUnit">
+                <SelectTrigger id="timeUnit" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,7 +168,7 @@ const CalculatorForm = ({ pair, onCalculate }: CalculatorFormProps) => {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-12 text-lg">
+          <Button type="submit" className="w-full h-11 font-semibold text-sm">
             Calculate & Add Trade
           </Button>
         </form>

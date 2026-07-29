@@ -103,35 +103,28 @@ export default function CurrencyConverter() {
   }, [amount, fromCurrency, exchangeRates]);
 
   return (
-    <div className="space-y-6">
-      {/* Main Converter */}
-      <Card>
+    <div className="space-y-5">
+      <Card className="card-accent-top">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5" />
-              Currency Converter
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchExchangeRates}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Refresh Rates
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[hsl(199_100%_50%/0.12)] border border-[hsl(199_100%_50%/0.2)]">
+                <ArrowRightLeft className="h-4 w-4 text-[hsl(199_100%_55%)]" />
+              </div>
+              <CardTitle className="text-sm">Currency Converter</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              {lastUpdated && <span className="text-[10px] text-[hsl(215_20%_40%)]">{lastUpdated.toLocaleTimeString()}</span>}
+              <Button variant="outline" size="sm" onClick={fetchExchangeRates} disabled={loading} className="h-8 text-xs gap-1.5">
+                <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
-          {lastUpdated && (
-            <p className="text-sm text-muted-foreground">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </p>
-          )}
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* From Currency */}
-          <div className="space-y-2">
-            <Label>From</Label>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="label-premium">From</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 type="number"
@@ -157,28 +150,19 @@ export default function CurrencyConverter() {
             </div>
           </div>
 
-          {/* Swap Button */}
           <div className="flex justify-center">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleSwapCurrencies}
-              className="rounded-full"
-            >
-              <ArrowRightLeft className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={handleSwapCurrencies} className="rounded-full w-8 h-8">
+              <ArrowRightLeft className="h-3.5 w-3.5" />
             </Button>
           </div>
 
-          {/* To Currency */}
-          <div className="space-y-2">
-            <Label>To</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                <div className="text-2xl font-bold font-mono">
+          <div className="space-y-1.5">
+            <Label className="label-premium">To</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl" style={{background: "hsl(199 100% 50% / 0.08)", border: "1px solid hsl(199 100% 50% / 0.2)"}}>
+                <div className="text-xl font-bold font-mono-num text-[hsl(199_100%_55%)]">
                   {convertedAmount == null
-                    ? loading
-                      ? "Loading rates…"
-                      : "—"
+                    ? loading ? <span className="text-sm text-[hsl(215_20%_45%)]">Loading...</span> : "—"
                     : formatCurrency(convertedAmount, toCurrency)}
                 </div>
               </div>

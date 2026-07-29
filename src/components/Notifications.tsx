@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { fadeInUp } from "@/lib/animations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +35,9 @@ const refIcon = (ref?: AppNotification["refType"]) => {
 };
 
 const priorityColor = (p: AppNotification["priority"]) =>
-  p === "high" ? "border-red-500/40 bg-red-500/5"
-    : p === "medium" ? "border-amber-500/30 bg-amber-500/5"
-    : "border-border/40";
+  p === "high" ? "border-[hsl(0_84%_60%/0.3)] bg-[hsl(0_84%_60%/0.04)]"
+    : p === "medium" ? "border-[hsl(38_92%_60%/0.25)] bg-[hsl(38_92%_60%/0.04)]"
+    : "border-[hsl(220_32%_18%)] bg-[hsl(220_40%_11%)]";
 
 export const Notifications = ({ onNavigate }: Props) => {
   const [list, setList] = useState<AppNotification[]>([]);
@@ -89,63 +91,83 @@ export const Notifications = ({ onNavigate }: Props) => {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="card-accent-top">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bell className="h-4 w-4 text-primary" />Notifications
-              {unreadCount > 0 && (
-                <Badge className="bg-red-500 text-white text-[10px]">{unreadCount} new</Badge>
-              )}
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => { runRecurringEngine(); reload(); }}>
-                <RefreshCw className="h-3 w-3 mr-1" />Refresh
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[hsl(199_100%_50%/0.12)] border border-[hsl(199_100%_50%/0.2)]">
+                <Bell className="h-4 w-4 text-[hsl(199_100%_55%)]" />
+              </div>
+              <CardTitle className="text-sm flex items-center gap-2">
+                Notifications
+                <AnimatePresence>
+                {unreadCount > 0 && (
+                  <motion.span
+                    key={unreadCount}
+                    className="badge-red badge-soft-pulse"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {unreadCount} new
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              </CardTitle>
+            </div>
+            <div className="flex gap-1.5">
+              <Button size="sm" variant="outline" onClick={() => { runRecurringEngine(); reload(); }} className="h-8 text-xs gap-1">
+                <RefreshCw className="h-3 w-3" />Refresh
               </Button>
-              <Button size="sm" variant="outline" onClick={markAllRead} disabled={unreadCount === 0}>
-                <CheckCheck className="h-3 w-3 mr-1" />Mark all read
+              <Button size="sm" variant="outline" onClick={markAllRead} disabled={unreadCount === 0} className="h-8 text-xs gap-1">
+                <CheckCheck className="h-3 w-3" />Mark all read
               </Button>
-              <Button size="sm" variant="outline" className="text-red-500" onClick={clearAll} disabled={list.length === 0}>
-                <Trash2 className="h-3 w-3 mr-1" />Clear
+              <Button size="sm" variant="outline" className="h-8 text-xs gap-1 text-[hsl(0_84%_60%)]" onClick={clearAll} disabled={list.length === 0}>
+                <Trash2 className="h-3 w-3" />Clear
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2 text-xs">
-            <div className="flex items-center gap-1">
-              <Filter className="h-3 w-3 text-muted-foreground" />
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3 w-3 text-[hsl(215_20%_45%)]" />
               <Tabs value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-                <TabsList className="h-7">
-                  <TabsTrigger value="all" className="text-xs h-5 px-2">All</TabsTrigger>
-                  <TabsTrigger value="payment" className="text-xs h-5 px-2">Payments</TabsTrigger>
-                  <TabsTrigger value="event" className="text-xs h-5 px-2">Events</TabsTrigger>
-                  <TabsTrigger value="recurring" className="text-xs h-5 px-2">Recurring</TabsTrigger>
-                  <TabsTrigger value="reminder" className="text-xs h-5 px-2">Reminders</TabsTrigger>
+                <TabsList className="h-7 p-0.5 rounded-lg" style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
+                  {["all", "payment", "event", "recurring", "reminder"].map(v => (
+                    <TabsTrigger key={v} value={v} className="text-[10px] h-5 px-2 rounded-md capitalize data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">{v}</TabsTrigger>
+                  ))}
                 </TabsList>
               </Tabs>
             </div>
             <Tabs value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-              <TabsList className="h-7">
-                <TabsTrigger value="all" className="text-xs h-5 px-2">All</TabsTrigger>
-                <TabsTrigger value="unread" className="text-xs h-5 px-2">Unread</TabsTrigger>
-                <TabsTrigger value="read" className="text-xs h-5 px-2">Read</TabsTrigger>
+              <TabsList className="h-7 p-0.5 rounded-lg" style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
+                {["all", "unread", "read"].map(v => (
+                  <TabsTrigger key={v} value={v} className="text-[10px] h-5 px-2 rounded-md capitalize data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">{v}</TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
           </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <BellOff className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No notifications</p>
+            <div className="text-center py-12">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{background: "hsl(220 40% 11%)"}}>
+                <BellOff className="h-5 w-5 text-[hsl(215_20%_40%)]" />
+              </div>
+              <p className="text-sm text-[hsl(215_20%_45%)]">No notifications</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {filtered.map(n => (
-                <div
+              {filtered.map((n, i) => (
+                <motion.div
                   key={n.id}
+                  initial="hidden"
+                  animate="visible"
+                  variants={fadeInUp}
+                  transition={{ delay: Math.min(i, 6) * 0.04 }}
                   onClick={() => handleClick(n)}
-                  className={`flex items-start gap-3 p-3 rounded border cursor-pointer hover:bg-muted/40 transition-colors ${priorityColor(n.priority)} ${n.status === "unread" ? "font-medium" : "opacity-70"}`}
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors duration-200 hover:brightness-110 ${priorityColor(n.priority)} ${n.status === "unread" ? "font-medium" : "opacity-60"}`}
                 >
                   <div className="mt-0.5 text-primary">{typeIcon(n.type)}</div>
                   <div className="flex-1 min-w-0">
@@ -178,7 +200,7 @@ export const Notifications = ({ onNavigate }: Props) => {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

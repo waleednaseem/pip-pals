@@ -22,24 +22,24 @@ const PairSelector = ({ selectedPair, onSelectPair, disabled }: PairSelectorProp
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
-      <div className="flex items-center gap-3 mb-4">
-        <TrendingUp className="h-12 w-12 text-primary" />
-        <h1 className="text-4xl font-bold">Forex Calculator</h1>
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-6 py-8">
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2"
+        style={{background: "linear-gradient(135deg, hsl(199 100% 50% / 0.15) 0%, hsl(270 80% 65% / 0.15) 100%)", border: "1px solid hsl(199 100% 50% / 0.25)"}}>
+        <TrendingUp className="h-8 w-8 text-[hsl(199_100%_55%)]" />
       </div>
       <div className="text-center max-w-md">
-        <h2 className="text-2xl font-semibold mb-2">Select Trading Pair</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-2xl font-bold gradient-text-mixed mb-2">Select Trading Pair</h2>
+        <p className="text-[hsl(215_20%_50%)] text-sm">
           Choose the currency pair or instrument you want to calculate pips and profits for
         </p>
       </div>
       <Select onValueChange={(value) => onSelectPair(value as TradingPair)} disabled={disabled}>
-        <SelectTrigger className="w-[280px] h-14 text-lg">
+        <SelectTrigger className="w-[280px] h-12 font-semibold">
           <SelectValue placeholder="Choose a pair..." />
         </SelectTrigger>
         <SelectContent>
           {TRADING_PAIRS.map((pair) => (
-            <SelectItem key={pair} value={pair} className="text-lg py-3">
+            <SelectItem key={pair} value={pair} className="py-2.5 font-mono-num">
               {pair}
             </SelectItem>
           ))}

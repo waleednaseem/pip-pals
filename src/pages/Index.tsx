@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { fadeInDown, staggerContainer, slideInLeft, tabContent } from "@/lib/animations";
 import { TradingPair, TradeEntry, Totals, CalculatorInputs } from "@/types/calculator";
 import { calculateTrade } from "@/utils/calculator";
 import {
@@ -23,10 +25,15 @@ import CanadaFundCalculator from "@/components/CanadaFundCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import MarketUpdates from "@/components/MarketUpdates";
 import TradingSignals from "@/components/TradingSignals";
+import BusinessIdeas from "@/components/BusinessIdeas";
 import { getLifelineData } from "@/utils/lifeline";
 import { GroupExpenses } from "@/components/GroupExpenses";
 import { ExpenseDivider } from "@/components/ExpenseDivider";
+import { KanbanBoard } from "@/components/KanbanBoard";
 import { Notifications } from "@/components/Notifications";
+import { MentalHealthHub } from "@/components/mental-health/MentalHealthHub";
+import { AdvertisingTab } from "@/components/AdvertisingTab";
+import { AdBanner } from "@/components/AdBanner";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -169,6 +176,7 @@ const Index = () => {
     { value: "notifications", label: "Notifications" },
     { value: "market-updates", label: "Market Updates (News & Calendar)" },
     { value: "trading-signals", label: "Trading Signals (Buy/Sell)" },
+    { value: "business-ideas", label: "Business Ideas" },
     { value: "canada", label: "Financial Plan" },
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
@@ -177,7 +185,10 @@ const Index = () => {
     { value: "lifeline", label: "Setup Your Lifeline" },
     { value: "group-expenses", label: "Group Expenses (Friends)" },
     { value: "expense-divider", label: "Expense Divider" },
+    { value: "kanban", label: "Kanban Board" },
     { value: "tax", label: "Tax History" },
+    { value: "mental-health", label: "Mental Health" },
+    { value: "advertising", label: "Advertising" },
     ...(selectedPair ? [{ value: "totals", label: "Totals Summary" }] : []),
     { value: "pair", label: "Select Trading Pair" },
   ];
@@ -197,110 +208,186 @@ const Index = () => {
   const totals = calculateTotals();
 
   return (
-    <div className="min-h-screen p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent">
-              Daily Planning
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {selectedPair ? `Calculate trades for ${selectedPair}` : "Plan your day, track expenses, manage finances"}
-            </p>
+    <div className="min-h-screen p-3 md:p-5">
+      <AdBanner />
+      <div className="max-w-7xl mx-auto space-y-5">
+
+        {/* ── Header ── */}
+        <motion.div
+          className="flex items-center justify-between flex-wrap gap-4 pt-2 pb-1"
+          initial="hidden" animate="visible" variants={fadeInDown}
+        >
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{background: "linear-gradient(135deg, hsl(199 100% 50%) 0%, hsl(270 80% 65%) 100%)"}}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+            >
+              <span className="text-[hsl(222_47%_5%)] font-bold text-sm">PP</span>
+            </motion.div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold gradient-text-mixed leading-tight">
+                Pip Pals
+              </h1>
+              <p className="text-[hsl(215_20%_45%)] text-xs mt-0.5 font-medium">
+                {selectedPair ? `Trading · ${selectedPair}` : "Your All-in-One Financial Dashboard"}
+              </p>
+            </div>
           </div>
-          {selectedPair && (
-            <ActionButtons
-              onClearHistory={handleClearHistory}
-              onExportCSV={handleExportCSV}
-              onChangePair={handleChangePair}
-              hasHistory={trades.length > 0}
-            />
-          )}
-        </div>
+          <div className="flex items-center gap-2">
+            <AnimatePresence>
+              {unreadNotif > 0 && (
+                <motion.button
+                  key="notif-btn"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab("notifications")}
+                  className="relative p-2 rounded-lg bg-[hsl(220_40%_11%)] border border-[hsl(220_32%_18%)] hover:border-[hsl(199_100%_50%/0.4)] transition-colors"
+                >
+                  <Bell className="h-4 w-4 text-[hsl(215_20%_55%)]" />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center badge-soft-pulse">
+                    {unreadNotif}
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+            {selectedPair && (
+              <ActionButtons
+                onClearHistory={handleClearHistory}
+                onExportCSV={handleExportCSV}
+                onChangePair={handleChangePair}
+                hasHistory={trades.length > 0}
+              />
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div className="divider-glow" initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} style={{ transformOrigin: "left" }} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* ── Navigation Drawer Trigger ── */}
           <Drawer>
             <DrawerTrigger asChild>
-              <Button variant="outline" className="w-full mb-6 justify-between text-left font-normal h-12 relative">
-                <span className="flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  {getCurrentTabLabel()}
-                  {unreadNotif > 0 && (
-                    <Badge className="bg-red-500 text-white text-[10px] px-1.5">{unreadNotif}</Badge>
-                  )}
+              <motion.button
+                className="w-full mb-5 flex items-center justify-between px-4 h-12 rounded-xl border border-[hsl(220_32%_18%)] bg-[hsl(220_40%_9%)] hover:border-[hsl(199_100%_50%/0.35)] hover:bg-[hsl(220_40%_11%)] transition-all group"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.25 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-[hsl(199_100%_50%)]" style={{boxShadow: "0 0 8px hsl(199 100% 50% / 0.6)"}} />
+                  <span className="text-sm font-semibold text-[hsl(210_40%_90%)]">{getCurrentTabLabel()}</span>
                 </span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-[hsl(215_20%_45%)] uppercase tracking-wider hidden sm:block">Switch Tool</span>
+                  <ChevronDown className="h-4 w-4 text-[hsl(215_20%_45%)] group-hover:text-[hsl(199_100%_50%)] transition-colors" />
+                </div>
+              </motion.button>
             </DrawerTrigger>
-            <DrawerContent className="max-h-[85vh]">
-              <DrawerHeader>
-                <DrawerTitle>Select Tool</DrawerTitle>
+            <DrawerContent className="max-h-[85vh] border-t border-[hsl(220_32%_16%)]" style={{background: "hsl(222 47% 6%)"}}>
+              <DrawerHeader className="pb-2">
+                <DrawerTitle className="gradient-text-cyan text-lg">Select Tool</DrawerTitle>
+                <p className="text-xs text-[hsl(215_20%_45%)]">{availableTabs.length} tools available</p>
               </DrawerHeader>
-              <div className="p-4 space-y-2 overflow-y-auto">
+              <motion.div
+                className="p-4 space-y-1.5 overflow-y-auto pb-8"
+                initial="hidden" animate="visible" variants={staggerContainer}
+              >
                 {availableTabs.map((tab) => (
                   <DrawerClose key={tab.value} asChild>
-                    <Button 
-                      variant={activeTab === tab.value ? "default" : "ghost"} 
-                      className="w-full justify-start h-14 text-lg"
+                    <motion.button variants={slideInLeft}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                        activeTab === tab.value
+                          ? "bg-[hsl(199_100%_50%/0.12)] text-[hsl(199_100%_55%)] border border-[hsl(199_100%_50%/0.25)]"
+                          : "text-[hsl(215_20%_65%)] hover:bg-[hsl(220_32%_14%)] hover:text-[hsl(210_40%_96%)] border border-transparent"
+                      }`}
                       onClick={() => setActiveTab(tab.value)}
                     >
-                      <span className="flex items-center gap-2">
-                        {tab.value === "notifications" && <Bell className="h-4 w-4" />}
+                      <span className="flex items-center gap-3">
+                        {activeTab === tab.value && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[hsl(199_100%_50%)]" />
+                        )}
                         {tab.label}
                       </span>
                       {tab.value === "notifications" && unreadNotif > 0 && (
-                        <Badge className="ml-auto bg-red-500 text-white">{unreadNotif}</Badge>
+                        <span className="badge-red">{unreadNotif}</span>
                       )}
-                    </Button>
+                    </motion.button>
                   </DrawerClose>
                 ))}
-              </div>
+              </motion.div>
             </DrawerContent>
           </Drawer>
 
-          <TabsContent value="calculator" className="space-y-6 mt-6">
-            {selectedPair && <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />}
-            <TradeHistory trades={trades} />
+          <TabsContent value="calculator" className="space-y-5 mt-5">
+            <AnimatePresence mode="wait">
+              <motion.div key="calculator" initial="hidden" animate="visible" exit="exit" variants={tabContent} className="space-y-5">
+                {selectedPair && <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />}
+                <TradeHistory trades={trades} />
+              </motion.div>
+            </AnimatePresence>
           </TabsContent>
 
-          <TabsContent value="converter" className="mt-6">
-            <CurrencyConverter />
+          <TabsContent value="converter" className="mt-5">
+            <motion.div key="converter" initial="hidden" animate="visible" variants={tabContent}><CurrencyConverter /></motion.div>
           </TabsContent>
 
-          <TabsContent value="market-updates" className="mt-6">
-            <MarketUpdates />
+          <TabsContent value="market-updates" className="mt-5">
+            <motion.div key="market" initial="hidden" animate="visible" variants={tabContent}><MarketUpdates /></motion.div>
           </TabsContent>
 
-          <TabsContent value="trading-signals" className="mt-6">
-            <TradingSignals />
+          <TabsContent value="trading-signals" className="mt-5">
+            <motion.div key="signals" initial="hidden" animate="visible" variants={tabContent}><TradingSignals /></motion.div>
           </TabsContent>
 
-          <TabsContent value="dynamic-calc" className="mt-6">
-            <DynamicCalculator pair={selectedPair} />
+          <TabsContent value="business-ideas" className="mt-5">
+            <motion.div key="biz" initial="hidden" animate="visible" variants={tabContent}><BusinessIdeas /></motion.div>
           </TabsContent>
 
-          <TabsContent value="time-convert" className="mt-6">
-            <TimeConversion />
+          <TabsContent value="dynamic-calc" className="mt-5">
+            <motion.div key="dynCalc" initial="hidden" animate="visible" variants={tabContent}><DynamicCalculator pair={selectedPair} /></motion.div>
           </TabsContent>
 
-          <TabsContent value="lifeline" className="mt-6">
-            <Lifeline />
+          <TabsContent value="time-convert" className="mt-5">
+            <motion.div key="time" initial="hidden" animate="visible" variants={tabContent}><TimeConversion /></motion.div>
           </TabsContent>
 
-          <TabsContent value="group-expenses" className="mt-6">
-            <GroupExpenses />
+          <TabsContent value="lifeline" className="mt-5">
+            <motion.div key="lifeline" initial="hidden" animate="visible" variants={tabContent}><Lifeline /></motion.div>
           </TabsContent>
 
-          <TabsContent value="expense-divider" className="mt-6">
-            <ExpenseDivider />
+          <TabsContent value="group-expenses" className="mt-5">
+            <motion.div key="grpExp" initial="hidden" animate="visible" variants={tabContent}><GroupExpenses /></motion.div>
           </TabsContent>
 
-          <TabsContent value="notifications" className="mt-6">
-            <Notifications onNavigate={(t) => {
-              if (t.type === "wife" || t.type === "child") setActiveTab("lifeline");
-              else if (t.type === "loan") setActiveTab("lifeline");
-              else if (t.type === "household") setActiveTab("lifeline");
-            }} />
+          <TabsContent value="expense-divider" className="mt-5">
+            <motion.div key="expDiv" initial="hidden" animate="visible" variants={tabContent}><ExpenseDivider /></motion.div>
+          </TabsContent>
+
+          <TabsContent value="kanban" className="mt-5">
+            <motion.div key="kanban" initial="hidden" animate="visible" variants={tabContent}><KanbanBoard /></motion.div>
+          </TabsContent>
+
+          <TabsContent value="mental-health" className="mt-5">
+            <motion.div key="mental" initial="hidden" animate="visible" variants={tabContent}><MentalHealthHub /></motion.div>
+          </TabsContent>
+
+          <TabsContent value="advertising" className="mt-5">
+            <motion.div key="ads" initial="hidden" animate="visible" variants={tabContent}><AdvertisingTab /></motion.div>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-5">
+            <motion.div key="notifs" initial="hidden" animate="visible" variants={tabContent}>
+              <Notifications onNavigate={(t) => {
+                if (t.type === "wife" || t.type === "child") setActiveTab("lifeline");
+                else if (t.type === "loan") setActiveTab("lifeline");
+                else if (t.type === "household") setActiveTab("lifeline");
+              }} />
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="tax" className="mt-6">
@@ -322,20 +409,20 @@ const Index = () => {
             })()}
           </TabsContent>
 
-          <TabsContent value="canada" className="mt-6">
-            <CanadaFundCalculator />
+          <TabsContent value="canada" className="mt-5">
+            <motion.div key="canada" initial="hidden" animate="visible" variants={tabContent}><CanadaFundCalculator /></motion.div>
           </TabsContent>
 
-          <TabsContent value="salary" className="mt-6">
-            <SalaryCalculator />
+          <TabsContent value="salary" className="mt-5">
+            <motion.div key="salary" initial="hidden" animate="visible" variants={tabContent}><SalaryCalculator /></motion.div>
           </TabsContent>
 
-          <TabsContent value="totals" className="mt-6">
-            <TotalsSummary totals={totals} />
+          <TabsContent value="totals" className="mt-5">
+            <motion.div key="totals" initial="hidden" animate="visible" variants={tabContent}><TotalsSummary totals={totals} /></motion.div>
           </TabsContent>
 
-          <TabsContent value="pair" className="mt-6">
-            <PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} />
+          <TabsContent value="pair" className="mt-5">
+            <motion.div key="pair" initial="hidden" animate="visible" variants={tabContent}><PairSelector selectedPair={selectedPair} onSelectPair={handleSelectPair} /></motion.div>
           </TabsContent>
         </Tabs>
       </div>

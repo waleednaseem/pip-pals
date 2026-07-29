@@ -26,12 +26,12 @@ const ActionButtons = ({
   hasHistory,
 }: ActionButtonsProps) => {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-2">
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="outline" disabled={!hasHistory} className="gap-2">
-            <Trash2 className="h-4 w-4" />
-            Clear History
+          <Button variant="outline" disabled={!hasHistory} size="sm" className="gap-1.5 h-9 text-xs font-medium">
+            <Trash2 className="h-3.5 w-3.5" />
+            Clear
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
@@ -51,20 +51,15 @@ const ActionButtons = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Button
-        variant="outline"
-        onClick={onExportCSV}
-        disabled={!hasHistory}
-        className="gap-2"
-      >
-        <Download className="h-4 w-4" />
-        Export CSV
+      <Button variant="outline" onClick={onExportCSV} disabled={!hasHistory} size="sm" className="gap-1.5 h-9 text-xs font-medium">
+        <Download className="h-3.5 w-3.5" />
+        Export
       </Button>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs font-medium">
+            <RefreshCw className="h-3.5 w-3.5" />
             Change Pair
           </Button>
         </AlertDialogTrigger>
