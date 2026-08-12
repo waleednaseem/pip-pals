@@ -177,6 +177,7 @@ const Index = () => {
     { value: "market-updates", label: "Market Updates (News & Calendar)" },
     { value: "trading-signals", label: "Trading Signals (Buy/Sell)" },
     { value: "business-ideas", label: "Business Ideas" },
+    { value: "advertising", label: "Advertising" },
     { value: "canada", label: "Financial Plan" },
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
@@ -188,7 +189,6 @@ const Index = () => {
     { value: "kanban", label: "Kanban Board" },
     { value: "tax", label: "Tax History" },
     { value: "mental-health", label: "Mental Health" },
-    { value: "advertising", label: "Advertising" },
     ...(selectedPair ? [{ value: "totals", label: "Totals Summary" }] : []),
     { value: "pair", label: "Select Trading Pair" },
   ];
@@ -288,13 +288,13 @@ const Index = () => {
                 </div>
               </motion.button>
             </DrawerTrigger>
-            <DrawerContent className="max-h-[85vh] border-t border-[hsl(220_32%_16%)]" style={{background: "hsl(222 47% 6%)"}}>
-              <DrawerHeader className="pb-2">
+            <DrawerContent className="max-h-[85vh] flex flex-col border-t border-[hsl(220_32%_16%)]" style={{background: "hsl(222 47% 6%)"}}>
+              <DrawerHeader className="pb-2 shrink-0">
                 <DrawerTitle className="gradient-text-cyan text-lg">Select Tool</DrawerTitle>
                 <p className="text-xs text-[hsl(215_20%_45%)]">{availableTabs.length} tools available</p>
               </DrawerHeader>
               <motion.div
-                className="p-4 space-y-1.5 overflow-y-auto pb-8"
+                className="p-4 space-y-1.5 overflow-y-auto pb-8 flex-1 min-h-0"
                 initial="hidden" animate="visible" variants={staggerContainer}
               >
                 {availableTabs.map((tab) => (
