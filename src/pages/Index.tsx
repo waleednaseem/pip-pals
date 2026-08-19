@@ -18,6 +18,7 @@ import TradeHistory from "@/components/TradeHistory";
 import TotalsSummary from "@/components/TotalsSummary";
 import TimeConversion from "@/components/TimeConversion";
 import DynamicCalculator from "@/components/DynamicCalculator";
+import LotFitCalculator from "@/components/LotFitCalculator";
 import ActionButtons from "@/components/ActionButtons";
 import { Lifeline } from "@/components/Lifeline";
 import { TaxHistory } from "@/components/TaxHistory";
@@ -181,6 +182,7 @@ const Index = () => {
     { value: "canada", label: "Financial Plan" },
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
+    { value: "lotfit", label: "LotFit" },
     { value: "salary", label: "Expense Calculator" },
     { value: "time-convert", label: "Time Conversion" },
     { value: "lifeline", label: "Setup Your Lifeline" },
@@ -350,6 +352,10 @@ const Index = () => {
 
           <TabsContent value="dynamic-calc" className="mt-5">
             <motion.div key="dynCalc" initial="hidden" animate="visible" variants={tabContent}><DynamicCalculator pair={selectedPair} /></motion.div>
+          </TabsContent>
+
+          <TabsContent value="lotfit" className="mt-5">
+            <motion.div key="lotfit" initial="hidden" animate="visible" variants={tabContent}><LotFitCalculator /></motion.div>
           </TabsContent>
 
           <TabsContent value="time-convert" className="mt-5">
