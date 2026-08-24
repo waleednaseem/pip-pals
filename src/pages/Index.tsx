@@ -538,12 +538,12 @@ const SalaryCalculator = () => {
     expenseHydrated.current = true;
   }, []);
 
-  // Save to localStorage whenever salary or expenses change (after initial load)
+  // Save to localStorage whenever salary, expenses or receivables change (after initial load)
   useEffect(() => {
     if (!expenseHydrated.current) return;
-    const data: ExpenseData = { salary, expenses };
+    const data: ExpenseData = { salary, expenses, receivables };
     localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(data));
-  }, [salary, expenses]);
+  }, [salary, expenses, receivables]);
 
   // Clear all data
   const clearAllData = () => {
