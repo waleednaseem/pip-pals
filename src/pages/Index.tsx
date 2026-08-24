@@ -1551,6 +1551,115 @@ const SalaryCalculator = () => {
             );
           })}
         </div>
+
+        {/* Money to Receive */}
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-emerald-500" />
+              Money to Receive
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {pendingReceivable.toLocaleString()} pending
+            </span>
+          </div>
+
+          {addingReceivable ? (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Input
+                value={newReceivableName}
+                onChange={(e) => setNewReceivableName(e.target.value)}
+                placeholder="Person name"
+              />
+              <Input
+                type="number"
+                value={newReceivableAmount}
+                onChange={(e) => setNewReceivableAmount(e.target.value)}
+                placeholder="Amount"
+                className="sm:w-32"
+              />
+              <div className="flex gap-2">
+                <Button onClick={addReceivable}>Add</Button>
+                <Button variant="ghost" onClick={() => setAddingReceivable(false)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddingReceivable(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add person
+            </Button>
+          )}
+
+          {receivables.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-2">
+              No receivables yet. Add people who owe you money.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {receivables.map((r) => (
+                <div
+                  key={r.id}
+                  className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors ${
+                    r.received
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : "hover:bg-muted/40"
+                  }`}
+                  onClick={() => toggleReceived(r.id)}
+                  title={r.received ? "Mark as not received" : "Mark as received"}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span
+                      className={`h-2 w-2 rounded-full shrink-0 ${
+                        r.received ? "bg-emerald-500" : "bg-amber-500"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm break-words min-w-0 flex-1 ${
+                        r.received ? "line-through text-muted-foreground" : ""
+                      }`}
+                    >
+                      {r.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-sm font-medium ${r.received ? "text-emerald-500" : ""}`}>
+                      {r.amount.toLocaleString()}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={(e) => { e.stopPropagation(); removeReceivable(r.id); }}
+                    >
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {receivables.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50">
+              <div className="text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</div>
+                <div className="text-sm font-medium">{totalReceivable.toLocaleString()}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-emerald-300 uppercase tracking-wide">Received</div>
+                <div className="text-sm font-medium text-emerald-200">{receivedTotal.toLocaleString()}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-amber-300 uppercase tracking-wide">Pending</div>
+                <div className="text-sm font-medium text-amber-200">{pendingReceivable.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
 
