@@ -459,9 +459,17 @@ interface ExpenseItem {
   allowSubExpenses: boolean;
 }
 
+interface Receivable {
+  id: string;
+  name: string;
+  amount: number;
+  received: boolean;
+}
+
 interface ExpenseData {
   salary: number;
   expenses: ExpenseItem[];
+  receivables: Receivable[];
 }
 
 interface ExpenseHistoryEntry {
@@ -472,6 +480,10 @@ interface ExpenseHistoryEntry {
   expenses: ExpenseItem[];
   totalExpenses: number;
   remaining: number;
+  receivables: Receivable[];
+  totalReceivable: number;
+  received: number;
+  pending: number;
 }
 
 const SalaryCalculator = () => {
