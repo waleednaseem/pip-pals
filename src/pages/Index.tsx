@@ -559,16 +559,18 @@ const SalaryCalculator = () => {
 
   // Save to history
   const saveToHistory = () => {
-    if (salary === 0 && expenses.length === 0) {
+    if (salary === 0 && expenses.length === 0 && receivables.length === 0) {
       toast({
         title: "Nothing to save",
-        description: "Add some expenses first",
+        description: "Add some expenses or receivables first",
         variant: "destructive",
       });
       return;
     }
 
     const now = new Date();
+    const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
+    const received = receivables.filter(r => r.received).reduce((sum, r) => sum + r.amount, 0);
     const entry: ExpenseHistoryEntry = {
       id: crypto.randomUUID(),
       date: now.toLocaleDateString("en-GB", { 
@@ -583,6 +585,10 @@ const SalaryCalculator = () => {
       expenses: JSON.parse(JSON.stringify(expenses)),
       totalExpenses: totalUsed,
       remaining: Math.max(0, salary - totalUsed),
+      receivables: JSON.parse(JSON.stringify(receivables)),
+      totalReceivable,
+      received,
+      pending: totalReceivable - received,
     };
 
     const newHistory = [entry, ...history];
