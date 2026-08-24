@@ -617,7 +617,7 @@ const SalaryCalculator = () => {
 
   // Load history entry
   const loadFromHistory = (entry: ExpenseHistoryEntry) => {
-    if (salary > 0 || expenses.length > 0) {
+    if (salary > 0 || expenses.length > 0 || receivables.length > 0) {
       const ok = window.confirm(
         "Current expense data will be replaced. Continue?"
       );
@@ -625,6 +625,7 @@ const SalaryCalculator = () => {
     }
     setSalary(entry.salary);
     setExpenses(JSON.parse(JSON.stringify(entry.expenses)));
+    setReceivables(JSON.parse(JSON.stringify(entry.receivables || [])));
     setViewingEntry(null);
     setShowHistory(false);
     toast({
