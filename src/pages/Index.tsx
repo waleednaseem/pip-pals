@@ -1355,6 +1355,22 @@ const SalaryCalculator = () => {
                 </span>
               </div>
             )}
+            {receivables.length > 0 && (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-emerald-500">To Receive</span>
+                  <span className="font-semibold text-emerald-500">{pendingReceivable.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Total</span>
+                  <span>{totalReceivable.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-emerald-300">
+                  <span>Received</span>
+                  <span>{receivedTotal.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
