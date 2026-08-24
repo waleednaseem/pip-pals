@@ -41,7 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, FileDown, RotateCcw, PlusCircle, Bell, Eye, EyeOff } from "lucide-react";
+import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, FileDown, RotateCcw, PlusCircle, Bell, Eye, EyeOff, Wallet } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -459,9 +459,17 @@ interface ExpenseItem {
   allowSubExpenses: boolean;
 }
 
+interface Receivable {
+  id: string;
+  name: string;
+  amount: number;
+  received: boolean;
+}
+
 interface ExpenseData {
   salary: number;
   expenses: ExpenseItem[];
+  receivables: Receivable[];
 }
 
 interface ExpenseHistoryEntry {
@@ -472,6 +480,10 @@ interface ExpenseHistoryEntry {
   expenses: ExpenseItem[];
   totalExpenses: number;
   remaining: number;
+  receivables: Receivable[];
+  totalReceivable: number;
+  received: number;
+  pending: number;
 }
 
 const SalaryCalculator = () => {
@@ -487,6 +499,12 @@ const SalaryCalculator = () => {
   const [newSubName, setNewSubName] = useState<string>("");
   const [newSubAmount, setNewSubAmount] = useState<string>("");
   
+  // Receivables (money others owe you)
+  const [receivables, setReceivables] = useState<Receivable[]>([]);
+  const [addingReceivable, setAddingReceivable] = useState<boolean>(false);
+  const [newReceivableName, setNewReceivableName] = useState<string>("");
+  const [newReceivableAmount, setNewReceivableAmount] = useState<string>("");
+  
   // History states
   const [history, setHistory] = useState<ExpenseHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
@@ -501,6 +519,7 @@ const SalaryCalculator = () => {
         const data: ExpenseData = JSON.parse(saved);
         setSalary(data.salary || 0);
         setExpenses(data.expenses || []);
+        setReceivables(data.receivables || []);
       } catch (e) {
         console.error("Failed to parse expense data:", e);
       }
@@ -519,36 +538,39 @@ const SalaryCalculator = () => {
     expenseHydrated.current = true;
   }, []);
 
-  // Save to localStorage whenever salary or expenses change (after initial load)
+  // Save to localStorage whenever salary, expenses or receivables change (after initial load)
   useEffect(() => {
     if (!expenseHydrated.current) return;
-    const data: ExpenseData = { salary, expenses };
+    const data: ExpenseData = { salary, expenses, receivables };
     localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(data));
-  }, [salary, expenses]);
+  }, [salary, expenses, receivables]);
 
   // Clear all data
   const clearAllData = () => {
     setSalary(0);
     setExpenses([]);
+    setReceivables([]);
     localStorage.removeItem(EXPENSE_STORAGE_KEY);
     toast({
       title: "Data cleared",
-      description: "All expenses have been removed",
+      description: "All expenses and receivables have been removed",
     });
   };
 
   // Save to history
   const saveToHistory = () => {
-    if (salary === 0 && expenses.length === 0) {
+    if (salary === 0 && expenses.length === 0 && receivables.length === 0) {
       toast({
         title: "Nothing to save",
-        description: "Add some expenses first",
+        description: "Add some expenses or receivables first",
         variant: "destructive",
       });
       return;
     }
 
     const now = new Date();
+    const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
+    const received = receivables.filter(r => r.received).reduce((sum, r) => sum + r.amount, 0);
     const entry: ExpenseHistoryEntry = {
       id: crypto.randomUUID(),
       date: now.toLocaleDateString("en-GB", { 
@@ -563,6 +585,10 @@ const SalaryCalculator = () => {
       expenses: JSON.parse(JSON.stringify(expenses)),
       totalExpenses: totalUsed,
       remaining: Math.max(0, salary - totalUsed),
+      receivables: JSON.parse(JSON.stringify(receivables)),
+      totalReceivable,
+      received,
+      pending: totalReceivable - received,
     };
 
     const newHistory = [entry, ...history];
@@ -591,7 +617,7 @@ const SalaryCalculator = () => {
 
   // Load history entry
   const loadFromHistory = (entry: ExpenseHistoryEntry) => {
-    if (salary > 0 || expenses.length > 0) {
+    if (salary > 0 || expenses.length > 0 || receivables.length > 0) {
       const ok = window.confirm(
         "Current expense data will be replaced. Continue?"
       );
@@ -599,6 +625,7 @@ const SalaryCalculator = () => {
     }
     setSalary(entry.salary);
     setExpenses(JSON.parse(JSON.stringify(entry.expenses)));
+    setReceivables(JSON.parse(JSON.stringify(entry.receivables || [])));
     setViewingEntry(null);
     setShowHistory(false);
     toast({
@@ -667,6 +694,38 @@ const SalaryCalculator = () => {
 
   const trackedTotal = paidTotal + unpaidTotal;
   const paidPct = trackedTotal > 0 ? (paidTotal / trackedTotal) * 100 : 0;
+
+  // Receivables (money to receive) totals
+  const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
+  const receivedTotal = receivables.filter(r => r.received).reduce((sum, r) => sum + r.amount, 0);
+  const pendingReceivable = totalReceivable - receivedTotal;
+
+  const addReceivable = () => {
+    const amountNum = parseFloat(newReceivableAmount);
+    if (!newReceivableName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+    setReceivables((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: newReceivableName.trim(),
+        amount: amountNum,
+        received: false,
+      },
+    ]);
+    setNewReceivableName("");
+    setNewReceivableAmount("");
+    setAddingReceivable(false);
+  };
+
+  const removeReceivable = (id: string) => {
+    setReceivables((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const toggleReceived = (id: string) => {
+    setReceivables((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, received: !r.received } : r))
+    );
+  };
 
   // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
   const recomputeSub = (s: SubExpense): SubExpense => {
@@ -1069,6 +1128,55 @@ const SalaryCalculator = () => {
     doc.text(`${paidPctRound}% paid of tracked`, pageWidth - 25, y + 23, { align: "right" });
     y += 32;
 
+    // Money to Receive section
+    if (receivables.length > 0) {
+      ensureSpace(40);
+      doc.setTextColor(...darkColor);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Money to Receive", 20, y);
+      y += 10;
+
+      doc.setFillColor(...primaryColor);
+      doc.rect(20, y, pageWidth - 40, 9, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Person", 25, y + 6);
+      doc.text("Status", pageWidth - 75, y + 6, { align: "right" });
+      doc.text("Amount", pageWidth - 25, y + 6, { align: "right" });
+      y += 12;
+
+      receivables.forEach((r) => {
+        ensureSpace(7);
+        doc.setTextColor(...darkColor);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(r.name, 25, y);
+        doc.setTextColor(...(r.received ? successColor : warningColor));
+        doc.setFont("helvetica", "bold");
+        doc.text(r.received ? "RECEIVED" : "PENDING", pageWidth - 75, y, { align: "right" });
+        doc.setTextColor(...(r.received ? successColor : darkColor));
+        doc.setFont("helvetica", "normal");
+        doc.text(`$${r.amount.toLocaleString()}`, pageWidth - 25, y, { align: "right" });
+        y += 7;
+      });
+
+      y += 4;
+      doc.setFillColor(...lightBg);
+      doc.roundedRect(20, y, pageWidth - 40, 20, 3, 3, "F");
+      doc.setTextColor(...darkColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total", 25, y + 8);
+      doc.text(`$${totalReceivable.toLocaleString()}`, pageWidth - 25, y + 8, { align: "right" });
+      doc.setTextColor(...successColor);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Received: $${receivedTotal.toLocaleString()}`, 25, y + 15);
+      doc.setTextColor(...warningColor);
+      doc.text(`Pending: $${pendingReceivable.toLocaleString()}`, pageWidth - 25, y + 15, { align: "right" });
+      y += 26;
+    }
+
     // Footer
     y = pageHeight - 20;
     doc.setDrawColor(...lightBg);
@@ -1296,6 +1404,22 @@ const SalaryCalculator = () => {
                 </span>
               </div>
             )}
+            {receivables.length > 0 && (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-emerald-500">To Receive</span>
+                  <span className="font-semibold text-emerald-500">{pendingReceivable.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Total</span>
+                  <span>{totalReceivable.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-emerald-300">
+                  <span>Received</span>
+                  <span>{receivedTotal.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1475,6 +1599,115 @@ const SalaryCalculator = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Money to Receive */}
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-emerald-500" />
+              Money to Receive
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {pendingReceivable.toLocaleString()} pending
+            </span>
+          </div>
+
+          {addingReceivable ? (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Input
+                value={newReceivableName}
+                onChange={(e) => setNewReceivableName(e.target.value)}
+                placeholder="Person name"
+              />
+              <Input
+                type="number"
+                value={newReceivableAmount}
+                onChange={(e) => setNewReceivableAmount(e.target.value)}
+                placeholder="Amount"
+                className="sm:w-32"
+              />
+              <div className="flex gap-2">
+                <Button onClick={addReceivable}>Add</Button>
+                <Button variant="ghost" onClick={() => setAddingReceivable(false)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddingReceivable(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add person
+            </Button>
+          )}
+
+          {receivables.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-2">
+              No receivables yet. Add people who owe you money.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {receivables.map((r) => (
+                <div
+                  key={r.id}
+                  className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors ${
+                    r.received
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : "hover:bg-muted/40"
+                  }`}
+                  onClick={() => toggleReceived(r.id)}
+                  title={r.received ? "Mark as not received" : "Mark as received"}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span
+                      className={`h-2 w-2 rounded-full shrink-0 ${
+                        r.received ? "bg-emerald-500" : "bg-amber-500"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm break-words min-w-0 flex-1 ${
+                        r.received ? "line-through text-muted-foreground" : ""
+                      }`}
+                    >
+                      {r.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-sm font-medium ${r.received ? "text-emerald-500" : ""}`}>
+                      {r.amount.toLocaleString()}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={(e) => { e.stopPropagation(); removeReceivable(r.id); }}
+                    >
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {receivables.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50">
+              <div className="text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</div>
+                <div className="text-sm font-medium">{totalReceivable.toLocaleString()}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-emerald-300 uppercase tracking-wide">Received</div>
+                <div className="text-sm font-medium text-emerald-200">{receivedTotal.toLocaleString()}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-amber-300 uppercase tracking-wide">Pending</div>
+                <div className="text-sm font-medium text-amber-200">{pendingReceivable.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
