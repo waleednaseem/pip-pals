@@ -499,6 +499,12 @@ const SalaryCalculator = () => {
   const [newSubName, setNewSubName] = useState<string>("");
   const [newSubAmount, setNewSubAmount] = useState<string>("");
   
+  // Receivables (money others owe you)
+  const [receivables, setReceivables] = useState<Receivable[]>([]);
+  const [addingReceivable, setAddingReceivable] = useState<boolean>(false);
+  const [newReceivableName, setNewReceivableName] = useState<string>("");
+  const [newReceivableAmount, setNewReceivableAmount] = useState<string>("");
+  
   // History states
   const [history, setHistory] = useState<ExpenseHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
