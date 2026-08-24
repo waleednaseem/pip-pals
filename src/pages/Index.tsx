@@ -459,12 +459,28 @@ interface ExpenseItem {
   allowSubExpenses: boolean;
 }
 
+interface ReceivablePayment {
+  id: string;
+  amount: number;
+  date: string;
+}
+
 interface Receivable {
   id: string;
   name: string;
   amount: number;
   received: boolean;
+  payments?: ReceivablePayment[];
 }
+
+const receivablePaid = (r: Receivable): number => {
+  const payments = r.payments ?? [];
+  if (payments.length > 0) return payments.reduce((sum, p) => sum + p.amount, 0);
+  return r.received ? r.amount : 0;
+};
+
+const receivablePending = (r: Receivable): number =>
+  Math.max(0, r.amount - receivablePaid(r));
 
 interface ExpenseData {
   salary: number;
@@ -504,6 +520,9 @@ const SalaryCalculator = () => {
   const [addingReceivable, setAddingReceivable] = useState<boolean>(false);
   const [newReceivableName, setNewReceivableName] = useState<string>("");
   const [newReceivableAmount, setNewReceivableAmount] = useState<string>("");
+  const [openReceivableId, setOpenReceivableId] = useState<string | null>(null);
+  const [payingReceivableId, setPayingReceivableId] = useState<string | null>(null);
+  const [newPaymentAmount, setNewPaymentAmount] = useState<string>("");
   
   // History states
   const [history, setHistory] = useState<ExpenseHistoryEntry[]>([]);
@@ -570,7 +589,7 @@ const SalaryCalculator = () => {
 
     const now = new Date();
     const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
-    const received = receivables.filter(r => r.received).reduce((sum, r) => sum + r.amount, 0);
+    const received = receivables.reduce((sum, r) => sum + receivablePaid(r), 0);
     const entry: ExpenseHistoryEntry = {
       id: crypto.randomUUID(),
       date: now.toLocaleDateString("en-GB", { 
@@ -584,11 +603,11 @@ const SalaryCalculator = () => {
       salary,
       expenses: JSON.parse(JSON.stringify(expenses)),
       totalExpenses: totalUsed,
-      remaining: Math.max(0, salary - totalUsed),
+      remaining: Math.max(0, salary - totalUsed + received),
       receivables: JSON.parse(JSON.stringify(receivables)),
       totalReceivable,
       received,
-      pending: totalReceivable - received,
+      pending: Math.max(0, totalReceivable - received),
     };
 
     const newHistory = [entry, ...history];
@@ -646,7 +665,11 @@ const SalaryCalculator = () => {
   ];
 
   const totalUsed = expenses.reduce((sum, e) => sum + (e.hidden ? 0 : e.amount), 0);
-  const remaining = Math.max(0, salary - totalUsed);
+  const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
+  const receivedTotal = receivables.reduce((sum, r) => sum + receivablePaid(r), 0);
+  const pendingReceivable = Math.max(0, totalReceivable - receivedTotal);
+  const available = salary + receivedTotal - totalUsed;
+  const remaining = Math.max(0, available);
   const pct = (amount: number, hidden?: boolean) => (salary > 0 && !hidden ? (amount / salary) * 100 : 0);
 
   // Paid/Unpaid breakdown — only counts plus (>0) leaf items.
@@ -695,36 +718,96 @@ const SalaryCalculator = () => {
   const trackedTotal = paidTotal + unpaidTotal;
   const paidPct = trackedTotal > 0 ? (paidTotal / trackedTotal) * 100 : 0;
 
-  // Receivables (money to receive) totals
-  const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
-  const receivedTotal = receivables.filter(r => r.received).reduce((sum, r) => sum + r.amount, 0);
-  const pendingReceivable = totalReceivable - receivedTotal;
-
   const addReceivable = () => {
     const amountNum = parseFloat(newReceivableAmount);
     if (!newReceivableName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+    const id = crypto.randomUUID();
     setReceivables((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id,
         name: newReceivableName.trim(),
         amount: amountNum,
         received: false,
+        payments: [],
       },
     ]);
     setNewReceivableName("");
     setNewReceivableAmount("");
     setAddingReceivable(false);
+    setOpenReceivableId(id);
+    setPayingReceivableId(id);
   };
 
   const removeReceivable = (id: string) => {
     setReceivables((prev) => prev.filter((r) => r.id !== id));
+    if (openReceivableId === id) setOpenReceivableId(null);
+    if (payingReceivableId === id) setPayingReceivableId(null);
   };
 
-  const toggleReceived = (id: string) => {
+  const addReceivablePayment = (id: string) => {
+    const amountNum = parseFloat(newPaymentAmount);
+    if (isNaN(amountNum) || amountNum <= 0) return;
+    const target = receivables.find((r) => r.id === id);
+    if (!target) return;
+    const pending = receivablePending(target);
+    if (pending <= 0) return;
+    if (amountNum > pending) {
+      toast({
+        title: "Amount too high",
+        description: `Only ${pending.toLocaleString()} remaining from ${target.name}`,
+        variant: "destructive",
+      });
+      return;
+    }
     setReceivables((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, received: !r.received } : r))
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const payments = [
+          ...(r.payments ?? []),
+          { id: crypto.randomUUID(), amount: amountNum, date: new Date().toISOString() },
+        ];
+        const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+        return { ...r, payments, received: paid >= r.amount };
+      })
     );
+    setNewPaymentAmount("");
+    setPayingReceivableId(null);
+    toast({
+      title: "Payment recorded",
+      description: `${amountNum.toLocaleString()} added to remaining balance`,
+    });
+  };
+
+  const removeReceivablePayment = (receivableId: string, paymentId: string) => {
+    setReceivables((prev) =>
+      prev.map((r) => {
+        if (r.id !== receivableId) return r;
+        const payments = (r.payments ?? []).filter((p) => p.id !== paymentId);
+        const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+        return { ...r, payments, received: paid >= r.amount };
+      })
+    );
+  };
+
+  const receiveRemaining = (id: string) => {
+    setReceivables((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const pending = receivablePending(r);
+        if (pending <= 0) return { ...r, received: true };
+        const payments = [
+          ...(r.payments ?? []),
+          { id: crypto.randomUUID(), amount: pending, date: new Date().toISOString() },
+        ];
+        return { ...r, payments, received: true };
+      })
+    );
+    setPayingReceivableId(null);
+    toast({
+      title: "Fully received",
+      description: "Remaining amount added to balance",
+    });
   };
 
   // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
@@ -1148,18 +1231,34 @@ const SalaryCalculator = () => {
       y += 12;
 
       receivables.forEach((r) => {
-        ensureSpace(7);
+        const paid = receivablePaid(r);
+        const pending = receivablePending(r);
+        const fullyReceived = pending <= 0;
+        ensureSpace(14);
         doc.setTextColor(...darkColor);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.text(r.name, 25, y);
-        doc.setTextColor(...(r.received ? successColor : warningColor));
+        doc.setTextColor(...(fullyReceived ? successColor : warningColor));
         doc.setFont("helvetica", "bold");
-        doc.text(r.received ? "RECEIVED" : "PENDING", pageWidth - 75, y, { align: "right" });
-        doc.setTextColor(...(r.received ? successColor : darkColor));
+        doc.text(fullyReceived ? "RECEIVED" : "PENDING", pageWidth - 75, y, { align: "right" });
+        doc.setTextColor(...(fullyReceived ? successColor : darkColor));
         doc.setFont("helvetica", "normal");
         doc.text(`$${r.amount.toLocaleString()}`, pageWidth - 25, y, { align: "right" });
-        y += 7;
+        y += 5;
+        doc.setFontSize(8);
+        doc.setTextColor(...grayColor);
+        doc.text(`Received $${paid.toLocaleString()}  ·  Left $${pending.toLocaleString()}`, 25, y);
+        y += 5;
+        (r.payments ?? []).forEach((p) => {
+          ensureSpace(5);
+          const dateLabel = p.date
+            ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+            : "";
+          doc.text(`- ${dateLabel}  $${p.amount.toLocaleString()}`.trim(), 30, y);
+          y += 4;
+        });
+        y += 2;
       });
 
       y += 4;
@@ -1394,13 +1493,21 @@ const SalaryCalculator = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Remaining</span>
-              <span className="font-medium">{remaining.toLocaleString()}</span>
+              <span className={`font-medium ${receivedTotal > 0 ? "text-emerald-400" : ""}`}>
+                {remaining.toLocaleString()}
+              </span>
             </div>
-            {totalUsed > salary && (
+            {receivedTotal > 0 && (
+              <div className="flex items-center justify-between text-xs text-emerald-400">
+                <span>Includes received</span>
+                <span>+{receivedTotal.toLocaleString()}</span>
+              </div>
+            )}
+            {available < 0 && (
               <div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1">
                 <span className="text-sm font-medium text-red-500">Over Expense</span>
                 <span className="font-semibold text-red-500">
-                  -{(totalUsed - salary).toLocaleString()}
+                  -{Math.abs(available).toLocaleString()}
                 </span>
               </div>
             )}
@@ -1649,46 +1756,165 @@ const SalaryCalculator = () => {
             </p>
           ) : (
             <div className="space-y-2">
-              {receivables.map((r) => (
+              {receivables.map((r) => {
+                const paid = receivablePaid(r);
+                const pending = receivablePending(r);
+                const fullyReceived = pending <= 0;
+                const isOpen = openReceivableId === r.id;
+                return (
                 <div
                   key={r.id}
-                  className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors ${
-                    r.received
+                  className={`rounded-md border p-2 space-y-2 transition-colors ${
+                    fullyReceived
                       ? "bg-emerald-500/5 border-emerald-500/30"
                       : "hover:bg-muted/40"
                   }`}
-                  onClick={() => toggleReceived(r.id)}
-                  title={r.received ? "Mark as not received" : "Mark as received"}
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span
-                      className={`h-2 w-2 rounded-full shrink-0 ${
-                        r.received ? "bg-emerald-500" : "bg-amber-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm break-words min-w-0 flex-1 ${
-                        r.received ? "line-through text-muted-foreground" : ""
-                      }`}
-                    >
-                      {r.name}
-                    </span>
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setOpenReceivableId(isOpen ? null : r.id)}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${
+                          isOpen ? "" : "rotate-[-90deg]"
+                        }`}
+                      />
+                      <span
+                        className={`h-2 w-2 rounded-full shrink-0 ${
+                          fullyReceived ? "bg-emerald-500" : "bg-amber-500"
+                        }`}
+                      />
+                      <span
+                        className={`text-sm break-words min-w-0 flex-1 ${
+                          fullyReceived ? "line-through text-muted-foreground" : ""
+                        }`}
+                      >
+                        {r.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-sm font-medium ${fullyReceived ? "text-emerald-500" : ""}`}>
+                        {r.amount.toLocaleString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); removeReceivable(r.id); }}
+                      >
+                        <Trash className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-sm font-medium ${r.received ? "text-emerald-500" : ""}`}>
-                      {r.amount.toLocaleString()}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => { e.stopPropagation(); removeReceivable(r.id); }}
-                    >
-                      <Trash className="h-3 w-3" />
-                    </Button>
+
+                  <div className="grid grid-cols-3 gap-1 text-center pl-6">
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Owed</div>
+                      <div className="text-xs font-medium">{r.amount.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-emerald-300 uppercase tracking-wide">Received</div>
+                      <div className="text-xs font-medium text-emerald-200">{paid.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-amber-300 uppercase tracking-wide">Left</div>
+                      <div className="text-xs font-medium text-amber-200">{pending.toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div className="pl-6 space-y-2">
+                    {isOpen && (r.payments ?? []).length > 0 && (
+                      <div className="space-y-1">
+                        {(r.payments ?? []).map((p) => (
+                          <div
+                            key={p.id}
+                            className="flex items-center justify-between text-xs bg-background/60 rounded px-2 py-1"
+                          >
+                            <span className="text-muted-foreground">
+                              {p.date
+                                ? new Date(p.date).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                  })
+                                : "Payment"}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-emerald-300">
+                                {p.amount.toLocaleString()}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
+                                onClick={() => removeReceivablePayment(r.id, p.id)}
+                              >
+                                <Trash className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {pending > 0 && (
+                      payingReceivableId === r.id ? (
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Input
+                            type="number"
+                            className="h-8 text-sm"
+                            value={newPaymentAmount}
+                            onChange={(e) => setNewPaymentAmount(e.target.value)}
+                            placeholder={`Amount (max ${pending.toLocaleString()})`}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") addReceivablePayment(r.id);
+                            }}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" className="h-8" onClick={() => addReceivablePayment(r.id)}>
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-8"
+                              variant="ghost"
+                              onClick={() => { setPayingReceivableId(null); setNewPaymentAmount(""); }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              setOpenReceivableId(r.id);
+                              setPayingReceivableId(r.id);
+                              setNewPaymentAmount("");
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Record payment
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-emerald-400"
+                            onClick={() => receiveRemaining(r.id)}
+                          >
+                            Receive remaining
+                          </Button>
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
