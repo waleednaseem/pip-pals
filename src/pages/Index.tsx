@@ -519,6 +519,7 @@ const SalaryCalculator = () => {
         const data: ExpenseData = JSON.parse(saved);
         setSalary(data.salary || 0);
         setExpenses(data.expenses || []);
+        setReceivables(data.receivables || []);
       } catch (e) {
         console.error("Failed to parse expense data:", e);
       }
