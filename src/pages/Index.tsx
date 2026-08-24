@@ -549,10 +549,11 @@ const SalaryCalculator = () => {
   const clearAllData = () => {
     setSalary(0);
     setExpenses([]);
+    setReceivables([]);
     localStorage.removeItem(EXPENSE_STORAGE_KEY);
     toast({
       title: "Data cleared",
-      description: "All expenses have been removed",
+      description: "All expenses and receivables have been removed",
     });
   };
 
