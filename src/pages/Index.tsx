@@ -695,6 +695,38 @@ const SalaryCalculator = () => {
   const trackedTotal = paidTotal + unpaidTotal;
   const paidPct = trackedTotal > 0 ? (paidTotal / trackedTotal) * 100 : 0;
 
+  // Receivables (money to receive) totals
+  const totalReceivable = receivables.reduce((sum, r) => sum + r.amount, 0);
+  const receivedTotal = receivables.filter(r => r.received).reduce((sum, r) => sum + r.amount, 0);
+  const pendingReceivable = totalReceivable - receivedTotal;
+
+  const addReceivable = () => {
+    const amountNum = parseFloat(newReceivableAmount);
+    if (!newReceivableName.trim() || isNaN(amountNum) || amountNum <= 0) return;
+    setReceivables((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: newReceivableName.trim(),
+        amount: amountNum,
+        received: false,
+      },
+    ]);
+    setNewReceivableName("");
+    setNewReceivableAmount("");
+    setAddingReceivable(false);
+  };
+
+  const removeReceivable = (id: string) => {
+    setReceivables((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const toggleReceived = (id: string) => {
+    setReceivables((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, received: !r.received } : r))
+    );
+  };
+
   // Recompute totals bottom-up: a node with sub-expenses takes the sum of its subs
   const recomputeSub = (s: SubExpense): SubExpense => {
     if (s.subExpenses && s.subExpenses.length > 0) {
