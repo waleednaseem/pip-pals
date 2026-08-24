@@ -1128,6 +1128,55 @@ const SalaryCalculator = () => {
     doc.text(`${paidPctRound}% paid of tracked`, pageWidth - 25, y + 23, { align: "right" });
     y += 32;
 
+    // Money to Receive section
+    if (receivables.length > 0) {
+      ensureSpace(40);
+      doc.setTextColor(...darkColor);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Money to Receive", 20, y);
+      y += 10;
+
+      doc.setFillColor(...primaryColor);
+      doc.rect(20, y, pageWidth - 40, 9, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Person", 25, y + 6);
+      doc.text("Status", pageWidth - 75, y + 6, { align: "right" });
+      doc.text("Amount", pageWidth - 25, y + 6, { align: "right" });
+      y += 12;
+
+      receivables.forEach((r) => {
+        ensureSpace(7);
+        doc.setTextColor(...darkColor);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(r.name, 25, y);
+        doc.setTextColor(...(r.received ? successColor : warningColor));
+        doc.setFont("helvetica", "bold");
+        doc.text(r.received ? "RECEIVED" : "PENDING", pageWidth - 75, y, { align: "right" });
+        doc.setTextColor(...(r.received ? successColor : darkColor));
+        doc.setFont("helvetica", "normal");
+        doc.text(`$${r.amount.toLocaleString()}`, pageWidth - 25, y, { align: "right" });
+        y += 7;
+      });
+
+      y += 4;
+      doc.setFillColor(...lightBg);
+      doc.roundedRect(20, y, pageWidth - 40, 20, 3, 3, "F");
+      doc.setTextColor(...darkColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total", 25, y + 8);
+      doc.text(`$${totalReceivable.toLocaleString()}`, pageWidth - 25, y + 8, { align: "right" });
+      doc.setTextColor(...successColor);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Received: $${receivedTotal.toLocaleString()}`, 25, y + 15);
+      doc.setTextColor(...warningColor);
+      doc.text(`Pending: $${pendingReceivable.toLocaleString()}`, pageWidth - 25, y + 15, { align: "right" });
+      y += 26;
+    }
+
     // Footer
     y = pageHeight - 20;
     doc.setDrawColor(...lightBg);
