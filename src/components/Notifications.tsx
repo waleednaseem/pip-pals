@@ -37,7 +37,7 @@ const refIcon = (ref?: AppNotification["refType"]) => {
 const priorityColor = (p: AppNotification["priority"]) =>
   p === "high" ? "border-[hsl(0_84%_60%/0.3)] bg-[hsl(0_84%_60%/0.04)]"
     : p === "medium" ? "border-[hsl(38_92%_60%/0.25)] bg-[hsl(38_92%_60%/0.04)]"
-    : "border-[hsl(220_32%_18%)] bg-[hsl(220_40%_11%)]";
+    : "border-border bg-muted/60";
 
 export const Notifications = ({ onNavigate }: Props) => {
   const [list, setList] = useState<AppNotification[]>([]);
@@ -132,19 +132,19 @@ export const Notifications = ({ onNavigate }: Props) => {
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center gap-1.5">
-              <Filter className="h-3 w-3 text-[hsl(215_20%_45%)]" />
+              <Filter className="h-3 w-3 text-muted-foreground" />
               <Tabs value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-                <TabsList className="h-7 p-0.5 rounded-lg" style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
+                <TabsList className="h-7 p-0.5 rounded-lg bg-muted border border-border">
                   {["all", "payment", "event", "recurring", "reminder"].map(v => (
-                    <TabsTrigger key={v} value={v} className="text-[10px] h-5 px-2 rounded-md capitalize data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">{v}</TabsTrigger>
+                    <TabsTrigger key={v} value={v} className="text-[10px] h-5 px-2 rounded-md capitalize data-[state=active]:bg-primary/10 data-[state=active]:text-primary">{v}</TabsTrigger>
                   ))}
                 </TabsList>
               </Tabs>
             </div>
             <Tabs value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-              <TabsList className="h-7 p-0.5 rounded-lg" style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
+              <TabsList className="h-7 p-0.5 rounded-lg bg-muted border border-border">
                 {["all", "unread", "read"].map(v => (
-                  <TabsTrigger key={v} value={v} className="text-[10px] h-5 px-2 rounded-md capitalize data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">{v}</TabsTrigger>
+                  <TabsTrigger key={v} value={v} className="text-[10px] h-5 px-2 rounded-md capitalize data-[state=active]:bg-primary/10 data-[state=active]:text-primary">{v}</TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
@@ -152,10 +152,10 @@ export const Notifications = ({ onNavigate }: Props) => {
 
           {filtered.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{background: "hsl(220 40% 11%)"}}>
-                <BellOff className="h-5 w-5 text-[hsl(215_20%_40%)]" />
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-muted">
+                <BellOff className="h-5 w-5 text-muted-foreground" />
               </div>
-              <p className="text-sm text-[hsl(215_20%_45%)]">No notifications</p>
+              <p className="text-sm text-muted-foreground">No notifications</p>
             </div>
           ) : (
             <div className="space-y-2">

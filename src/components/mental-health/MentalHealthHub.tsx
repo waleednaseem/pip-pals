@@ -15,26 +15,25 @@ export const MentalHealthHub = () => {
         </div>
         <div>
           <h2 className="text-base font-semibold gradient-text-purple">Mental Health</h2>
-          <p className="text-xs text-[hsl(215_20%_45%)]">Dreams, medications, sleep & gym tracker</p>
+          <p className="text-xs text-muted-foreground">Dreams, medications, sleep & gym tracker</p>
         </div>
       </div>
 
       <Tabs defaultValue="dreams" className="w-full">
-        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1 rounded-xl"
-          style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
-          <TabsTrigger value="dreams" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1 rounded-xl bg-muted border border-border">
+          <TabsTrigger value="dreams" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             <Moon className="h-3.5 w-3.5" />
             Dreams
           </TabsTrigger>
-          <TabsTrigger value="medications" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">
+          <TabsTrigger value="medications" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             <Pill className="h-3.5 w-3.5" />
             Medications
           </TabsTrigger>
-          <TabsTrigger value="sleep" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">
+          <TabsTrigger value="sleep" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             <BedDouble className="h-3.5 w-3.5" />
             Sleep
           </TabsTrigger>
-          <TabsTrigger value="gym" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">
+          <TabsTrigger value="gym" className="flex-1 min-w-[100px] gap-1.5 text-xs rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             <Dumbbell className="h-3.5 w-3.5" />
             Gym
           </TabsTrigger>

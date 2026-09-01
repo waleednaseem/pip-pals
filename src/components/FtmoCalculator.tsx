@@ -218,8 +218,8 @@ const FtmoCalculator = () => {
                   onClick={() => setSize(s)}
                   className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${
                     size === s
-                      ? "border-[hsl(199_100%_50%/0.45)] bg-[hsl(199_100%_50%/0.12)] text-[hsl(199_100%_55%)]"
-                      : "border-[hsl(220_32%_18%)] text-muted-foreground hover:text-foreground"
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {formatSize(s)}
@@ -425,7 +425,7 @@ const FtmoCalculator = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-[hsl(220_32%_18%)]">
+                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
                   <th className="py-2 pr-3">Size</th>
                   <th className="py-2 pr-3">Target</th>
                   <th className="py-2 pr-3">Pass at</th>
@@ -439,7 +439,7 @@ const FtmoCalculator = () => {
                 {table.map((row) => (
                   <tr
                     key={row.size}
-                    className={`border-b border-[hsl(220_32%_14%)] ${row.size === size ? "text-[hsl(199_100%_55%)]" : ""}`}
+                    className={`border-b border-border ${row.size === size ? "text-primary" : ""}`}
                   >
                     <td className="py-2.5 pr-3 font-medium">{formatSize(row.size)}</td>
                     <td className="py-2.5 pr-3 font-mono-num">{row.profitTarget > 0 ? formatUsd(row.profitTarget) : "—"}</td>

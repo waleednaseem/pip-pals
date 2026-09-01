@@ -83,10 +83,10 @@ export const KanbanCard = ({ task, board, members, doneColumnIds, onClick }: Kan
         <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <CheckSquare className="h-3 w-3" />
           {subtaskDone}/{task.subtasks.length}
-          <div className="flex-1 h-1 rounded-full overflow-hidden ml-1" style={{background: "hsl(220 32% 18%)"}}>
+          <div className="flex-1 h-1 rounded-full overflow-hidden ml-1 bg-muted">
             <div
-              className="h-full rounded-full"
-              style={{ width: `${task.subtasks.length ? (subtaskDone / task.subtasks.length) * 100 : 0}%`, background: "hsl(158 64% 52%)" }}
+              className="h-full rounded-full bg-[hsl(var(--success))]"
+              style={{ width: `${task.subtasks.length ? (subtaskDone / task.subtasks.length) * 100 : 0}%` }}
             />
           </div>
         </div>

@@ -24,10 +24,10 @@ const TradeHistory = ({ trades }: TradeHistoryProps) => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="w-12 h-12 rounded-full bg-[hsl(220_32%_14%)] flex items-center justify-center">
-              <History className="h-5 w-5 text-[hsl(215_20%_45%)]" />
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <History className="h-5 w-5 text-muted-foreground" />
             </div>
-            <p className="text-[hsl(215_20%_45%)] text-sm">No trades yet. Add your first calculation above.</p>
+            <p className="text-muted-foreground text-sm">No trades yet. Add your first calculation above.</p>
           </div>
         </CardContent>
       </Card>
@@ -59,27 +59,26 @@ const TradeHistory = ({ trades }: TradeHistoryProps) => {
                 animate="visible"
                 variants={fadeInUp}
                 transition={{ delay: Math.min(i, 8) * 0.04 }}
-                className="p-4 rounded-xl border cursor-default transition-colors duration-200 hover:bg-[hsl(220_40%_12%)]"
+                className="p-4 rounded-xl border bg-muted/60 cursor-default transition-colors duration-200 hover:bg-muted"
                 style={{
-                  background: "hsl(220 40% 11%)",
-                  borderColor: trade.profit.amount >= 0 ? "hsl(158 64% 52% / 0.15)" : "hsl(0 84% 60% / 0.15)",
+                  borderColor: trade.profit.amount >= 0 ? "hsl(var(--success) / 0.25)" : "hsl(var(--destructive) / 0.25)",
                 }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-sm font-mono-num text-[hsl(210_40%_92%)]">{trade.pair}</span>
+                      <span className="font-bold text-sm font-mono-num text-foreground">{trade.pair}</span>
                       <span className={trade.direction === "BUY" ? "badge-green" : "badge-red"}>
                         {trade.direction}
                       </span>
                     </div>
-                    <div className="text-[10px] text-[hsl(215_20%_40%)]">
+                    <div className="text-[10px] text-muted-foreground">
                       {new Date(trade.timestamp).toLocaleString()}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className={`text-lg font-bold font-mono-num flex items-center gap-1 ${
-                      trade.profit.amount >= 0 ? "text-[hsl(158_64%_52%)]" : "text-[hsl(0_84%_60%)]"
+                      trade.profit.amount >= 0 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--destructive))]"
                     }`}>
                       {trade.profit.amount >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                       {formatCurrency(trade.profit.amount, trade.profit.currency)}
@@ -94,16 +93,16 @@ const TradeHistory = ({ trades }: TradeHistoryProps) => {
                     { label: "Pips", value: formatNumber(trade.pips, 2), highlight: true },
                     { label: "Lot", value: formatNumber(trade.lot, 2) },
                   ].map(({ label, value, highlight }) => (
-                    <div key={label} className="rounded-lg p-2" style={{background: "hsl(220 40% 13%)"}}>
-                      <div className="text-[10px] text-[hsl(215_20%_40%)] mb-0.5">{label}</div>
-                      <div className={`font-mono-num font-semibold text-xs ${highlight ? "text-[hsl(199_100%_55%)]" : "text-[hsl(210_40%_85%)]"}`}>{value}</div>
+                    <div key={label} className="rounded-lg p-2 bg-background/70 border border-border">
+                      <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
+                      <div className={`font-mono-num font-semibold text-xs ${highlight ? "text-primary" : "text-foreground"}`}>{value}</div>
                     </div>
                   ))}
                   {trade.duration && (
-                    <div className="col-span-4 rounded-lg p-2 flex items-center gap-2" style={{background: "hsl(220 40% 13%)"}}>
-                      <Clock className="h-3 w-3 text-[hsl(215_20%_40%)]" />
-                      <span className="text-[10px] text-[hsl(215_20%_40%)]">Duration</span>
-                      <span className="font-mono-num font-semibold text-xs text-[hsl(210_40%_85%)]">{trade.duration.formatted}</span>
+                    <div className="col-span-4 rounded-lg p-2 flex items-center gap-2 bg-background/70 border border-border">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Duration</span>
+                      <span className="font-mono-num font-semibold text-xs text-foreground">{trade.duration.formatted}</span>
                     </div>
                   )}
                 </div>

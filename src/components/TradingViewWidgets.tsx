@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
 
 interface BaseProps {
   symbol: string;
@@ -10,7 +11,6 @@ const injectWidgetScript = (
   src: string,
   config: Record<string, unknown>
 ) => {
-  // Clear any previous widget instance before mounting a new one.
   container.innerHTML = '<div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>';
   const script = document.createElement("script");
   script.type = "text/javascript";
@@ -20,8 +20,14 @@ const injectWidgetScript = (
   container.appendChild(script);
 };
 
+const useChartTheme = () => {
+  const { resolvedTheme } = useTheme();
+  return resolvedTheme === "light" ? "light" : "dark";
+};
+
 export const TradingViewChart = ({ symbol, height = 600 }: BaseProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const theme = useChartTheme();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -33,7 +39,7 @@ export const TradingViewChart = ({ symbol, height = 600 }: BaseProps) => {
         symbol,
         interval: "60",
         timezone: "Etc/UTC",
-        theme: "dark",
+        theme,
         style: "1",
         locale: "en",
         allow_symbol_change: false,
@@ -41,7 +47,7 @@ export const TradingViewChart = ({ symbol, height = 600 }: BaseProps) => {
         support_host: "https://www.tradingview.com",
       }
     );
-  }, [symbol]);
+  }, [symbol, theme]);
 
   return (
     <div
@@ -54,6 +60,7 @@ export const TradingViewChart = ({ symbol, height = 600 }: BaseProps) => {
 
 export const TradingViewTechnicalAnalysis = ({ symbol, height = 500 }: BaseProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const theme = useChartTheme();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -69,10 +76,10 @@ export const TradingViewTechnicalAnalysis = ({ symbol, height = 500 }: BaseProps
         showIntervalTabs: true,
         displayMode: "single",
         locale: "en",
-        colorTheme: "dark",
+        colorTheme: theme,
       }
     );
-  }, [symbol]);
+  }, [symbol, theme]);
 
   return (
     <div

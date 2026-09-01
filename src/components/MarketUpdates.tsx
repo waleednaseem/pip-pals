@@ -20,7 +20,7 @@ const CURRENCY_FILTERS = ["USD", "EUR", "GBP", "JPY", "AUD", "CHF"] as const;
 const impactStyles: Record<string, string> = {
   High: "badge-red",
   Medium: "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(38_92%_60%/0.15)] text-[hsl(38_92%_60%)] border border-[hsl(38_92%_60%/0.25)]",
-  Low: "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(220_28%_16%)] text-[hsl(215_20%_55%)] border border-[hsl(220_32%_20%)]",
+  Low: "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border",
   Holiday: "badge-cyan",
 };
 
@@ -120,18 +120,18 @@ export default function MarketUpdates() {
             Refresh
           </Button>
         </div>
-        <p className="text-xs text-[hsl(215_20%_45%)]">
+        <p className="text-xs text-muted-foreground">
           News &amp; economic calendar — XAU, USD, EUR and more
         </p>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="calendar" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 p-1 rounded-xl" style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
-            <TabsTrigger value="calendar" className="gap-1.5 text-xs rounded-lg data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">
+          <TabsList className="grid w-full grid-cols-2 p-1 rounded-xl bg-muted border border-border">
+            <TabsTrigger value="calendar" className="gap-1.5 text-xs rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               <CalendarClock className="h-3.5 w-3.5" />
               Economic Calendar
             </TabsTrigger>
-            <TabsTrigger value="news" className="gap-1.5 text-xs rounded-lg data-[state=active]:bg-[hsl(199_100%_50%/0.12)] data-[state=active]:text-[hsl(199_100%_55%)]">
+            <TabsTrigger value="news" className="gap-1.5 text-xs rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               <Newspaper className="h-3.5 w-3.5" />
               News
             </TabsTrigger>

@@ -75,8 +75,7 @@ const TotalsSummary = ({ totals }: TotalsSummaryProps) => {
             <motion.div
               key={label}
               variants={fadeInUp}
-              className="rounded-xl p-4"
-              style={{ background: "hsl(220 40% 11%)", border: "1px solid hsl(220 32% 18%)" }}
+              className="rounded-xl p-4 bg-muted/60 border border-border"
             >
               <div className={`flex items-center gap-1.5 text-xs mb-2 ${
                 color === "cyan" ? "text-[hsl(199_100%_50%)]" :

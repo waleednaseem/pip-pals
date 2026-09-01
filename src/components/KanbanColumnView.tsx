@@ -56,9 +56,8 @@ export const KanbanColumnView = ({
   };
 
   return (
-    <div className="flex flex-col w-72 shrink-0 rounded-xl max-h-full"
-      style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 16%)"}}>
-      <div className="flex items-center justify-between gap-1 p-2.5" style={{borderBottom: "1px solid hsl(220 32% 14%)"}}>
+    <div className="flex flex-col w-72 shrink-0 rounded-xl max-h-full bg-card border border-border">
+      <div className="flex items-center justify-between gap-1 p-2.5 border-b border-border">
 
         <div className="flex items-center gap-1.5 min-w-0">
           {column.isDoneColumn && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
@@ -127,7 +126,7 @@ export const KanbanColumnView = ({
         )}
       </div>
 
-      <div className="p-2" style={{borderTop: "1px solid hsl(220 32% 14%)"}}>
+      <div className="p-2 border-t border-border">
         <AnimatePresence mode="wait">
         {adding ? (
           <motion.div key="add-form" initial="hidden" animate="visible" exit="hidden" variants={scaleIn} className="space-y-1.5">

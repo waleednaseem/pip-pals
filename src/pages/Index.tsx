@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { fadeInDown, staggerContainer, slideInLeft, tabContent } from "@/lib/animations";
+import { tabContent } from "@/lib/animations";
 import { TradingPair, TradeEntry, Totals, CalculatorInputs } from "@/types/calculator";
 import { calculateTrade } from "@/utils/calculator";
 import {
@@ -20,7 +20,6 @@ import TimeConversion from "@/components/TimeConversion";
 import DynamicCalculator from "@/components/DynamicCalculator";
 import LotFitCalculator from "@/components/LotFitCalculator";
 import FtmoCalculator from "@/components/FtmoCalculator";
-import ActionButtons from "@/components/ActionButtons";
 import { Lifeline } from "@/components/Lifeline";
 import { TaxHistory } from "@/components/TaxHistory";
 import CanadaFundCalculator from "@/components/CanadaFundCalculator";
@@ -35,25 +34,17 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { Notifications } from "@/components/Notifications";
 import { MentalHealthHub } from "@/components/mental-health/MentalHealthHub";
 import { AdvertisingTab } from "@/components/AdvertisingTab";
-import { AdBanner } from "@/components/AdBanner";
+import { AppShell } from "@/components/layout/AppShell";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Trash, Download, History, Clock, X, Save, FileText, FileDown, RotateCcw, PlusCircle, Bell, Eye, EyeOff, Wallet } from "lucide-react";
+import { Plus, Trash, Download, History, Clock, X, Save, FileText, FileDown, RotateCcw, PlusCircle, Eye, EyeOff, Wallet, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
@@ -172,162 +163,28 @@ const Index = () => {
     };
   };
 
-  // All tabs in one unified menu
-  const availableTabs = [
-    ...(selectedPair ? [{ value: "calculator", label: "Forex Pip Calculator" }] : []),
-    { value: "notifications", label: "Notifications" },
-    { value: "market-updates", label: "Market Updates (News & Calendar)" },
-    { value: "trading-signals", label: "Trading Signals (Buy/Sell)" },
-    { value: "business-ideas", label: "Business Ideas" },
-    { value: "advertising", label: "Advertising" },
-    { value: "canada", label: "Financial Plan" },
-    { value: "converter", label: "Currency Converter" },
-    { value: "dynamic-calc", label: "Dynamic Calculator" },
-    { value: "lotfit", label: "LotFit" },
-    { value: "ftmo", label: "FTMO Challenge" },
-    { value: "salary", label: "Expense Calculator" },
-    { value: "time-convert", label: "Time Conversion" },
-    { value: "lifeline", label: "Setup Your Lifeline" },
-    { value: "group-expenses", label: "Group Expenses (Friends)" },
-    { value: "expense-divider", label: "Expense Divider" },
-    { value: "kanban", label: "Kanban Board" },
-    { value: "tax", label: "Tax History" },
-    { value: "mental-health", label: "Mental Health" },
-    ...(selectedPair ? [{ value: "totals", label: "Totals Summary" }] : []),
-    { value: "pair", label: "Select Trading Pair" },
-  ];
-
-  // Redirect orphan tabs when pair is cleared
   useEffect(() => {
     if (!selectedPair && (activeTab === "calculator" || activeTab === "totals")) {
       setActiveTab("canada");
     }
   }, [selectedPair, activeTab]);
 
-  const getCurrentTabLabel = () => {
-    const tab = availableTabs.find(t => t.value === activeTab);
-    return tab?.label || availableTabs[0]?.label;
-  };
-
   const totals = calculateTotals();
 
   return (
-    <div className="min-h-screen p-3 md:p-5">
-      <AdBanner />
-      <div className="max-w-7xl mx-auto space-y-5">
-
-        {/* ── Header ── */}
-        <motion.div
-          className="flex items-center justify-between flex-wrap gap-4 pt-2 pb-1"
-          initial="hidden" animate="visible" variants={fadeInDown}
-        >
-          <div className="flex items-center gap-3">
-            <motion.div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{background: "linear-gradient(135deg, hsl(199 100% 50%) 0%, hsl(270 80% 65%) 100%)"}}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ duration: 0.15 }}
-            >
-              <span className="text-[hsl(222_47%_5%)] font-bold text-sm">PP</span>
-            </motion.div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold gradient-text-mixed leading-tight">
-                Pip Pals
-              </h1>
-              <p className="text-[hsl(215_20%_45%)] text-xs mt-0.5 font-medium">
-                {selectedPair ? `Trading · ${selectedPair}` : "Your All-in-One Financial Dashboard"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <AnimatePresence>
-              {unreadNotif > 0 && (
-                <motion.button
-                  key="notif-btn"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setActiveTab("notifications")}
-                  className="relative p-2 rounded-lg bg-[hsl(220_40%_11%)] border border-[hsl(220_32%_18%)] hover:border-[hsl(199_100%_50%/0.4)] transition-colors"
-                >
-                  <Bell className="h-4 w-4 text-[hsl(215_20%_55%)]" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center badge-soft-pulse">
-                    {unreadNotif}
-                  </span>
-                </motion.button>
-              )}
-            </AnimatePresence>
-            {selectedPair && (
-              <ActionButtons
-                onClearHistory={handleClearHistory}
-                onExportCSV={handleExportCSV}
-                onChangePair={handleChangePair}
-                hasHistory={trades.length > 0}
-              />
-            )}
-          </div>
-        </motion.div>
-
-        <motion.div className="divider-glow" initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} style={{ transformOrigin: "left" }} />
-
+    <AppShell
+      activeTab={activeTab}
+      selectedPair={selectedPair}
+      unreadNotif={unreadNotif}
+      hasHistory={trades.length > 0}
+      onNavigate={setActiveTab}
+      onClearHistory={handleClearHistory}
+      onExportCSV={handleExportCSV}
+      onChangePair={handleChangePair}
+    >
+      <div className="mx-auto w-full max-w-7xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* ── Navigation Drawer Trigger ── */}
-          <Drawer>
-            <DrawerTrigger asChild>
-              <motion.button
-                className="w-full mb-5 flex items-center justify-between px-4 h-12 rounded-xl border border-[hsl(220_32%_18%)] bg-[hsl(220_40%_9%)] hover:border-[hsl(199_100%_50%/0.35)] hover:bg-[hsl(220_40%_11%)] transition-all group"
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.25 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <span className="flex items-center gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-[hsl(199_100%_50%)]" style={{boxShadow: "0 0 8px hsl(199 100% 50% / 0.6)"}} />
-                  <span className="text-sm font-semibold text-[hsl(210_40%_90%)]">{getCurrentTabLabel()}</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-[hsl(215_20%_45%)] uppercase tracking-wider hidden sm:block">Switch Tool</span>
-                  <ChevronDown className="h-4 w-4 text-[hsl(215_20%_45%)] group-hover:text-[hsl(199_100%_50%)] transition-colors" />
-                </div>
-              </motion.button>
-            </DrawerTrigger>
-            <DrawerContent className="max-h-[85vh] flex flex-col border-t border-[hsl(220_32%_16%)]" style={{background: "hsl(222 47% 6%)"}}>
-              <DrawerHeader className="pb-2 shrink-0">
-                <DrawerTitle className="gradient-text-cyan text-lg">Select Tool</DrawerTitle>
-                <p className="text-xs text-[hsl(215_20%_45%)]">{availableTabs.length} tools available</p>
-              </DrawerHeader>
-              <motion.div
-                className="p-4 space-y-1.5 overflow-y-auto pb-8 flex-1 min-h-0"
-                initial="hidden" animate="visible" variants={staggerContainer}
-              >
-                {availableTabs.map((tab) => (
-                  <DrawerClose key={tab.value} asChild>
-                    <motion.button variants={slideInLeft}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                        activeTab === tab.value
-                          ? "bg-[hsl(199_100%_50%/0.12)] text-[hsl(199_100%_55%)] border border-[hsl(199_100%_50%/0.25)]"
-                          : "text-[hsl(215_20%_65%)] hover:bg-[hsl(220_32%_14%)] hover:text-[hsl(210_40%_96%)] border border-transparent"
-                      }`}
-                      onClick={() => setActiveTab(tab.value)}
-                    >
-                      <span className="flex items-center gap-3">
-                        {activeTab === tab.value && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[hsl(199_100%_50%)]" />
-                        )}
-                        {tab.label}
-                      </span>
-                      {tab.value === "notifications" && unreadNotif > 0 && (
-                        <span className="badge-red">{unreadNotif}</span>
-                      )}
-                    </motion.button>
-                  </DrawerClose>
-                ))}
-              </motion.div>
-            </DrawerContent>
-          </Drawer>
-
-          <TabsContent value="calculator" className="space-y-5 mt-5">
+          <TabsContent value="calculator" className="mt-0 space-y-5">
             <AnimatePresence mode="wait">
               <motion.div key="calculator" initial="hidden" animate="visible" exit="exit" variants={tabContent} className="space-y-5">
                 {selectedPair && <CalculatorForm pair={selectedPair} onCalculate={handleCalculate} />}
@@ -438,7 +295,7 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

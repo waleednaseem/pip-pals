@@ -89,11 +89,9 @@ export const AdBanner = () => {
 
   const inner = (
     <div
-      className={`relative flex items-center gap-3 rounded-xl overflow-hidden ${isPromotion ? "h-28 md:h-36" : "h-14 md:h-16"}`}
-      style={{background: "hsl(220 40% 9%)", border: "1px solid hsl(220 32% 18%)"}}
+      className={`relative flex items-center gap-3 rounded-xl overflow-hidden border border-border bg-card ${isPromotion ? "h-28 md:h-36" : "h-14 md:h-16"}`}
     >
-      <div className="absolute top-1.5 left-1.5 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-        style={{background: "hsl(199 100% 50% / 0.15)", color: "hsl(199 100% 55%)", border: "1px solid hsl(199 100% 50% / 0.25)"}}>
+      <div className="badge-cyan absolute top-1.5 left-1.5 z-10">
         Ad
       </div>
       <div className={`h-full ${isPromotion ? "w-full" : "w-20 md:w-28 shrink-0"}`}>
@@ -101,16 +99,15 @@ export const AdBanner = () => {
       </div>
       {!isPromotion && (
         <div className="min-w-0 flex-1 pr-3">
-          <div className="font-semibold text-sm truncate text-[hsl(210_40%_90%)]">{current.title}</div>
-          <div className="text-xs text-[hsl(215_20%_45%)]">Sponsored</div>
+          <div className="font-semibold text-sm truncate text-foreground">{current.title}</div>
+          <div className="text-xs text-muted-foreground">Sponsored</div>
         </div>
       )}
     </div>
   );
 
   return (
-    <div className="sticky top-0 z-40 -mx-3 md:-mx-5 px-3 md:px-5 py-2 mb-2"
-      style={{background: "hsl(222 47% 5% / 0.95)", backdropFilter: "blur(20px)", borderBottom: "1px solid hsl(220 32% 14%)"}}>
+    <div className="mb-2">
       <div className="max-w-7xl mx-auto">
         {current.linkUrl ? (
           <a href={current.linkUrl} target="_blank" rel="noopener noreferrer" className="block">

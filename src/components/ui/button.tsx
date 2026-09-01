@@ -9,11 +9,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary/90 text-primary-foreground backdrop-blur-sm border border-primary/30 shadow-[0_4px_16px_hsl(195_100%_50%/0.3),inset_0_1px_0_hsl(210_40%_98%/0.2)] hover:shadow-[0_6px_24px_hsl(195_100%_50%/0.4)] hover:-translate-y-0.5",
-        destructive: "bg-destructive/90 text-destructive-foreground backdrop-blur-sm border border-destructive/30 shadow-[0_4px_16px_hsl(0_85%_60%/0.3)] hover:shadow-[0_6px_24px_hsl(0_85%_60%/0.4)] hover:-translate-y-0.5",
-        outline: "border border-border/50 bg-background/50 backdrop-blur-sm shadow-[0_2px_8px_hsl(220_50%_5%/0.2),inset_0_1px_0_hsl(210_40%_98%/0.05)] hover:bg-muted/50 hover:border-border",
-        secondary: "bg-secondary/80 text-secondary-foreground backdrop-blur-sm border border-border/30 shadow-[0_2px_8px_hsl(220_50%_5%/0.2)] hover:bg-secondary/60",
-        ghost: "hover:bg-muted/50 hover:backdrop-blur-sm",
+        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 dark:bg-primary/90 dark:border dark:border-primary/30 dark:shadow-[0_4px_16px_hsl(var(--primary)/0.3)] dark:hover:-translate-y-0.5",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 dark:shadow-[0_4px_16px_hsl(var(--destructive)/0.3)] dark:hover:-translate-y-0.5",
+        outline: "border border-border bg-background hover:bg-muted",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-muted",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

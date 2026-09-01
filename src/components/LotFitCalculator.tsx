@@ -191,8 +191,8 @@ const LotFitCalculator = () => {
                     onClick={() => setDeposit(String(n))}
                     className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
                       depositNum === n
-                        ? "border-[hsl(199_100%_50%/0.45)] bg-[hsl(199_100%_50%/0.12)] text-[hsl(199_100%_55%)]"
-                        : "border-[hsl(220_32%_18%)] text-muted-foreground hover:text-foreground"
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {usd(n)}

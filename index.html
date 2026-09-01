@@ -1,7 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("pip-pals-theme");
+          if (t === "light") document.documentElement.classList.remove("dark");
+          else document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Daily Planning — Plan, Track & Manage Your Finances</title>
     <meta name="description" content="Daily Planning helps you organize expenses, track income, plan trades and manage your family & group finances — all in one dark, easy-to-use dashboard." />
