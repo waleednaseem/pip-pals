@@ -58,7 +58,7 @@ export const RatesCatalog = ({ currency }: Props) => {
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="grid grid-cols-12 gap-2">
-            <Input className="col-span-5" placeholder="Category name (e.g. Eid Clothes)"
+            <Input className="col-span-5" placeholder="Category name (e.g. Festival clothes)"
               value={newName} onChange={e => setNewName(e.target.value)} />
             <Input className="col-span-3" type="number" placeholder={`Default (${currency})`}
               value={newAmount} onChange={e => setNewAmount(e.target.value)} />

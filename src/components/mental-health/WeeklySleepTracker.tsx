@@ -43,11 +43,11 @@ export const WeeklySleepTracker = () => {
     const poor = parseInt(poorNights || "0", 10);
 
     if (isNaN(hours) || hours < 0) {
-      toast({ title: "Invalid hours", description: "Total hours sahi darj karen", variant: "destructive" });
+      toast({ title: "Invalid hours", description: "Enter a valid total hours value", variant: "destructive" });
       return;
     }
     if (isNaN(poor) || poor < 0 || poor > 7) {
-      toast({ title: "Invalid nights", description: "Poor nights 0-7 ke darmiyan honi chahiye", variant: "destructive" });
+      toast({ title: "Invalid nights", description: "Poor nights must be between 0 and 7", variant: "destructive" });
       return;
     }
 
@@ -66,13 +66,13 @@ export const WeeklySleepTracker = () => {
     setTotalHours("");
     setPoorNights("");
     setNotes("");
-    toast({ title: "Saved", description: `${entry.weekLabel} ka sleep data save ho gaya` });
+    toast({ title: "Saved", description: `Sleep data saved for ${entry.weekLabel}` });
   };
 
   const handleDelete = (id: string) => {
     deleteWeeklySleep(id);
     setEntries(getWeeklySleep());
-    toast({ title: "Deleted", description: "Weekly sleep entry remove ho gayi" });
+    toast({ title: "Deleted", description: "Weekly sleep entry removed" });
   };
 
   const chartData = useMemo(
@@ -100,11 +100,11 @@ export const WeeklySleepTracker = () => {
               <Input type="date" value={weekStartDate} onChange={(e) => setWeekStartDate(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Total hours soye is hafte</label>
+              <label className="text-xs text-muted-foreground">Total hours slept this week</label>
               <Input type="number" min="0" value={totalHours} onChange={(e) => setTotalHours(e.target.value)} placeholder="e.g. 42" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Kitni raatein neend disturb hui (0-7)</label>
+              <label className="text-xs text-muted-foreground">Nights with poor sleep (0-7)</label>
               <Input type="number" min="0" max="7" value={poorNights} onChange={(e) => setPoorNights(e.target.value)} placeholder="e.g. 2" />
             </div>
           </div>
@@ -140,7 +140,7 @@ export const WeeklySleepTracker = () => {
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Abhi tak koi weekly entry save nahi hui</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No weekly entries saved yet</p>
           ) : (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {entries.map((e) => (

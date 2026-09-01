@@ -19,6 +19,7 @@ import TotalsSummary from "@/components/TotalsSummary";
 import TimeConversion from "@/components/TimeConversion";
 import DynamicCalculator from "@/components/DynamicCalculator";
 import LotFitCalculator from "@/components/LotFitCalculator";
+import FtmoCalculator from "@/components/FtmoCalculator";
 import ActionButtons from "@/components/ActionButtons";
 import { Lifeline } from "@/components/Lifeline";
 import { TaxHistory } from "@/components/TaxHistory";
@@ -124,7 +125,7 @@ const Index = () => {
   const handleChangePair = () => {
     if (trades.length > 0) {
       const ok = window.confirm(
-        "Pair change karne se saari trade history clear ho jayegi. Continue?"
+        "Changing the pair will clear all trade history. Continue?"
       );
       if (!ok) return;
     }
@@ -183,6 +184,7 @@ const Index = () => {
     { value: "converter", label: "Currency Converter" },
     { value: "dynamic-calc", label: "Dynamic Calculator" },
     { value: "lotfit", label: "LotFit" },
+    { value: "ftmo", label: "FTMO Challenge" },
     { value: "salary", label: "Expense Calculator" },
     { value: "time-convert", label: "Time Conversion" },
     { value: "lifeline", label: "Setup Your Lifeline" },
@@ -356,6 +358,10 @@ const Index = () => {
 
           <TabsContent value="lotfit" className="mt-5">
             <motion.div key="lotfit" initial="hidden" animate="visible" variants={tabContent}><LotFitCalculator /></motion.div>
+          </TabsContent>
+
+          <TabsContent value="ftmo" className="mt-5">
+            <motion.div key="ftmo" initial="hidden" animate="visible" variants={tabContent}><FtmoCalculator /></motion.div>
           </TabsContent>
 
           <TabsContent value="time-convert" className="mt-5">
@@ -1575,7 +1581,7 @@ const SalaryCalculator = () => {
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Expense name (e.g., Ration)"
+              placeholder="Expense name (e.g., Groceries)"
             />
             <Input
               type="number"

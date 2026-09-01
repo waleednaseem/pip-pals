@@ -60,7 +60,7 @@ export const ExpenseDivider = () => {
     const name = nameInput.trim();
     if (!name) return;
     if (friends.some((f) => f.name.toLowerCase() === name.toLowerCase())) {
-      toast({ title: "Already added", description: `${name} pehle se list mein hai.`, variant: "destructive" });
+      toast({ title: "Already added", description: `${name} is already on the list.`, variant: "destructive" });
       return;
     }
     setFriends((f) => [...f, { id: uid(), name, paid: "" }]);
@@ -205,7 +205,7 @@ export const ExpenseDivider = () => {
   const copySummary = () => {
     if (!result) return;
     navigator.clipboard.writeText(result.lines.join("\n"));
-    toast({ title: "Copied!", description: "Full summary clipboard pe hai." });
+    toast({ title: "Copied!", description: "Full summary copied to clipboard." });
   };
 
   return (
@@ -299,7 +299,7 @@ export const ExpenseDivider = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">3. Who Paid How Much?</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Jo nahi diya unka 0 chhor do.
+              Leave 0 for anyone who has not paid yet.
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -362,7 +362,7 @@ export const ExpenseDivider = () => {
                 </div>
                 {result.unpaidBill > 0.01 && (
                   <div className="text-xs text-amber-600 mt-1 font-medium">
-                    Bill pe abhi {fmt(result.unpaidBill, currency)} baqi hai
+                    {fmt(result.unpaidBill, currency)} still unpaid on the bill
                   </div>
                 )}
               </div>
@@ -406,7 +406,7 @@ export const ExpenseDivider = () => {
             <CardContent className="space-y-2">
               {result.transfers.length === 0 ? (
                 <p className="text-sm text-center text-muted-foreground py-2">
-                  Friends ke beech koi transfer nahi chahiye
+                  No transfers needed between friends
                 </p>
               ) : (
                 result.transfers.map((t, i) => (
@@ -423,7 +423,7 @@ export const ExpenseDivider = () => {
               {result.stillOweBill.length > 0 && result.unpaidBill > 0.01 && (
                 <div className="space-y-2 pt-2 border-t border-border/50">
                   <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                    Bill pe baqi {fmt(result.unpaidBill, currency)} — ye log abhi cover karein:
+                    {fmt(result.unpaidBill, currency)} still due — these people should cover it:
                   </p>
                   {result.stillOweBill.map((x, i) => (
                     <div

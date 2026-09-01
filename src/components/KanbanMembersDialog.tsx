@@ -122,7 +122,7 @@ export const KanbanMembersDialog = ({ open, onClose, members, tasks, onChange }:
             ))}
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Members are shared across all boards. Google login se dynamic linking baad mein add hogi.
+            Members are shared across all boards. Dynamic linking with Google login will be added later.
           </p>
         </div>
       </DialogContent>

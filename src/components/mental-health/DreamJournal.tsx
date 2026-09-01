@@ -29,7 +29,7 @@ export const DreamJournal = () => {
 
   const handleSave = () => {
     if (!content.trim()) {
-      toast({ title: "Dream likhen", description: "Dream ka detail likhna zaroori hai", variant: "destructive" });
+      toast({ title: "Dream required", description: "Please write the dream details", variant: "destructive" });
       return;
     }
 
@@ -46,13 +46,13 @@ export const DreamJournal = () => {
     setDreams(getDreams());
     setContent("");
     setMood("");
-    toast({ title: "Saved", description: "Dream history mein save ho gaya" });
+    toast({ title: "Saved", description: "Dream saved to history" });
   };
 
   const handleDelete = (id: string) => {
     deleteDream(id);
     setDreams(getDreams());
-    toast({ title: "Deleted", description: "Dream entry remove ho gayi" });
+    toast({ title: "Deleted", description: "Dream entry removed" });
   };
 
   const moodInfo = (m?: DreamMood) => MOOD_OPTIONS.find((o) => o.value === m);
@@ -63,14 +63,14 @@ export const DreamJournal = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Moon className="h-5 w-5" />
-            Aaj ka Khuwab
+            Today's Dream
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Apna khuwab yahan likhen..."
+            placeholder="Write your dream here..."
             className="min-h-[100px]"
           />
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
@@ -95,7 +95,7 @@ export const DreamJournal = () => {
         </CardHeader>
         <CardContent>
           {dreams.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Abhi tak koi dream save nahi hui</p>
+            <p className="text-sm text-muted-foreground text-center py-6">No dreams saved yet</p>
           ) : (
             <div className="space-y-3 max-h-[420px] overflow-y-auto">
               {dreams.map((d) => {

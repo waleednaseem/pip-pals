@@ -57,8 +57,8 @@ export const AdvertisingTab = () => {
 
     if (file.size > MAX_MEDIA_FILE_BYTES) {
       toast({
-        title: "File bohat bara hai",
-        description: `Max size ${(MAX_MEDIA_FILE_BYTES / 1024 / 1024).toFixed(1)}MB hai. Chhoti file upload karein.`,
+        title: "File is too large",
+        description: `Max size is ${(MAX_MEDIA_FILE_BYTES / 1024 / 1024).toFixed(1)}MB. Please upload a smaller file.`,
         variant: "destructive",
       });
       e.target.value = "";
@@ -71,22 +71,22 @@ export const AdvertisingTab = () => {
       setMediaData(base64);
       setMediaKind(kind);
     } catch {
-      toast({ title: "Upload fail hogaya", variant: "destructive" });
+      toast({ title: "Upload failed", variant: "destructive" });
     }
   };
 
   const handleAdd = () => {
     if (!title.trim()) {
-      toast({ title: "Ad ka title daalein", variant: "destructive" });
+      toast({ title: "Enter an ad title", variant: "destructive" });
       return;
     }
     if (type === "youtube") {
       if (!extractYoutubeId(youtubeUrl)) {
-        toast({ title: "Valid YouTube link daalein", variant: "destructive" });
+        toast({ title: "Enter a valid YouTube link", variant: "destructive" });
         return;
       }
     } else if (!mediaData) {
-      toast({ title: "Image ya video upload karein", variant: "destructive" });
+      toast({ title: "Upload an image or video", variant: "destructive" });
       return;
     }
 
@@ -102,7 +102,7 @@ export const AdvertisingTab = () => {
 
     refresh();
     resetForm();
-    toast({ title: "Ad add ho gayi", description: "Ab yeh app mein sab jagah nazar aayegi" });
+    toast({ title: "Ad added", description: "It will now show across the app" });
   };
 
   const handleDelete = (id: string) => {
@@ -121,7 +121,7 @@ export const AdvertisingTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Megaphone className="h-5 w-5" />
-            Naya Ad Banao
+            Create Ad
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -193,7 +193,7 @@ export const AdvertisingTab = () => {
 
           <Button onClick={handleAdd} className="gap-2">
             <Upload className="h-4 w-4" />
-            Ad Add Karein
+            Add Ad
           </Button>
         </CardContent>
       </Card>
@@ -205,7 +205,7 @@ export const AdvertisingTab = () => {
         <CardContent className="space-y-3">
           {ads.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
-              Abhi koi ad nahi hai. Upar se ek banayein.
+              No ads yet. Create one above.
             </p>
           ) : (
             ads.map((ad) => (

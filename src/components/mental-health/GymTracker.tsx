@@ -46,13 +46,13 @@ export const GymTracker = () => {
     setActivityType("");
     setNotes("");
     setDidWorkout(true);
-    toast({ title: "Logged", description: `${date} ka entry save ho gaya` });
+    toast({ title: "Logged", description: `Entry saved for ${date}` });
   };
 
   const handleDelete = (id: string) => {
     deleteGymLog(id);
     setLogs(getGymLogs());
-    toast({ title: "Deleted", description: "Gym log entry remove ho gayi" });
+    toast({ title: "Deleted", description: "Gym log entry removed" });
   };
 
   const weekSummary = useMemo(() => {
@@ -73,7 +73,7 @@ export const GymTracker = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Dumbbell className="h-5 w-5" />
-            Aaj ka Workout
+            Today's Workout
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -81,7 +81,7 @@ export const GymTracker = () => {
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             <div className="flex items-center gap-2">
               <Switch id="did-workout" checked={didWorkout} onCheckedChange={setDidWorkout} />
-              <Label htmlFor="did-workout">{didWorkout ? "Gym/workout kiya" : "Nahi kiya"}</Label>
+              <Label htmlFor="did-workout">{didWorkout ? "Worked out" : "Skipped"}</Label>
             </div>
           </div>
           {didWorkout && (
@@ -99,9 +99,9 @@ export const GymTracker = () => {
         <CardContent>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="text-base px-3 py-1 bg-primary/10 border-primary/30">
-              {weekSummary.workoutDays} / 7 din workout
+              {weekSummary.workoutDays} / 7 workout days
             </Badge>
-            <span className="text-sm text-muted-foreground">{weekSummary.totalLogged} din log kiye is hafte</span>
+            <span className="text-sm text-muted-foreground">{weekSummary.totalLogged} day{weekSummary.totalLogged === 1 ? "" : "s"} logged this week</span>
           </div>
         </CardContent>
       </Card>
@@ -112,7 +112,7 @@ export const GymTracker = () => {
         </CardHeader>
         <CardContent>
           {logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Abhi tak koi entry save nahi hui</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No entries saved yet</p>
           ) : (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {logs.map((l) => (

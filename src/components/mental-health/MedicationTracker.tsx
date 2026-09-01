@@ -17,17 +17,21 @@ const formatDuration = (startDate: string, endDate?: string): string => {
   const end = endDate ? new Date(endDate) : new Date();
   const days = Math.max(0, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
-  if (days < 1) return "Aaj se shuru";
-  if (days < 30) return `${days} din se`;
+  if (days < 1) return "Started today";
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"}`;
   if (days < 365) {
     const months = Math.floor(days / 30);
-    const remDays = days % 30;
-    return remDays > 0 ? `${months} mahenay ${remDays} din se` : `${months} mahenay se`;
+    const remainingDays = days % 30;
+    return remainingDays > 0
+      ? `${months} month${months === 1 ? "" : "s"} ${remainingDays} day${remainingDays === 1 ? "" : "s"}`
+      : `${months} month${months === 1 ? "" : "s"}`;
   }
   const years = Math.floor(days / 365);
-  const remDays = days % 365;
-  const months = Math.floor(remDays / 30);
-  return months > 0 ? `${years} saal ${months} mahenay se` : `${years} saal se`;
+  const remainingDays = days % 365;
+  const months = Math.floor(remainingDays / 30);
+  return months > 0
+    ? `${years} year${years === 1 ? "" : "s"} ${months} month${months === 1 ? "" : "s"}`
+    : `${years} year${years === 1 ? "" : "s"}`;
 };
 
 export const MedicationTracker = () => {
@@ -45,7 +49,7 @@ export const MedicationTracker = () => {
 
   const handleAdd = () => {
     if (!name.trim() || !dosage.trim()) {
-      toast({ title: "Missing info", description: "Naam aur dosage zaroori hai", variant: "destructive" });
+      toast({ title: "Missing info", description: "Name and dosage are required", variant: "destructive" });
       return;
     }
 
@@ -66,19 +70,19 @@ export const MedicationTracker = () => {
     setNotes("");
     setFrequency(FREQUENCY_OPTIONS[0]);
     setStartDate(new Date().toISOString().split("T")[0]);
-    toast({ title: "Added", description: `${entry.name} tracking mein add ho gayi` });
+    toast({ title: "Added", description: `${entry.name} added to tracking` });
   };
 
   const handleStop = (id: string) => {
     updateMedication(id, { active: false, endDate: new Date().toISOString().split("T")[0] });
     setMedications(getMedications());
-    toast({ title: "Stopped", description: "Medicine ko past mein move kar diya" });
+    toast({ title: "Stopped", description: "Moved to past medications" });
   };
 
   const handleDelete = (id: string) => {
     deleteMedication(id);
     setMedications(getMedications());
-    toast({ title: "Deleted", description: "Medication entry remove ho gayi" });
+    toast({ title: "Deleted", description: "Medication entry removed" });
   };
 
   const activeMeds = medications.filter((m) => m.active);
@@ -90,12 +94,12 @@ export const MedicationTracker = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Pill className="h-5 w-5" />
-            Nayi Dawai Add Karen
+            Add Medicine
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Dawai ka naam" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Medicine name" />
             <Input value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="Dosage (e.g. 500mg)" />
             <Select value={frequency} onValueChange={setFrequency}>
               <SelectTrigger>
@@ -120,7 +124,7 @@ export const MedicationTracker = () => {
         </CardHeader>
         <CardContent>
           {activeMeds.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Koi active medicine nahi hai</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No active medicines</p>
           ) : (
             <div className="space-y-2">
               {activeMeds.map((m) => (

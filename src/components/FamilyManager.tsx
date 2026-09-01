@@ -113,7 +113,7 @@ export const FamilyManager = ({ currency }: Props) => {
 
           {data.wives.length > 1 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Per-Wife Comparison (Adl Indicator)</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">Per-Wife Comparison (Fairness Indicator)</CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 {data.wives.map(w => {
                   const t = wifeTotal(data, w.id);
@@ -440,9 +440,9 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
           </div>
           <div><Label className="text-xs">Marriage Date</Label>
             <Input type="date" value={wife.marriageDate || ""} onChange={e => onUpdate({ marriageDate: e.target.value })} className="h-8" /></div>
-          <div><Label className="text-xs">Mahr Total</Label>
+          <div><Label className="text-xs">Dower total</Label>
             <Input type="number" value={wife.mahrTotal ?? ""} onChange={e => onUpdate({ mahrTotal: parseFloat(e.target.value) || 0 })} className="h-8" /></div>
-          <div><Label className="text-xs">Mahr Paid</Label>
+          <div><Label className="text-xs">Dower paid</Label>
             <Input type="number" value={wife.mahrPaid ?? ""} onChange={e => onUpdate({ mahrPaid: parseFloat(e.target.value) || 0 })} className="h-8" /></div>
           <div><Label className="text-xs">Monthly Allowance</Label>
             <Input type="number" value={wife.monthlyAllowance ?? ""} onChange={e => onUpdate({ monthlyAllowance: parseFloat(e.target.value) || 0 })} className="h-8" /></div>
@@ -450,7 +450,7 @@ const WifeCard = ({ wife, data, setData, currency, onUpdate, onRemove }: any) =>
             <Input type="number" value={wife.walletBalance ?? ""} onChange={e => onUpdate({ walletBalance: parseFloat(e.target.value) || 0 })} className="h-8" /></div>
         </div>
         {wife.mahrTotal && wife.mahrTotal > (wife.mahrPaid || 0) && (
-          <div className="flex items-center gap-2 text-xs text-amber-500"><AlertCircle className="h-3 w-3" />Mahr pending: {fmt(wife.mahrTotal - (wife.mahrPaid || 0), currency)}</div>
+          <div className="flex items-center gap-2 text-xs text-amber-500"><AlertCircle className="h-3 w-3" />Dower pending: {fmt(wife.mahrTotal - (wife.mahrPaid || 0), currency)}</div>
         )}
         <div>
           <Label className="text-xs">Notes</Label>
@@ -696,7 +696,7 @@ const HouseholdSection = ({ data, setData, currency }: any) => {
               <SelectTrigger className="col-span-4"><SelectValue /></SelectTrigger>
               <SelectContent>{cats.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
             </Select>
-            <Input className="col-span-5" placeholder="Label (e.g. Bijli bill)" value={label} onChange={e => setLabel(e.target.value)} />
+            <Input className="col-span-5" placeholder="Label (e.g. Electricity bill)" value={label} onChange={e => setLabel(e.target.value)} />
             <Input className="col-span-3" type="number" placeholder={`Amount (${currency})`} value={amt} onChange={e => setAmt(e.target.value)} />
           </div>
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -772,7 +772,7 @@ const EventsSection = ({ data, setData, currency }: any) => {
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" />Add Event</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-12 gap-2">
-            <Input className="col-span-5" placeholder="Eid clothes / Aqeeqah / Wedding..." value={title} onChange={e => setTitle(e.target.value)} />
+            <Input className="col-span-5" placeholder="Festival clothes / Aqiqah / Wedding..." value={title} onChange={e => setTitle(e.target.value)} />
             <Input className="col-span-3" type="date" value={date} onChange={e => setDate(e.target.value)} />
             <Input className="col-span-3" type="number" placeholder={`Amount (${currency})`} value={amt} onChange={e => setAmt(e.target.value)} />
             <Button className="col-span-1 bg-emerald-600 hover:bg-emerald-700" onClick={add} size="icon"><Plus className="h-4 w-4" /></Button>
@@ -984,7 +984,7 @@ const ZakatSection = ({ data, setData, currency }: any) => {
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />Calculate Zakat</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          <p className="text-xs text-muted-foreground">Zakat is 2.5% of your zakatable wealth held for one lunar year (above nisab).</p>
+          <p className="text-xs text-muted-foreground">Zakat is 2.5% of your zakatable wealth held for one lunar year (above the minimum threshold).</p>
           <div className="grid grid-cols-12 gap-2">
             <Input className="col-span-5" type="number" placeholder={`Total wealth (${currency})`} value={wealth} onChange={e => setWealth(e.target.value)} />
             <Input className="col-span-6" placeholder="Note (e.g. Ramadan 1447)" value={note} onChange={e => setNote(e.target.value)} />
