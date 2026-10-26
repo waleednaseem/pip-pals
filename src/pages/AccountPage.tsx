@@ -28,13 +28,27 @@ export function AccountPage({ mode }: { mode: "login" | "signup" }) {
   };
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <div className="flex min-h-svh items-center justify-center bg-background px-4 py-8">
+      <div className="grid w-full max-w-3xl gap-4 md:grid-cols-[1.1fr_0.9fr]">
+        <aside className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Reminder</p>
+          <h2 className="mt-2 text-xl font-semibold">Please sign up to save your history</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Expense calculator, trades, family records, and the rest of the app are saved to your account. Only you can see them after you log in.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">Use your email, username, and password. Nothing else is required.</p>
+          {!isSignup && (
+            <Button asChild className="mt-5">
+              <Link to="/signup">Sign up</Link>
+            </Button>
+          )}
+        </aside>
+      <form onSubmit={submit} className="w-full space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Pip Pals</p>
           <h1 className="mt-1 text-2xl font-semibold">{isSignup ? "Create account" : "Log in"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your history stays with this account.
+            Please sign up to save your history.
           </p>
         </div>
 
@@ -100,6 +114,7 @@ export function AccountPage({ mode }: { mode: "login" | "signup" }) {
           )}
         </p>
       </form>
+      </div>
     </div>
   );
 }
