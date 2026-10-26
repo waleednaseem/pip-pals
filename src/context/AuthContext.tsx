@@ -1,4 +1,5 @@
 import { clearLocalAppData, loadUserHistory } from "@/lib/appHistory";
+import { authHeaders, setSessionToken } from "@/lib/session";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type AccountUser = {
@@ -25,9 +26,10 @@ async function postAccount(url: string, body: unknown) {
     body: JSON.stringify(body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data?.ok) {
+  if (!response.ok || !data?.ok || !data?.user) {
     return { user: null as AccountUser | null, error: data?.error || "Something went wrong." };
   }
+  if (typeof data.token === "string" && data.token) setSessionToken(data.token);
   return { user: data.user as AccountUser, error: null as string | null };
 }
 
@@ -40,9 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch("/api/auth/me", { credentials: "include" });
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+          headers: authHeaders(),
+        });
         const data = await response.json();
         if (!cancelled && response.ok && data?.ok && data.user) setUser(data.user);
+        else if (!cancelled) setSessionToken(null);
       } catch {
         /* stay signed out */
       } finally {
@@ -87,7 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout: async () => {
         clearLocalAppData();
         setUser(null);
-        await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+          headers: authHeaders(),
+        }).catch(() => {});
+        setSessionToken(null);
       },
     }),
     [user, loading, historyReady]

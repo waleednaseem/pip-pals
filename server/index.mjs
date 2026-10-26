@@ -82,18 +82,37 @@ function passwordMatches(password, stored) {
   return timingSafeEqual(current, next);
 }
 
-function sessionCookie(token) {
+function wantsSecureCookie(req) {
+  if (process.env.COOKIE_SECURE === "0") return false;
+  if (process.env.COOKIE_SECURE === "1") return true;
+  const proto = String(req.headers["x-forwarded-proto"] || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  return proto === "https";
+}
+
+function sessionCookie(token, req) {
   const maxAge = token ? 60 * 60 * 24 * 30 : 0;
   const value = token || "";
-  return `sid=${value}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}`;
+  const secure = wantsSecureCookie(req) ? "; Secure" : "";
+  return `sid=${value}; HttpOnly; Path=/; SameSite=Lax${secure}; Max-Age=${maxAge}`;
 }
 
 function publicUser(user) {
   return { email: user.email, username: user.username };
 }
 
+function readAuthToken(req) {
+  const cookieToken = readCookies(req).sid;
+  if (cookieToken) return cookieToken;
+  const header = String(req.headers.authorization || "");
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  return match?.[1]?.trim() || "";
+}
+
 async function currentUser(req) {
-  const token = readCookies(req).sid;
+  const token = readAuthToken(req);
   if (!token) return null;
   const session = await db.collection("sessions").findOne({ token });
   if (!session?.userId) return null;
@@ -346,7 +365,12 @@ const server = http.createServer(async (req, res) => {
           userId: result.insertedId,
           createdAt: new Date(),
         });
-        send(res, 200, { ok: true, user: { email, username } }, { "Set-Cookie": sessionCookie(token) });
+        send(
+          res,
+          200,
+          { ok: true, token, user: { email, username } },
+          { "Set-Cookie": sessionCookie(token, req) }
+        );
       } catch (error) {
         if (error?.code === 11000) {
           send(res, 409, { ok: false, error: "That email or username is already used." });
@@ -374,14 +398,19 @@ const server = http.createServer(async (req, res) => {
         userId: user._id,
         createdAt: new Date(),
       });
-      send(res, 200, { ok: true, user: publicUser(user) }, { "Set-Cookie": sessionCookie(token) });
+      send(
+        res,
+        200,
+        { ok: true, token, user: publicUser(user) },
+        { "Set-Cookie": sessionCookie(token, req) }
+      );
       return;
     }
 
     if (path === "/api/auth/logout" && method === "POST") {
-      const token = readCookies(req).sid;
+      const token = readAuthToken(req);
       if (token) await db.collection("sessions").deleteOne({ token });
-      send(res, 200, { ok: true }, { "Set-Cookie": sessionCookie("") });
+      send(res, 200, { ok: true }, { "Set-Cookie": sessionCookie("", req) });
       return;
     }
 

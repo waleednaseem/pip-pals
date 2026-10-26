@@ -1,4 +1,6 @@
-const SKIP_KEYS = new Set(["business_ideas_openai_key", "pip-pals-theme"]);
+import { authHeaders } from "@/lib/session";
+
+const SKIP_KEYS = new Set(["business_ideas_openai_key", "pip-pals-theme", "pip-pals:sid"]);
 
 function skipKey(key: string) {
   return SKIP_KEYS.has(key) || key.startsWith("pip-pals:studio");
@@ -38,7 +40,7 @@ async function flush() {
           await fetch("/api/app/state", {
             method: "DELETE",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({ key }),
           });
           return;
@@ -46,7 +48,7 @@ async function flush() {
         await fetch("/api/app/state", {
           method: "PUT",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ key, value: op.value }),
         });
       } catch {
@@ -86,7 +88,10 @@ export async function loadUserHistory() {
   installSync();
   const serverKeys = new Set<string>();
 
-  const response = await fetch("/api/app/state", { credentials: "include" });
+  const response = await fetch("/api/app/state", {
+    credentials: "include",
+    headers: authHeaders(),
+  });
   if (!response.ok) return;
   const data = await response.json();
   if (!data?.ok || !Array.isArray(data.items)) return;
