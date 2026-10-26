@@ -1,4 +1,4 @@
-import { clearLocalAppData, loadUserHistory } from "@/lib/appHistory";
+import { clearLocalAppData, disableCloudSync, loadUserHistory } from "@/lib/appHistory";
 import { authHeaders, setSessionToken } from "@/lib/session";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
@@ -46,11 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           credentials: "include",
           headers: authHeaders(),
         });
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (!cancelled && response.ok && data?.ok && data.user) setUser(data.user);
         else if (!cancelled) setSessionToken(null);
       } catch {
-        /* stay signed out */
+        /* guest mode — app still works offline / without API */
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
-      setHistoryReady(false);
+      setHistoryReady(true);
       return;
     }
     let cancelled = false;
@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       logout: async () => {
         clearLocalAppData();
+        disableCloudSync();
         setUser(null);
         await fetch("/api/auth/logout", {
           method: "POST",

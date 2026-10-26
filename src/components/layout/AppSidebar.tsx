@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, UserPlus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
@@ -82,7 +83,7 @@ export const AppSidebar = ({ activeTab, hasPair, onNavigate }: AppSidebarProps) 
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border gap-2">
-        {user && (
+        {user ? (
           <button
             type="button"
             onClick={() => void logout()}
@@ -95,6 +96,18 @@ export const AppSidebar = ({ activeTab, hasPair, onNavigate }: AppSidebarProps) 
               <span className="block truncate text-[10px] text-muted-foreground">Log out</span>
             </span>
           </button>
+        ) : (
+          <Link
+            to="/signup"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-sidebar-foreground hover:bg-sidebar-accent"
+            title="Sign up to save history"
+          >
+            <UserPlus className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+              <span className="block truncate font-medium">Save history</span>
+              <span className="block truncate text-[10px] text-muted-foreground">Optional sign up</span>
+            </span>
+          </Link>
         )}
         <ThemeToggle compact={state === "collapsed"} className={state === "collapsed" ? undefined : "w-full justify-start"} />
       </SidebarFooter>

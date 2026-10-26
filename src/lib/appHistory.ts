@@ -11,18 +11,33 @@ type Pending = { type: "save"; value: string } | { type: "remove" };
 const pending = new Map<string, Pending>();
 let flushTimer = 0;
 let applyingRemote = false;
+let cloudEnabled = false;
+
+export function enableCloudSync() {
+  cloudEnabled = true;
+  installSync();
+}
+
+export function disableCloudSync() {
+  cloudEnabled = false;
+  pending.clear();
+  window.clearTimeout(flushTimer);
+}
 
 function scheduleFlush() {
+  if (!cloudEnabled) return;
   window.clearTimeout(flushTimer);
   flushTimer = window.setTimeout(flush, 500);
 }
 
 function queueSave(key: string, value: string) {
+  if (!cloudEnabled) return;
   pending.set(key, { type: "save", value });
   scheduleFlush();
 }
 
 function queueRemove(key: string) {
+  if (!cloudEnabled) return;
   pending.set(key, { type: "remove" });
   scheduleFlush();
 }
@@ -85,7 +100,7 @@ export function clearLocalAppData() {
 }
 
 export async function loadUserHistory() {
-  installSync();
+  enableCloudSync();
   const serverKeys = new Set<string>();
 
   const response = await fetch("/api/app/state", {

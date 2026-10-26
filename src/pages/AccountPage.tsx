@@ -31,89 +31,86 @@ export function AccountPage({ mode }: { mode: "login" | "signup" }) {
     <div className="flex min-h-svh items-center justify-center bg-background px-4 py-8">
       <div className="grid w-full max-w-3xl gap-4 md:grid-cols-[1.1fr_0.9fr]">
         <aside className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Reminder</p>
-          <h2 className="mt-2 text-xl font-semibold">Please sign up to save your history</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Optional</p>
+          <h2 className="mt-2 text-xl font-semibold">Sign up only if you want to save history</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Expense calculator, trades, family records, and the rest of the app are saved to your account. Only you can see them after you log in.
+            You can use every tool free without an account. Sign up only when you want your history saved privately to your account.
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">Use your email, username, and password. Nothing else is required.</p>
-          {!isSignup && (
-            <Button asChild className="mt-5">
-              <Link to="/signup">Sign up</Link>
-            </Button>
-          )}
+          <Button asChild variant="outline" className="mt-5">
+            <Link to="/">Continue without account</Link>
+          </Button>
         </aside>
-      <form onSubmit={submit} className="w-full space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Pip Pals</p>
-          <h1 className="mt-1 text-2xl font-semibold">{isSignup ? "Create account" : "Log in"}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Please sign up to save your history.
-          </p>
-        </div>
+        <form onSubmit={submit} className="w-full space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Pip Pals</p>
+            <h1 className="mt-1 text-2xl font-semibold">{isSignup ? "Create account" : "Log in"}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Optional — for saving history across devices.
+            </p>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">{isSignup ? "Email" : "Email or username"}</Label>
-          <Input
-            id="email"
-            type={isSignup ? "email" : "text"}
-            autoComplete={isSignup ? "email" : "username"}
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
-
-        {isSignup && (
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="email">{isSignup ? "Email" : "Email or username"}</Label>
             <Input
-              id="username"
-              autoComplete="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              id="email"
+              type={isSignup ? "email" : "text"}
+              autoComplete={isSignup ? "email" : "username"}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>
-        )}
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete={isSignup ? "new-password" : "current-password"}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-        </div>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? "Please wait…" : isSignup ? "Sign up" : "Log in"}
-        </Button>
-
-        <p className="text-center text-sm text-muted-foreground">
-          {isSignup ? (
-            <>
-              Already have an account?{" "}
-              <Link to="/login" className="font-medium text-primary hover:underline">
-                Log in
-              </Link>
-            </>
-          ) : (
-            <>
-              Need an account?{" "}
-              <Link to="/signup" className="font-medium text-primary hover:underline">
-                Sign up
-              </Link>
-            </>
+          {isSignup && (
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                required
+              />
+            </div>
           )}
-        </p>
-      </form>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={8}
+            />
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy ? "Please wait…" : isSignup ? "Sign up" : "Log in"}
+          </Button>
+
+          <p className="text-center text-sm text-muted-foreground">
+            {isSignup ? (
+              <>
+                Already have an account?{" "}
+                <Link to="/login" className="font-medium text-primary hover:underline">
+                  Log in
+                </Link>
+              </>
+            ) : (
+              <>
+                Need an account?{" "}
+                <Link to="/signup" className="font-medium text-primary hover:underline">
+                  Sign up
+                </Link>
+              </>
+            )}
+          </p>
+        </form>
       </div>
     </div>
   );
