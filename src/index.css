@@ -454,3 +454,62 @@
     }
   }
 }
+
+.studio {
+  color-scheme: light;
+  --background: #f4f7fb;
+  --foreground: #0f172a;
+  --brand: #0e7490;
+  --brand-dark: #155e75;
+  --brand-secondary: #06b6d4;
+  --brand-light: #cffafe;
+  --brand-soft: #ecfeff;
+  --surface: #ffffff;
+  --gray-border: rgba(15, 23, 42, 0.1);
+  --gray-muted: #64748b;
+  --text-secondary: #334155;
+  --gradient-primary: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --glow-primary: 0 4px 14px rgba(14, 116, 144, 0.28);
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.studio h1,
+.studio h2,
+.studio h3,
+.studio .font-heading {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.studio .btn-primary {
+  background: var(--gradient-primary);
+  color: #fff;
+  box-shadow: var(--glow-primary);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.studio .btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.studio .tool-card-surface-pdf { background: linear-gradient(160deg, #ecfeff 0%, #ffffff 58%); }
+.studio .tool-card-surface-image { background: linear-gradient(160deg, #eef4ff 0%, #ffffff 58%); }
+.studio .tool-card-surface-text { background: linear-gradient(160deg, #fff8eb 0%, #ffffff 58%); }
+.studio .tool-card-surface-zip { background: linear-gradient(160deg, #fff3e8 0%, #ffffff 58%); }
+.studio .tool-card-surface-other { background: linear-gradient(160deg, #f8eef8 0%, #ffffff 58%); }
+.studio .tool-card-surface-convert { background: linear-gradient(160deg, #eaf8ff 0%, #ffffff 58%); }
+
+.studio .tool-card-icon-pdf { background: linear-gradient(145deg, #a5f3fc, #67e8f9); color: #155e75; }
+.studio .tool-card-icon-image { background: linear-gradient(145deg, #d6e4ff, #adc6ff); color: #1e3a8a; }
+.studio .tool-card-icon-text { background: linear-gradient(145deg, #ffe8b8, #ffd280); color: #92400e; }
+.studio .tool-card-icon-zip { background: linear-gradient(145deg, #ffd8b5, #ffb77a); color: #9a3412; }
+.studio .tool-card-icon-other { background: linear-gradient(145deg, #f3d6f3, #e8b4e8); color: #7a1f7a; }
+.studio .tool-card-icon-convert { background: linear-gradient(145deg, #c9ecff, #8fd4ff); color: #075985; }

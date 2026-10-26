@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "@/lib/animations";
 import { TradingPair, TradeEntry, Totals, CalculatorInputs } from "@/types/calculator";
@@ -47,10 +48,14 @@ import jsPDF from "jspdf";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
-  const [activeTab, setActiveTab] = useState(() =>
-    getSelectedPair() ? "calculator" : "canada"
-  );
+  const [activeTab, setActiveTab] = useState(() => {
+    const fromUrl = searchParams.get("tab");
+    if (fromUrl && fromUrl !== "studio") return fromUrl;
+    return getSelectedPair() ? "calculator" : "canada";
+  });
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [unreadNotif, setUnreadNotif] = useState(0);
   
@@ -164,6 +169,15 @@ const Index = () => {
   };
 
   useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "studio") {
+      navigate("/studio", { replace: true });
+      return;
+    }
+    if (tab) setActiveTab(tab);
+  }, [searchParams, navigate]);
+
+  useEffect(() => {
     if (!selectedPair && (activeTab === "calculator" || activeTab === "totals")) {
       setActiveTab("canada");
     }
@@ -177,7 +191,10 @@ const Index = () => {
       selectedPair={selectedPair}
       unreadNotif={unreadNotif}
       hasHistory={trades.length > 0}
-      onNavigate={setActiveTab}
+      onNavigate={(tab) => {
+        if (tab === "studio") navigate("/studio");
+        else setActiveTab(tab);
+      }}
       onClearHistory={handleClearHistory}
       onExportCSV={handleExportCSV}
       onChangePair={handleChangePair}

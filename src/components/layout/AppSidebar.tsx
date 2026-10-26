@@ -1,4 +1,5 @@
-import { ChevronDown } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { ChevronDown, LogOut } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
@@ -25,6 +26,7 @@ interface AppSidebarProps {
 
 export const AppSidebar = ({ activeTab, hasPair, onNavigate }: AppSidebarProps) => {
   const { isMobile, setOpenMobile, state } = useSidebar();
+  const { user, logout } = useAuth();
   const groups = getVisibleNavGroups(hasPair);
 
   const handleNav = (tab: string) => {
@@ -79,7 +81,21 @@ export const AppSidebar = ({ activeTab, hasPair, onNavigate }: AppSidebarProps) 
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="border-t border-sidebar-border gap-2">
+        {user && (
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-sidebar-foreground hover:bg-sidebar-accent"
+            title="Log out"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+              <span className="block truncate font-medium">{user.username}</span>
+              <span className="block truncate text-[10px] text-muted-foreground">Log out</span>
+            </span>
+          </button>
+        )}
         <ThemeToggle compact={state === "collapsed"} className={state === "collapsed" ? undefined : "w-full justify-start"} />
       </SidebarFooter>
       <SidebarRail />

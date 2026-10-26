@@ -32,7 +32,11 @@ export const AppHeader = ({
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-sm font-semibold leading-tight">{getTabLabel(activeTab)}</h1>
         <p className="truncate text-[11px] text-muted-foreground">
-          {selectedPair ? `Trading · ${selectedPair}` : "Your all-in-one financial dashboard"}
+          {activeTab === "studio"
+            ? "PDF, image, text, ZIP, and converters"
+            : selectedPair
+              ? `Trading · ${selectedPair}`
+              : "Your all-in-one financial dashboard"}
         </p>
       </div>
       <div className="flex items-center gap-1.5">

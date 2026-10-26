@@ -7,6 +7,7 @@ import {
   CandlestickChart,
   Clock,
   Columns3,
+  Files,
   HeartPulse,
   Landmark,
   Lightbulb,
@@ -80,7 +81,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     id: "tools",
     label: "Tools",
-    items: [{ value: "time-convert", label: "Time Conversion", icon: Clock }],
+    items: [
+      { value: "studio", label: "File Studio", icon: Files },
+      { value: "time-convert", label: "Time Conversion", icon: Clock },
+    ],
   },
 ];
 
