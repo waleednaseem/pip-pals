@@ -112,9 +112,7 @@ export async function POST() {
         updated: 0,
         count: docs.length,
         items: docs.map((doc) => asIdea(doc as Record<string, unknown>)),
-        errors: feed.errors.length
-          ? [...feed.errors, "(showing saved ideas)"]
-          : [],
+        errors: feed.errors.length ? feed.errors : [],
         fetchedAt: Date.now(),
         stale: docs.length > 0,
       });

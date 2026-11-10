@@ -80,8 +80,8 @@ export default function AiTextTool({
       )}
       <p className="text-sm text-[var(--gray-muted)]">
         {mode === "summarizer"
-          ? "Extractive summary from PDF text (runs locally in your browser)."
-          : "Translates extracted text via a free public API (best for short docs)."}
+          ? "Creates a short summary from your PDF text — right in your browser."
+          : "Translates the extracted text — works best with shorter documents."}
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex flex-wrap gap-2">

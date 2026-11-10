@@ -178,7 +178,7 @@ export const fetchEconomicCalendar = async (
   } catch {
     const stale = getStaleCache<CalendarEvent[]>(CACHE_KEY_CALENDAR);
     if (stale) {
-      return { items: stale.data, errors: ["Economic Calendar (showing cached)"], fetchedAt: stale.fetchedAt, stale: true };
+      return { items: stale.data, errors: ["Showing the last available calendar"], fetchedAt: stale.fetchedAt, stale: true };
     }
     return { items: [], errors: ["Economic Calendar"], fetchedAt: Date.now(), stale: true };
   }
@@ -286,7 +286,7 @@ export const fetchMarketNews = async (
 
   const stale = getStaleCache<NewsItem[]>(CACHE_KEY_NEWS);
   if (stale) {
-    return { items: stale.data, errors: [...errors, "(showing cached news)"], fetchedAt: stale.fetchedAt, stale: true };
+    return { items: stale.data, errors: [...errors, "Showing the last available news"], fetchedAt: stale.fetchedAt, stale: true };
   }
   return { items: [], errors, fetchedAt: Date.now(), stale: true };
 };

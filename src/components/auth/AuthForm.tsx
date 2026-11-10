@@ -28,8 +28,8 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     setBusy(false);
     setMessage(
       isLogin
-        ? "Login will connect to the account API soon. Your tools still work without an account."
-        : "Sign up will connect to the account API soon. You can use every tool free without signing up."
+        ? "Accounts are almost ready. You can keep using every tool without signing in."
+        : "Accounts are almost ready. Every tool stays free — no sign-up needed."
     );
   };
 

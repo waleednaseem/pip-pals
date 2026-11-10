@@ -35,7 +35,7 @@ export async function PUT(req: Request) {
       return json({ ok: false, error: "key and value required" }, 400);
     }
     if (body.key.startsWith("pip-pals:studio") || body.key === "business_ideas_openai_key") {
-      return json({ ok: false, error: "This key is not stored in the database." }, 400);
+      return json({ ok: false, error: "This item can't be saved." }, 400);
     }
     if (body.value.length > 12_000_000) {
       return json({ ok: false, error: "Value is too large." }, 413);

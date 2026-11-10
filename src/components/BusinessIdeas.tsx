@@ -28,7 +28,6 @@ import {
   setOpenAiKey,
   COUNTRY_OPTIONS,
   LANGUAGE_OPTIONS,
-  IDEA_SOURCE_NAMES,
 } from "@/utils/businessIdeas";
 import { BUDGET_PRESETS } from "@/types/businessIdeas";
 import { cn } from "@/lib/utils";
@@ -84,11 +83,18 @@ export default function BusinessIdeas() {
       setIdeas(res.items);
       setErrors(res.errors);
       setUpdatedAt(res.fetchedAt);
-      if (force && (res.inserted > 0 || res.updated > 0)) {
-        toast({
-          title: "Ideas synced",
-          description: `${res.inserted} new · ${res.updated} updated · ${res.items.length} total in database`,
-        });
+      if (force) {
+        if (res.inserted > 0) {
+          toast({
+            title: "Fresh ideas added",
+            description: `${res.inserted} new idea${res.inserted === 1 ? "" : "s"} · ${res.items.length} in your list`,
+          });
+        } else if (res.items.length > 0) {
+          toast({
+            title: "You're up to date",
+            description: `${res.items.length} ideas ready to browse`,
+          });
+        }
       }
     } finally {
       setLoading(false);
@@ -109,13 +115,13 @@ export default function BusinessIdeas() {
     setOpenAiKey(apiKeyInput);
     setApiKeyState(apiKeyInput.trim());
     setApiKeyInput("");
-    toast({ title: "API key saved", description: "Stored locally in this browser only." });
+    toast({ title: "Key saved", description: "AI tagging is ready on this browser." });
   };
 
   const handleClearKey = () => {
     setOpenAiKey("");
     setApiKeyState("");
-    toast({ title: "API key removed" });
+    toast({ title: "Key removed" });
   };
 
   const handleAnalyzeWithAI = async () => {
@@ -170,8 +176,8 @@ export default function BusinessIdeas() {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          Free business &amp; startup idea feeds from {IDEA_SOURCE_NAMES.join(", ")}. Fetched ideas are saved in
-          MongoDB (no duplicates) so your list grows every day you refresh.
+          Fresh startup ideas from trusted communities — Reddit, Hacker News, and Product Hunt.
+          Refresh anytime to discover what&apos;s new.
         </p>
       </CardHeader>
 
@@ -187,7 +193,7 @@ export default function BusinessIdeas() {
             {apiKey ? (
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="text-xs text-muted-foreground">
-                  Key is stored in this browser only. AI tagging enriches {untaggedCount} untagged idea(s).
+                  AI can tag {untaggedCount} idea{untaggedCount === 1 ? "" : "s"} that still need details.
                 </span>
                 <div className="flex gap-2 shrink-0">
                   <Button
@@ -226,7 +232,7 @@ export default function BusinessIdeas() {
             )}
             {!apiKey && (
               <p className="text-xs text-muted-foreground">
-                Without a key, ideas show with country/cost as "Unknown" — add a key to auto-tag them.
+                Add a key to auto-fill country and cost estimates for each idea.
               </p>
             )}
           </div>
@@ -313,12 +319,12 @@ export default function BusinessIdeas() {
         {errors.length > 0 && ideas.length === 0 && (
           <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-md px-3 py-2">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span>Couldn't refresh feeds: {errors.join(", ")}</span>
+            <span>Couldn&apos;t load new ideas right now. Please try again in a moment.</span>
           </div>
         )}
         {errors.length > 0 && ideas.length > 0 && (
           <div className="text-xs text-muted-foreground">
-            Some sources skipped: {errors.filter((e) => !e.startsWith("(")).join(", ") || "none"} · showing saved list
+            Showing your saved list — a few sources were temporarily unavailable.
           </div>
         )}
 

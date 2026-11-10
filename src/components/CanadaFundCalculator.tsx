@@ -225,8 +225,8 @@ export default function CanadaFundCalculator() {
       } catch (error) {
         console.error("Failed to fetch exchange rates:", error);
         toast({
-          title: "Exchange Rate Error",
-          description: "Using default rates.",
+          title: "Couldn't update rates",
+          description: "Using standard rates for now.",
           variant: "destructive",
         });
       }

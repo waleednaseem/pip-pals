@@ -168,7 +168,7 @@ export default function MarketUpdates() {
             {calendarErrors.length > 0 && (
               <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-md px-3 py-2">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>Couldn't refresh: {calendarErrors.join(", ")}</span>
+                <span>Calendar couldn&apos;t update right now. Showing the last available data.</span>
               </div>
             )}
 
@@ -250,7 +250,7 @@ export default function MarketUpdates() {
             {newsErrors.length > 0 && (
               <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-md px-3 py-2">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>Unavailable right now: {newsErrors.join(", ")}</span>
+                <span>News couldn&apos;t update right now. Please try again shortly.</span>
               </div>
             )}
 

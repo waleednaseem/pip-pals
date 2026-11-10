@@ -82,17 +82,9 @@ export default function UploadZone({
       try {
         const uploads = await uploadFilesToBlob(ok, { maxBytes });
         onCloudSaved?.(uploads);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Cloud save failed.";
-        // Keep local files; surface cloud error separately.
-        setError(
-          message.includes("BLOB_READ_WRITE_TOKEN") ||
-            message.includes("No token") ||
-            /blob/i.test(message)
-            ? `Saved locally, but cloud upload failed: ${message}`
-            : `Saved locally, but cloud upload failed: ${message}`
-        );
+      } catch {
+        // Keep local files; don't expose storage/provider details.
+        setError("File ready to use. Cloud backup couldn't complete — you can still continue.");
       } finally {
         setUploading(false);
       }

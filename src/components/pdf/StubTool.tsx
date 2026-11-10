@@ -31,7 +31,7 @@ export default function StubTool({ slug = "unknown", title }: Props) {
         slug,
         title: title || slug,
         status: "queued",
-        note: "Queued for server processing when API is ready.",
+        note: "Saved and ready when you need it.",
         files: files.map((f) => ({
           name: f.name,
           size: f.size,
@@ -53,13 +53,13 @@ export default function StubTool({ slug = "unknown", title }: Props) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        This tool stays on this device. File names and sizes are not sent to the database.
+        Your files stay private while you work — nothing is shared unless you choose to save.
       </div>
       <UploadZone files={files} onChange={setFiles} />
       {error && <p className="text-sm text-red-600">{error}</p>}
       {jobId && (
         <p className="rounded-lg border border-[var(--brand)]/30 bg-[var(--brand-soft)] px-3 py-2 text-sm text-[var(--brand-dark)]">
-          Saved on this device — job id: {jobId}
+          Saved — reference {jobId}
         </p>
       )}
       <button
@@ -68,7 +68,7 @@ export default function StubTool({ slug = "unknown", title }: Props) {
         onClick={queue}
         className="rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-dark)] disabled:opacity-60"
       >
-        {busy ? "Saving…" : "Save job on this device"}
+        {busy ? "Saving…" : "Save for later"}
       </button>
     </div>
   );

@@ -250,12 +250,12 @@ export const loadStoredBusinessIdeas = async (): Promise<IdeaFeedResult> => {
     if (stale) {
       return {
         items: applyAiCache(stale.data),
-        errors: ["(showing local cache — database unavailable)"],
+        errors: ["Showing previously saved ideas"],
         fetchedAt: stale.fetchedAt,
         stale: true,
       };
     }
-    return { items: [], errors: ["Database unavailable"], fetchedAt: Date.now(), stale: true };
+    return { items: [], errors: ["Ideas are temporarily unavailable"], fetchedAt: Date.now(), stale: true };
   }
 };
 
@@ -331,7 +331,7 @@ export const fetchBusinessIdeas = async (forceRefresh = false): Promise<IdeaFeed
   if (stale) {
     return {
       items: applyAiCache(stale.data),
-      errors: [...errors, "(showing cached ideas)"],
+      errors: [...errors, "Showing previously saved ideas"],
       fetchedAt: stale.fetchedAt,
       stale: true,
     };
@@ -350,7 +350,7 @@ export const refreshAndPersistBusinessIdeas = async (
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data?.ok) {
-      throw new Error(data?.error || "Refresh failed");
+      throw new Error("Couldn't refresh ideas right now");
     }
     const items = applyAiCache((data.items as BusinessIdea[]) || []);
     if (items.length) setCache(CACHE_KEY_RAW, items);
@@ -367,7 +367,7 @@ export const refreshAndPersistBusinessIdeas = async (
     return {
       items: stored.items,
       errors: [
-        err instanceof Error ? err.message : "Refresh failed",
+        "Couldn't refresh ideas right now",
         ...stored.errors,
       ],
       fetchedAt: stored.fetchedAt,
@@ -468,17 +468,17 @@ Return one result per input id, in any order, with no extra commentary.`;
   });
 
   if (!res.ok) {
-    if (res.status === 401) throw new Error("Invalid OpenAI API key");
-    if (res.status === 429) throw new Error("OpenAI rate limit reached");
-    throw new Error(`OpenAI HTTP ${res.status}`);
+    if (res.status === 401) throw new Error("AI key looks invalid — please check and try again");
+    if (res.status === 429) throw new Error("AI is busy right now — please try again shortly");
+    throw new Error("AI tagging couldn't finish — please try again");
   }
 
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Empty OpenAI response");
+  if (!content) throw new Error("AI returned no result — please try again");
 
   const parsed = JSON.parse(content) as { results: OpenAiBatchResult[] };
-  if (!Array.isArray(parsed.results)) throw new Error("Unexpected OpenAI response shape");
+  if (!Array.isArray(parsed.results)) throw new Error("AI tagging couldn't finish — please try again");
   return parsed.results;
 };
 

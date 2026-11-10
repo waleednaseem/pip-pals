@@ -178,8 +178,7 @@ export default function EsignRequestTool() {
     <div className="space-y-4">
       <UploadZone files={files} onChange={setFiles} />
       <div className="rounded-xl border border-[var(--brand)]/20 bg-[var(--brand-soft)] px-4 py-3 text-sm text-[var(--brand-dark)]">
-        Builds a signing PDF and keeps the request on this device.
-        Email delivery to signers can be added later.
+        Creates a signing PDF you can share with signers. Email delivery is coming soon.
       </div>
 
       <label className="block text-sm">
