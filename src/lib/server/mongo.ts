@@ -39,6 +39,8 @@ function createMongo() {
     await db.collection("users").createIndex({ email: 1 }, { unique: true });
     await db.collection("users").createIndex({ username: 1 }, { unique: true });
     await db.collection("sessions").createIndex({ token: 1 }, { unique: true });
+    await db.collection("uploads").createIndex({ userId: 1, createdAt: -1 });
+    await db.collection("uploads").createIndex({ createdAt: -1 });
   })();
 
   return { client, db, ready };

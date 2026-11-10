@@ -1,5 +1,11 @@
 import { useFavorites } from "@/context";
 import { downloadBlob } from "@/lib/downloadBlob";
+import {
+  MAX_ZIP_BYTES,
+  filterValidFiles,
+  formatFileSize,
+  validateFileSize,
+} from "@/lib/fileLimits";
 import type { ZipToolDef } from "@/lib/zip/registry";
 import JSZip from "jszip";
 import { useEffect, useRef, useState } from "react";
@@ -86,6 +92,9 @@ export default function ZipToolClient({ tool }: { tool: ZipToolDef }) {
               ? zipFile.name
               : "Drop a ZIP or click to browse"}
         </span>
+        <span className="mt-1 text-xs text-[var(--gray-muted)]">
+          Max {formatFileSize(MAX_ZIP_BYTES)} per file
+        </span>
       </button>
       <input
         ref={inputRef}
@@ -95,9 +104,30 @@ export default function ZipToolClient({ tool }: { tool: ZipToolDef }) {
         className="hidden"
         onChange={(e) => {
           const list = e.target.files ? Array.from(e.target.files) : [];
-          if (isCreate) setFiles((prev) => [...prev, ...list]);
-          else setZipFile(list[0] || null);
           e.target.value = "";
+          if (isCreate) {
+            const { ok, error: sizeError } = filterValidFiles(list, MAX_ZIP_BYTES);
+            if (sizeError) {
+              setError(sizeError);
+              return;
+            }
+            setError(null);
+            setFiles((prev) => [...prev, ...ok]);
+            return;
+          }
+          const next = list[0] || null;
+          if (!next) {
+            setZipFile(null);
+            return;
+          }
+          const sizeError = validateFileSize(next, MAX_ZIP_BYTES);
+          if (sizeError) {
+            setError(sizeError);
+            setZipFile(null);
+            return;
+          }
+          setError(null);
+          setZipFile(next);
         }}
       />
 

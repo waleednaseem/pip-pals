@@ -11,6 +11,7 @@ import {
   type ImageFormat,
 } from "@/lib/image/ops";
 import type { ImageToolDef } from "@/lib/image/registry";
+import { MAX_IMAGE_BYTES, formatFileSize, validateFileSize } from "@/lib/fileLimits";
 import { useEffect, useRef, useState } from "react";
 
 const formatMap: Record<string, { mime: ImageFormat; ext: string }> = {
@@ -96,7 +97,7 @@ export default function ImageToolClient({ tool }: { tool: ImageToolDef }) {
           {file ? file.name : "Drop image here or click to browse"}
         </span>
         <span className="mt-1 text-xs text-[var(--gray-muted)]">
-          JPG · PNG · WEBP · GIF
+          JPG · PNG · WEBP · GIF · max {formatFileSize(MAX_IMAGE_BYTES)}
         </span>
       </button>
       <input
@@ -105,8 +106,20 @@ export default function ImageToolClient({ tool }: { tool: ImageToolDef }) {
         accept="image/*"
         className="hidden"
         onChange={(e) => {
-          setFile(e.target.files?.[0] || null);
+          const next = e.target.files?.[0] || null;
           e.target.value = "";
+          if (!next) {
+            setFile(null);
+            return;
+          }
+          const sizeError = validateFileSize(next, MAX_IMAGE_BYTES);
+          if (sizeError) {
+            setError(sizeError);
+            setFile(null);
+            return;
+          }
+          setError(null);
+          setFile(next);
         }}
       />
 
