@@ -2,7 +2,7 @@ import { useFavorites } from "@/context";
 import { logConverterRun } from "@/lib/client/persist";
 import { getConverter } from "@/lib/converters";
 import { CURRENCY_CODES, convertCurrency } from "@/lib/converters/rates";
-import { useSearchParams } from "react-router-dom";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Props = {
@@ -17,7 +17,9 @@ function formatResult(n: number): string {
 export default function ConverterForm({ slug }: Props) {
   const converter = getConverter(slug);
   const isMulti = slug === "multi-currency";
-  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const { addRecent, toggleFavorite, isFavorite } = useFavorites();
 
   const [fromCode, setFromCode] = useState(
@@ -63,13 +65,14 @@ export default function ConverterForm({ slug }: Props) {
 
   const syncUrl = useCallback(
     (next: { v?: string; from?: string; to?: string }) => {
-      const params = new URLSearchParams(searchParams);
+      const params = new URLSearchParams(searchParams.toString());
       if (next.v != null) params.set("v", next.v);
       if (next.from != null) params.set("from", next.from);
       if (next.to != null) params.set("to", next.to);
-      setSearchParams(params, { replace: true });
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [searchParams, setSearchParams]
+    [searchParams, router, pathname]
   );
 
   if (!converter) {

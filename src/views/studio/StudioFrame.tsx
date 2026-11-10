@@ -1,3 +1,5 @@
+"use client";
+
 import Footer from "@/components/file-studio/Footer";
 import Header from "@/components/file-studio/Header";
 import { AppShell } from "@/components/layout/AppShell";
@@ -11,10 +13,10 @@ import {
 } from "@/utils/storage";
 import type { TradingPair } from "@/types/calculator";
 import { useEffect, useState, type ReactNode } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 export function StudioFrame({ children }: { children?: ReactNode }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(() => getSelectedPair());
   const [hasHistory, setHasHistory] = useState(() => getTradesFromStorage().length > 0);
   const [unreadNotif, setUnreadNotif] = useState(0);
@@ -31,10 +33,10 @@ export function StudioFrame({ children }: { children?: ReactNode }) {
       hasHistory={hasHistory}
       onNavigate={(tab) => {
         if (tab === "studio") {
-          navigate("/studio");
+          router.push("/studio");
           return;
         }
-        navigate(`/?tab=${encodeURIComponent(tab)}`);
+        router.push(`/?tab=${encodeURIComponent(tab)}`);
       }}
       onClearHistory={() => {
         clearTradesFromStorage();
@@ -46,12 +48,12 @@ export function StudioFrame({ children }: { children?: ReactNode }) {
         clearTradesFromStorage();
         setSelectedPair(null);
         setHasHistory(false);
-        navigate("/?tab=pair");
+        router.push("/?tab=pair");
       }}
     >
       <div className="studio overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm">
         <Header />
-        {children ?? <Outlet />}
+        {children}
         <Footer />
       </div>
     </AppShell>

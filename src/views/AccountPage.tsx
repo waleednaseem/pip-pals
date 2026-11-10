@@ -1,12 +1,16 @@
+"use client";
+
 import { useAuth } from "@/context/AuthContext";
 import { FormEvent, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function AccountPage({ mode }: { mode: "login" | "signup" }) {
   const { user, loading, login, signup } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -14,7 +18,10 @@ export function AccountPage({ mode }: { mode: "login" | "signup" }) {
   const [busy, setBusy] = useState(false);
   const isSignup = mode === "signup";
 
-  if (!loading && user) return <Navigate to="/" replace />;
+  if (!loading && user) {
+    router.replace("/");
+    return null;
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -37,7 +44,7 @@ export function AccountPage({ mode }: { mode: "login" | "signup" }) {
             You can use every tool free without an account. Sign up only when you want your history saved privately to your account.
           </p>
           <Button asChild variant="outline" className="mt-5">
-            <Link to="/">Continue without account</Link>
+            <Link href="/">Continue without account</Link>
           </Button>
         </aside>
         <form onSubmit={submit} className="w-full space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -97,14 +104,14 @@ export function AccountPage({ mode }: { mode: "login" | "signup" }) {
             {isSignup ? (
               <>
                 Already have an account?{" "}
-                <Link to="/login" className="font-medium text-primary hover:underline">
+                <Link href="/login" className="font-medium text-primary hover:underline">
                   Log in
                 </Link>
               </>
             ) : (
               <>
                 Need an account?{" "}
-                <Link to="/signup" className="font-medium text-primary hover:underline">
+                <Link href="/signup" className="font-medium text-primary hover:underline">
                   Sign up
                 </Link>
               </>

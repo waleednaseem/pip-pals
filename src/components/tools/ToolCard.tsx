@@ -1,5 +1,5 @@
 import type { ToolFamily } from "@/lib/tools/types";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 type ToolCardProps = {
   href: string;
@@ -40,7 +40,7 @@ export default function ToolCard({
 }: ToolCardProps) {
   return (
     <Link
-      to={href}
+      href={href}
       className={`group flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--gray-border)] p-5 shadow-[var(--shadow-sm)] transition duration-200 hover:-translate-y-1 hover:border-[var(--brand)]/40 hover:shadow-[var(--shadow-md)] ${surfaceClass[family]}`}
     >
       <div className="mb-4 flex items-start justify-between gap-2">

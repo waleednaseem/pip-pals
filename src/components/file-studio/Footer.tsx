@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const cols = [
   {
@@ -51,7 +51,7 @@ export default function Footer() {
               {col.links.map((l) => (
                 <li key={l.href}>
                   <Link
-                    to={l.href}
+                    href={l.href}
                     className="transition hover:text-[var(--brand)]"
                   >
                     {l.label}

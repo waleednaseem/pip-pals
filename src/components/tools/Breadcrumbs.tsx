@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 type Crumb = { label: string; href?: string };
 
@@ -13,7 +13,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
               {i > 0 && <span className="opacity-40">/</span>}
               {item.href && !last ? (
                 <Link
-                  to={item.href}
+                  href={item.href}
                   className="font-medium hover:text-[var(--brand)]"
                 >
                   {item.label}

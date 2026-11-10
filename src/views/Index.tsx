@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { tabContent } from "@/lib/animations";
 import { TradingPair, TradeEntry, Totals, CalculatorInputs } from "@/types/calculator";
@@ -48,8 +50,8 @@ import jsPDF from "jspdf";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 const Index = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [activeTab, setActiveTab] = useState(() => {
     const fromUrl = searchParams.get("tab");
@@ -171,11 +173,11 @@ const Index = () => {
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab === "studio") {
-      navigate("/studio", { replace: true });
+      router.replace("/studio");
       return;
     }
     if (tab) setActiveTab(tab);
-  }, [searchParams, navigate]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (!selectedPair && (activeTab === "calculator" || activeTab === "totals")) {
@@ -192,7 +194,7 @@ const Index = () => {
       unreadNotif={unreadNotif}
       hasHistory={trades.length > 0}
       onNavigate={(tab) => {
-        if (tab === "studio") navigate("/studio");
+        if (tab === "studio") router.push("/studio");
         else setActiveTab(tab);
       }}
       onClearHistory={handleClearHistory}

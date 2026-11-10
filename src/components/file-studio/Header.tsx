@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { useState } from "react";
 
 type MegaLink = {
@@ -142,7 +142,7 @@ export default function Header() {
   return (
     <header className="relative z-30 border-b border-[var(--gray-border)] bg-[var(--surface)]">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 lg:gap-5">
-        <Link to="/studio" className="flex shrink-0 items-center gap-2" aria-label="File Studio home">
+        <Link href="/studio" className="flex shrink-0 items-center gap-2" aria-label="File Studio home">
           <span className="relative flex h-9 w-9 items-center justify-center">
             <span className="absolute inset-0 rounded-[10px] bg-[var(--brand)]" />
             <span className="relative text-[15px] leading-none text-white">♥</span>
@@ -155,13 +155,13 @@ export default function Header() {
         </Link>
 
         <nav className="ml-2 hidden flex-1 items-center justify-center gap-0.5 lg:flex xl:gap-1">
-          <Link to="/studio/pdf/merge" className={navBtn}>
+          <Link href="/studio/pdf/merge" className={navBtn}>
             Merge PDF
           </Link>
-          <Link to="/studio/pdf/split" className={navBtn}>
+          <Link href="/studio/pdf/split" className={navBtn}>
             Split PDF
           </Link>
-          <Link to="/studio/pdf/compress" className={navBtn}>
+          <Link href="/studio/pdf/compress" className={navBtn}>
             Compress PDF
           </Link>
 
@@ -182,7 +182,7 @@ export default function Header() {
                       {convertToPdf.map((item) => (
                         <li key={item.href}>
                           <Link
-                            to={item.href}
+                            href={item.href}
                             className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-[var(--brand-soft)]"
                           >
                             <ToolIcon tone={item.tone} arrow={item.arrow} />
@@ -202,7 +202,7 @@ export default function Header() {
                       {convertFromPdf.map((item) => (
                         <li key={item.href}>
                           <Link
-                            to={item.href}
+                            href={item.href}
                             className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-[var(--brand-soft)]"
                           >
                             <ToolIcon tone={item.tone} arrow={item.arrow} />
@@ -237,7 +237,7 @@ export default function Header() {
                         {group.items.map((item) => (
                           <li key={item.href}>
                             <Link
-                              to={item.href}
+                              href={item.href}
                               className="block rounded-lg px-2 py-2 text-[13px] font-semibold text-foreground transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
                             >
                               {item.label}
@@ -255,13 +255,13 @@ export default function Header() {
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <Link
-            to="/login"
+            href="/login"
             className="hidden px-2 py-2 text-sm font-semibold text-foreground transition hover:text-[var(--brand)] sm:inline-flex sm:items-center"
           >
             Login
           </Link>
           <Link
-            to="/signup"
+            href="/signup"
             className="hidden items-center justify-center rounded-[6px] bg-[var(--brand)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--brand-dark)] sm:inline-flex"
           >
             Sign up
@@ -286,7 +286,7 @@ export default function Header() {
                 ].map((item) => (
                   <Link
                     key={item.href}
-                    to={item.href}
+                    href={item.href}
                     className="block rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
                   >
                     {item.label}
@@ -317,7 +317,7 @@ export default function Header() {
             ].map((item) => (
               <Link
                 key={item.href}
-                to={item.href}
+                href={item.href}
                 className="rounded-xl px-3 py-2.5 text-sm font-bold uppercase"
                 onClick={() => setMobileOpen(false)}
               >
@@ -331,7 +331,7 @@ export default function Header() {
             {convertToPdf.map((item) => (
               <Link
                 key={item.href}
-                to={item.href}
+                href={item.href}
                 className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold"
                 onClick={() => setMobileOpen(false)}
               >
@@ -346,7 +346,7 @@ export default function Header() {
             {convertFromPdf.map((item) => (
               <Link
                 key={item.href}
-                to={item.href}
+                href={item.href}
                 className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold"
                 onClick={() => setMobileOpen(false)}
               >
@@ -356,7 +356,7 @@ export default function Header() {
             ))}
 
             <Link
-              to="/studio/pdf"
+              href="/studio/pdf"
               className="mt-3 rounded-xl px-3 py-2.5 text-sm font-bold uppercase text-[var(--brand)]"
               onClick={() => setMobileOpen(false)}
             >
@@ -365,14 +365,14 @@ export default function Header() {
 
             <div className="mt-4 flex gap-2 px-3">
               <Link
-                to="/login"
+                href="/login"
                 className="flex flex-1 items-center justify-center rounded-[6px] border border-[var(--gray-border)] py-2.5 text-sm font-semibold"
                 onClick={() => setMobileOpen(false)}
               >
                 Login
               </Link>
               <Link
-                to="/signup"
+                href="/signup"
                 className="flex flex-1 items-center justify-center rounded-[6px] bg-[var(--brand)] py-2.5 text-sm font-bold text-white"
                 onClick={() => setMobileOpen(false)}
               >

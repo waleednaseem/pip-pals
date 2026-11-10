@@ -1,7 +1,7 @@
 import ToolCard from "@/components/tools/ToolCard";
 import { familyLabels, getAllCatalogTools, getHomeSections } from "@/lib/catalog";
 import type { ToolFamily } from "@/lib/tools/types";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 const pills: Array<ToolFamily | "all"> = [
@@ -109,7 +109,7 @@ export default function HomeCatalog() {
                   {section.title}
                 </h2>
                 <Link
-                  to={section.href}
+                  href={section.href}
                   className="text-sm font-bold text-[var(--brand)] hover:underline"
                 >
                   See All ›

@@ -1,6 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDown, LogOut, UserPlus } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
@@ -98,7 +98,7 @@ export const AppSidebar = ({ activeTab, hasPair, onNavigate }: AppSidebarProps) 
           </button>
         ) : (
           <Link
-            to="/signup"
+            href="/signup"
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-sidebar-foreground hover:bg-sidebar-accent"
             title="Sign up to save history"
           >

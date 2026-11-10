@@ -1,3 +1,5 @@
+"use client";
+
 import { logToolRun, syncFavorite, syncRecent } from "@/lib/client/persist";
 import {
   createContext,

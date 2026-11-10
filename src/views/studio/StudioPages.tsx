@@ -1,3 +1,5 @@
+"use client";
+
 import AuthForm from "@/components/auth/AuthForm";
 import HomeExperience from "@/components/home/HomeExperience";
 import ImageToolClient from "@/components/image/ImageToolClient";
@@ -19,7 +21,7 @@ import { getPdfTool, pdfTools } from "@/lib/pdf/registry";
 import { getTextTool, textTools } from "@/lib/text/registry";
 import type { ToolFamily } from "@/lib/tools/types";
 import { getZipTool, zipTools } from "@/lib/zip/registry";
-import { Link, useParams } from "react-router-dom";
+import Link from "next/link";
 
 const familyMeta: Record<
   Exclude<ToolFamily, "pdf" | "convert">,
@@ -81,8 +83,7 @@ export function PdfIndexPage() {
   );
 }
 
-export function PdfToolPage() {
-  const { slug = "" } = useParams();
+export function PdfToolPage({ slug = "" }: { slug?: string }) {
   const tool = getPdfTool(slug);
   if (!tool) return <MissingTool />;
   const others = pdfTools.filter((t) => t.slug !== slug).slice(0, 4);
@@ -140,10 +141,11 @@ export function FamilyIndexPage({
 
 export function FamilyToolPage({
   family,
+  slug = "",
 }: {
   family: Exclude<ToolFamily, "pdf" | "convert">;
+  slug?: string;
 }) {
-  const { slug = "" } = useParams();
   const meta = familyMeta[family];
   const tool = meta.get(slug);
   if (!tool) return <MissingTool />;
@@ -228,8 +230,7 @@ export function ConvertIndexPage() {
   );
 }
 
-export function ConvertToolPage() {
-  const { slug = "" } = useParams();
+export function ConvertToolPage({ slug = "" }: { slug?: string }) {
   const converter = getConverter(slug);
   if (!converter) return <MissingTool />;
   const related = getRelatedConverters(slug);
@@ -263,7 +264,7 @@ export function ConvertToolPage() {
       )}
       <p className="mt-8 text-sm text-[var(--gray-muted)]">
         Working with documents?{" "}
-        <Link to="/studio/pdf" className="font-semibold text-[var(--brand)] hover:underline">
+        <Link href="/studio/pdf" className="font-semibold text-[var(--brand)] hover:underline">
           Browse PDF tools
         </Link>
         .
@@ -295,7 +296,7 @@ export function MissingTool() {
       <p className="mt-2 text-sm text-[var(--gray-muted)]">
         Pick another tool from the studio catalog.
       </p>
-      <Link to="/studio" className="mt-5 inline-block text-sm font-bold text-[var(--brand)] hover:underline">
+      <Link href="/studio" className="mt-5 inline-block text-sm font-bold text-[var(--brand)] hover:underline">
         Back to File Studio
       </Link>
     </main>

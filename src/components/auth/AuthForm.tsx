@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { useState } from "react";
 
 type Mode = "login" | "signup";
@@ -102,7 +102,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
             <>
               Don&apos;t have an account?{" "}
               <Link
-                to="/studio/signup"
+                href="/signup"
                 className="font-semibold text-[var(--brand)] hover:underline"
               >
                 Sign up
@@ -112,7 +112,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
             <>
               Already have an account?{" "}
               <Link
-                to="/studio/login"
+                href="/login"
                 className="font-semibold text-[var(--brand)] hover:underline"
               >
                 Log in

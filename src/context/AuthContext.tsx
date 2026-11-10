@@ -1,3 +1,5 @@
+"use client";
+
 import { clearLocalAppData, disableCloudSync, loadUserHistory } from "@/lib/appHistory";
 import { authHeaders, setSessionToken } from "@/lib/session";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
