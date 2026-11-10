@@ -66,6 +66,7 @@ export default function BusinessIdeas() {
   const [languageFilter, setLanguageFilter] = useState<string>("All");
   const [maxBudget, setMaxBudget] = useState<number | null>(null);
   const [customBudget, setCustomBudget] = useState<string>("");
+  const [showAiKeyUi, setShowAiKeyUi] = useState(false);
 
   const loadIdeas = async (force = false) => {
     setLoading(true);
@@ -95,7 +96,11 @@ export default function BusinessIdeas() {
   };
 
   useEffect(() => {
-    setApiKeyState(getOpenAiKey());
+    const host = window.location.hostname;
+    const local =
+      host === "localhost" || host === "127.0.0.1" || host === "::1";
+    setShowAiKeyUi(local);
+    if (local) setApiKeyState(getOpenAiKey());
     void loadIdeas(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -171,59 +176,61 @@ export default function BusinessIdeas() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* API key setup */}
-        <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <KeyRound className="h-4 w-4" />
-            OpenAI API Key
-            {apiKey && <Badge variant="secondary" className="text-[10px]">Saved</Badge>}
-          </div>
-          {apiKey ? (
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-xs text-muted-foreground">
-                Key is stored in this browser only. AI tagging enriches {untaggedCount} untagged idea(s).
-              </span>
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={handleAnalyzeWithAI}
-                  disabled={aiBusy || untaggedCount === 0}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {aiBusy
-                    ? aiProgress
-                      ? `Tagging ${aiProgress.done}/${aiProgress.total}...`
-                      : "Tagging..."
-                    : untaggedCount === 0
-                    ? "All tagged"
-                    : `Analyze ${untaggedCount} with AI`}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8" onClick={handleClearKey}>
-                  Remove key
+        {/* API key setup — localhost only */}
+        {showAiKeyUi && (
+          <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <KeyRound className="h-4 w-4" />
+              OpenAI API Key
+              {apiKey && <Badge variant="secondary" className="text-[10px]">Saved</Badge>}
+            </div>
+            {apiKey ? (
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">
+                  Key is stored in this browser only. AI tagging enriches {untaggedCount} untagged idea(s).
+                </span>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    className="h-8 gap-1.5"
+                    onClick={handleAnalyzeWithAI}
+                    disabled={aiBusy || untaggedCount === 0}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {aiBusy
+                      ? aiProgress
+                        ? `Tagging ${aiProgress.done}/${aiProgress.total}...`
+                        : "Tagging..."
+                      : untaggedCount === 0
+                      ? "All tagged"
+                      : `Analyze ${untaggedCount} with AI`}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8" onClick={handleClearKey}>
+                    Remove key
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="password"
+                  placeholder="sk-..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  className="h-9"
+                />
+                <Button size="sm" className="h-9" onClick={handleSaveKey} disabled={!apiKeyInput.trim()}>
+                  Save Key
                 </Button>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="password"
-                placeholder="sk-..."
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                className="h-9"
-              />
-              <Button size="sm" className="h-9" onClick={handleSaveKey} disabled={!apiKeyInput.trim()}>
-                Save Key
-              </Button>
-            </div>
-          )}
-          {!apiKey && (
-            <p className="text-xs text-muted-foreground">
-              Without a key, ideas show with country/cost as "Unknown" — add a key to auto-tag them.
-            </p>
-          )}
-        </div>
+            )}
+            {!apiKey && (
+              <p className="text-xs text-muted-foreground">
+                Without a key, ideas show with country/cost as "Unknown" — add a key to auto-tag them.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
