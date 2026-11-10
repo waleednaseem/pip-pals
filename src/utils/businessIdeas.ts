@@ -10,7 +10,7 @@ const IDEA_SOURCES: { name: string; url: string }[] = [
   { name: "r/SideProject", url: "https://www.reddit.com/r/SideProject/.rss" },
   { name: "r/smallbusiness", url: "https://www.reddit.com/r/smallbusiness/.rss" },
   { name: "Show HN", url: "https://hnrss.org/show" },
-  { name: "Indie Hackers", url: "https://www.indiehackers.com/rss.xml" },
+  { name: "Product Hunt", url: "https://www.producthunt.com/feed" },
 ];
 
 export const IDEA_SOURCE_NAMES = IDEA_SOURCES.map((s) => s.name);
@@ -339,42 +339,43 @@ export const fetchBusinessIdeas = async (forceRefresh = false): Promise<IdeaFeed
   return { items: [], errors, fetchedAt: Date.now(), stale: true };
 };
 
-/** Fetch feeds, upsert into Mongo (no duplicates), return accumulated DB list. */
+/** Server-side feed fetch + Mongo upsert (avoids browser CORS / proxy failures). */
 export const refreshAndPersistBusinessIdeas = async (
-  forceRefresh = true
+  _forceRefresh = true
 ): Promise<IdeaFeedResult & { inserted: number; updated: number }> => {
-  const feed = await fetchBusinessIdeas(forceRefresh);
-  if (!feed.items.length) {
-    const stored = await loadStoredBusinessIdeas();
+  try {
+    const res = await fetch("/api/business-ideas/refresh", {
+      method: "POST",
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Refresh failed");
+    }
+    const items = applyAiCache((data.items as BusinessIdea[]) || []);
+    if (items.length) setCache(CACHE_KEY_RAW, items);
     return {
-      ...stored,
-      errors: [...feed.errors, ...stored.errors],
-      inserted: 0,
-      updated: 0,
+      items,
+      errors: Array.isArray(data.errors) ? data.errors.map(String) : [],
+      fetchedAt: Number(data.fetchedAt) || Date.now(),
+      stale: Boolean(data.stale),
+      inserted: Number(data.inserted) || 0,
+      updated: Number(data.updated) || 0,
     };
-  }
-
-  const saved = await saveBusinessIdeasToDb(feed.items);
-  if (saved.errors.length && !saved.items.length) {
+  } catch (err) {
     const stored = await loadStoredBusinessIdeas();
     return {
-      items: stored.items.length ? stored.items : feed.items,
-      errors: [...feed.errors, ...saved.errors, ...stored.errors],
-      fetchedAt: Date.now(),
+      items: stored.items,
+      errors: [
+        err instanceof Error ? err.message : "Refresh failed",
+        ...stored.errors,
+      ],
+      fetchedAt: stored.fetchedAt,
       stale: true,
       inserted: 0,
       updated: 0,
     };
   }
-
-  return {
-    items: saved.items,
-    errors: feed.errors,
-    fetchedAt: Date.now(),
-    stale: false,
-    inserted: saved.inserted,
-    updated: saved.updated,
-  };
 };
 
 // ---------------- AI enrichment (OpenAI) ----------------
