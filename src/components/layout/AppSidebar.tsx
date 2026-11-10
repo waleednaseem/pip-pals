@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getVisibleNavGroups } from "@/config/nav";
-import { canManageAdvertising } from "@/lib/access";
+import { isAppOwner } from "@/lib/access";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -30,7 +30,7 @@ export const AppSidebar = ({ activeTab, hasPair, onNavigate }: AppSidebarProps) 
   const { isMobile, setOpenMobile, state } = useSidebar();
   const { user, logout } = useAuth();
   const groups = getVisibleNavGroups(hasPair, {
-    canManageAds: canManageAdvertising(user?.email),
+    isOwner: isAppOwner(user?.email),
   });
 
   const handleNav = (tab: string) => {

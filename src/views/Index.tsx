@@ -41,7 +41,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { canManageAdvertising } from "@/lib/access";
+import { canAccessOwnerTab } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -190,10 +190,10 @@ const Index = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (activeTab === "advertising" && !canManageAdvertising(user?.email)) {
-      setActiveTab(selectedPair ? "calculator" : "canada");
+    if (!canAccessOwnerTab(activeTab, user?.email)) {
+      setActiveTab("canada");
     }
-  }, [activeTab, authLoading, user?.email, selectedPair]);
+  }, [activeTab, authLoading, user?.email]);
 
   const totals = calculateTotals();
 
@@ -205,7 +205,7 @@ const Index = () => {
       hasHistory={trades.length > 0}
       onNavigate={(tab) => {
         if (tab === "studio") router.push("/studio");
-        else if (tab === "advertising" && !canManageAdvertising(user?.email)) return;
+        else if (!canAccessOwnerTab(tab, user?.email)) return;
         else setActiveTab(tab);
       }}
       onClearHistory={handleClearHistory}

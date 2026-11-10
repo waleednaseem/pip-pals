@@ -28,7 +28,7 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   requiresPair?: boolean;
-  /** Only shown to the advertising admin account. */
+  /** Only shown to the app owner account. */
   adminOnly?: boolean;
 };
 
@@ -43,13 +43,13 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "trading",
     label: "Trading",
     items: [
-      { value: "pair", label: "Select Pair", icon: CandlestickChart },
-      { value: "calculator", label: "Pip Calculator", icon: Calculator, requiresPair: true },
-      { value: "totals", label: "Totals", icon: BarChart3, requiresPair: true },
-      { value: "lotfit", label: "LotFit", icon: Scale },
-      { value: "ftmo", label: "FTMO Challenge", icon: Target },
-      { value: "dynamic-calc", label: "Dynamic Calculator", icon: Sigma },
-      { value: "trading-signals", label: "Signals", icon: TrendingUp },
+      { value: "pair", label: "Select Pair", icon: CandlestickChart, adminOnly: true },
+      { value: "calculator", label: "Pip Calculator", icon: Calculator, requiresPair: true, adminOnly: true },
+      { value: "totals", label: "Totals", icon: BarChart3, requiresPair: true, adminOnly: true },
+      { value: "lotfit", label: "LotFit", icon: Scale, adminOnly: true },
+      { value: "ftmo", label: "FTMO Challenge", icon: Target, adminOnly: true },
+      { value: "dynamic-calc", label: "Dynamic Calculator", icon: Sigma, adminOnly: true },
+      { value: "trading-signals", label: "Signals", icon: TrendingUp, adminOnly: true },
       { value: "market-updates", label: "Market Updates", icon: Newspaper },
     ],
   },
@@ -92,13 +92,13 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const getVisibleNavGroups = (
   hasPair: boolean,
-  opts?: { canManageAds?: boolean }
+  opts?: { isOwner?: boolean }
 ): NavGroup[] =>
   NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (item.requiresPair && !hasPair) return false;
-      if (item.adminOnly && !opts?.canManageAds) return false;
+      if (item.adminOnly && !opts?.isOwner) return false;
       return true;
     }),
   })).filter((group) => group.items.length > 0);
