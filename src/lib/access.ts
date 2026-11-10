@@ -9,7 +9,6 @@ export const OWNER_ONLY_TABS = new Set([
   "lotfit",
   "ftmo",
   "dynamic-calc",
-  "trading-signals",
   "advertising",
 ]);
 

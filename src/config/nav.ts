@@ -49,7 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { value: "lotfit", label: "LotFit", icon: Scale, adminOnly: true },
       { value: "ftmo", label: "FTMO Challenge", icon: Target, adminOnly: true },
       { value: "dynamic-calc", label: "Dynamic Calculator", icon: Sigma, adminOnly: true },
-      { value: "trading-signals", label: "Signals", icon: TrendingUp, adminOnly: true },
+      { value: "trading-signals", label: "Signals", icon: TrendingUp },
       { value: "market-updates", label: "Market Updates", icon: Newspaper },
     ],
   },
