@@ -182,7 +182,7 @@ const parseFeedXml = (xmlText: string, sourceName: string): BusinessIdea[] => {
   const items = Array.from(doc.querySelectorAll("item, entry")).slice(0, 20);
   if (items.length === 0) throw new Error("No items in feed");
 
-  return items.map((el, idx) => {
+  return items.map((el) => {
     const title = el.querySelector("title")?.textContent ?? "Untitled";
     const linkEl = el.querySelector("link");
     const link = linkEl?.getAttribute("href") || linkEl?.textContent || "";
@@ -196,9 +196,9 @@ const parseFeedXml = (xmlText: string, sourceName: string): BusinessIdea[] => {
       el.querySelector("summary")?.textContent ||
       el.querySelector("content")?.textContent ||
       "";
-    const id = `${sourceName}-${idx}-${link || title}`;
     const cleanTitle = stripHtml(title);
     const cleanDescription = stripHtml(description).slice(0, 500);
+    const id = makeIdeaId(sourceName, link, cleanTitle);
     return {
       id,
       source: sourceName,
@@ -219,6 +219,75 @@ const parseFeedXml = (xmlText: string, sourceName: string): BusinessIdea[] => {
 const fetchSingleSource = async (name: string, url: string): Promise<BusinessIdea[]> => {
   const xmlText = await fetchTextWithFallback(url);
   return parseFeedXml(xmlText, name);
+};
+
+/** Stable id so daily refreshes don't create duplicates. */
+export function makeIdeaId(source: string, link: string, title: string): string {
+  const key = `${source.trim().toLowerCase()}::${(link || title).trim().toLowerCase()}`;
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `idea_${(hash >>> 0).toString(16)}_${key.slice(0, 80).replace(/[^a-z0-9]+/gi, "_")}`;
+}
+
+export const loadStoredBusinessIdeas = async (): Promise<IdeaFeedResult> => {
+  try {
+    const res = await fetch("/api/business-ideas?limit=500", { credentials: "include" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
+      throw new Error(data?.error || "Failed to load stored ideas");
+    }
+    return {
+      items: applyAiCache(data.items as BusinessIdea[]),
+      errors: [],
+      fetchedAt: Number(data.fetchedAt) || Date.now(),
+      stale: false,
+    };
+  } catch {
+    const stale = getStaleCache<BusinessIdea[]>(CACHE_KEY_RAW);
+    if (stale) {
+      return {
+        items: applyAiCache(stale.data),
+        errors: ["(showing local cache — database unavailable)"],
+        fetchedAt: stale.fetchedAt,
+        stale: true,
+      };
+    }
+    return { items: [], errors: ["Database unavailable"], fetchedAt: Date.now(), stale: true };
+  }
+};
+
+export const saveBusinessIdeasToDb = async (
+  items: BusinessIdea[]
+): Promise<{ items: BusinessIdea[]; inserted: number; updated: number; errors: string[] }> => {
+  if (!items.length) return { items: [], inserted: 0, updated: 0, errors: [] };
+  try {
+    const res = await fetch("/api/business-ideas", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Failed to save ideas");
+    }
+    return {
+      items: applyAiCache((data.items as BusinessIdea[]) || []),
+      inserted: Number(data.inserted) || 0,
+      updated: Number(data.updated) || 0,
+      errors: [],
+    };
+  } catch (err) {
+    return {
+      items: [],
+      inserted: 0,
+      updated: 0,
+      errors: [err instanceof Error ? err.message : "Failed to save ideas"],
+    };
+  }
 };
 
 // ---------------- Public: fetch raw ideas ----------------
@@ -246,11 +315,16 @@ export const fetchBusinessIdeas = async (forceRefresh = false): Promise<IdeaFeed
     }
   });
 
-  items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+  // Dedupe within this fetch batch by stable id.
+  const byId = new Map<string, BusinessIdea>();
+  for (const item of items) byId.set(item.id, item);
+  const uniqueItems = [...byId.values()].sort(
+    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
 
-  if (items.length > 0) {
-    const fetchedAt = setCache(CACHE_KEY_RAW, items);
-    return { items: applyAiCache(items), errors, fetchedAt, stale: false };
+  if (uniqueItems.length > 0) {
+    const fetchedAt = setCache(CACHE_KEY_RAW, uniqueItems);
+    return { items: applyAiCache(uniqueItems), errors, fetchedAt, stale: false };
   }
 
   const stale = getStaleCache<BusinessIdea[]>(CACHE_KEY_RAW);
@@ -263,6 +337,44 @@ export const fetchBusinessIdeas = async (forceRefresh = false): Promise<IdeaFeed
     };
   }
   return { items: [], errors, fetchedAt: Date.now(), stale: true };
+};
+
+/** Fetch feeds, upsert into Mongo (no duplicates), return accumulated DB list. */
+export const refreshAndPersistBusinessIdeas = async (
+  forceRefresh = true
+): Promise<IdeaFeedResult & { inserted: number; updated: number }> => {
+  const feed = await fetchBusinessIdeas(forceRefresh);
+  if (!feed.items.length) {
+    const stored = await loadStoredBusinessIdeas();
+    return {
+      ...stored,
+      errors: [...feed.errors, ...stored.errors],
+      inserted: 0,
+      updated: 0,
+    };
+  }
+
+  const saved = await saveBusinessIdeasToDb(feed.items);
+  if (saved.errors.length && !saved.items.length) {
+    const stored = await loadStoredBusinessIdeas();
+    return {
+      items: stored.items.length ? stored.items : feed.items,
+      errors: [...feed.errors, ...saved.errors, ...stored.errors],
+      fetchedAt: Date.now(),
+      stale: true,
+      inserted: 0,
+      updated: 0,
+    };
+  }
+
+  return {
+    items: saved.items,
+    errors: feed.errors,
+    fetchedAt: Date.now(),
+    stale: false,
+    inserted: saved.inserted,
+    updated: saved.updated,
+  };
 };
 
 // ---------------- AI enrichment (OpenAI) ----------------
@@ -418,6 +530,21 @@ export const enrichIdeasWithAI = async (
   }
 
   saveAiCache(cache);
+
+  // Persist AI results (including rejected non-ideas) so DB stays clean of duplicates/noise.
+  const toPersist = applyAiCache(items)
+    .filter((idea) => cache[idea.id])
+    .map((idea) => ({
+      ...idea,
+      isBusinessIdea: cache[idea.id]?.isBusinessIdea !== false,
+    }));
+  if (toPersist.length) {
+    const saved = await saveBusinessIdeasToDb(toPersist as BusinessIdea[]);
+    errors.push(...saved.errors);
+    if (saved.items.length) {
+      return { items: saved.items, errors };
+    }
+  }
 
   const enriched = applyAiCache(items).filter((idea) => {
     const entry = cache[idea.id];

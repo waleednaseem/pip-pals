@@ -8,6 +8,7 @@ const COL = {
   esignRequests: "esign_requests",
   pdfJobs: "pdf_jobs",
   usageDaily: "usage_daily",
+  businessIdeas: "business_ideas",
 } as const;
 
 declare global {
@@ -41,6 +42,9 @@ function createMongo() {
     await db.collection("sessions").createIndex({ token: 1 }, { unique: true });
     await db.collection("uploads").createIndex({ userId: 1, createdAt: -1 });
     await db.collection("uploads").createIndex({ createdAt: -1 });
+    await db.collection(COL.businessIdeas).createIndex({ dedupeKey: 1 }, { unique: true });
+    await db.collection(COL.businessIdeas).createIndex({ pubDate: -1 });
+    await db.collection(COL.businessIdeas).createIndex({ updatedAt: -1 });
   })();
 
   return { client, db, ready };

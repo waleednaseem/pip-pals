@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { BusinessIdea } from "@/types/businessIdeas";
 import {
-  fetchBusinessIdeas,
+  loadStoredBusinessIdeas,
+  refreshAndPersistBusinessIdeas,
   enrichIdeasWithAI,
   filterByCountry,
   filterByBudget,
@@ -68,16 +69,35 @@ export default function BusinessIdeas() {
 
   const loadIdeas = async (force = false) => {
     setLoading(true);
-    const res = await fetchBusinessIdeas(force);
-    setIdeas(res.items);
-    setErrors(res.errors);
-    setUpdatedAt(res.fetchedAt);
-    setLoading(false);
+    try {
+      if (!force) {
+        const stored = await loadStoredBusinessIdeas();
+        if (stored.items.length) {
+          setIdeas(stored.items);
+          setErrors(stored.errors);
+          setUpdatedAt(stored.fetchedAt);
+        }
+      }
+
+      const res = await refreshAndPersistBusinessIdeas(true);
+      setIdeas(res.items);
+      setErrors(res.errors);
+      setUpdatedAt(res.fetchedAt);
+      if (force && (res.inserted > 0 || res.updated > 0)) {
+        toast({
+          title: "Ideas synced",
+          description: `${res.inserted} new · ${res.updated} updated · ${res.items.length} total in database`,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     setApiKeyState(getOpenAiKey());
-    loadIdeas();
+    void loadIdeas(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveKey = () => {
@@ -145,8 +165,8 @@ export default function BusinessIdeas() {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          Free business &amp; startup idea feeds from {IDEA_SOURCE_NAMES.join(", ")} — tagged with AI for origin
-          country, best-fit market, and rough startup cost.
+          Free business &amp; startup idea feeds from {IDEA_SOURCE_NAMES.join(", ")}. Fetched ideas are saved in
+          MongoDB (no duplicates) so your list grows every day you refresh.
         </p>
       </CardHeader>
 

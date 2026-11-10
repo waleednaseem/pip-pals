@@ -17,6 +17,8 @@ export interface BusinessIdea {
   costEstimate: CostEstimate | null;
   language: string; // e.g. "English", "Roman Urdu", "French"
   aiTagged: boolean; // false until enrichment succeeds for this item
+  /** Set by AI; false means filtered out of the growing DB list. */
+  isBusinessIdea?: boolean;
 }
 
 export interface IdeaFeedResult {
