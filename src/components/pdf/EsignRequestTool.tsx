@@ -185,7 +185,7 @@ export default function EsignRequestTool() {
       <label className="block text-sm">
         <span className="mb-1 block font-medium">Request title</span>
         <input
-          className="w-full rounded-lg border border-gray-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
@@ -193,7 +193,7 @@ export default function EsignRequestTool() {
       <label className="block text-sm">
         <span className="mb-1 block font-medium">Message</span>
         <textarea
-          className="w-full rounded-lg border border-gray-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           rows={2}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -206,7 +206,7 @@ export default function EsignRequestTool() {
           <div key={i} className="flex flex-wrap gap-2">
             <input
               placeholder="Name"
-              className="min-w-[140px] flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="min-w-[140px] flex-1 rounded-lg border border-[var(--gray-border)] px-3 py-2 text-sm"
               value={s.name}
               onChange={(e) =>
                 setSigners((prev) =>
@@ -218,7 +218,7 @@ export default function EsignRequestTool() {
             />
             <input
               placeholder="Email"
-              className="min-w-[180px] flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="min-w-[180px] flex-1 rounded-lg border border-[var(--gray-border)] px-3 py-2 text-sm"
               value={s.email}
               onChange={(e) =>
                 setSigners((prev) =>
@@ -233,7 +233,7 @@ export default function EsignRequestTool() {
               className={`rounded-lg px-3 py-2 text-sm ${
                 activeSigner === i
                   ? "bg-[var(--brand)] text-white"
-                  : "border border-gray-300"
+                  : "border border-[var(--gray-border)]"
               }`}
               onClick={() => setActiveSigner(i)}
             >
@@ -258,7 +258,7 @@ export default function EsignRequestTool() {
               type="number"
               min={1}
               max={pageCount}
-              className="w-16 rounded-lg border border-gray-300 px-2 py-1.5"
+              className="w-16 rounded-lg border border-[var(--gray-border)] px-2 py-1.5"
               value={pageNumber}
               onChange={(e) => setPageNumber(Number(e.target.value) || 1)}
             />
@@ -268,7 +268,7 @@ export default function EsignRequestTool() {
             Click preview to place a signature box for the selected signer.
           </p>
           <div
-            className="relative w-full max-w-[640px] cursor-crosshair overflow-auto rounded-xl border border-gray-300 bg-zinc-100"
+            className="relative w-full max-w-[640px] cursor-crosshair overflow-auto rounded-xl border border-[var(--gray-border)] bg-[var(--surface-muted)]"
             onClick={placeSlot}
           >
             <canvas ref={previewRef} className="block h-auto w-full" />
@@ -288,7 +288,7 @@ export default function EsignRequestTool() {
       </button>
 
       {saved.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+        <div className="rounded-xl border border-[var(--gray-border)] bg-[var(--surface)] p-4 text-sm">
           <p className="mb-2 font-medium">Saved requests</p>
           <ul className="space-y-1 text-[var(--gray-muted)]">
             {saved.slice(0, 5).map((r) => (

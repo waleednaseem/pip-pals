@@ -14,9 +14,9 @@ export default function ToolShell({
   children,
 }: Props) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--gray-border)] bg-white p-6 shadow-[var(--shadow-md)]">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--gray-border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-md)]">
       <div className="mb-1 flex flex-wrap items-center gap-2">
-        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
           {title}
         </h1>
         <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand)]">

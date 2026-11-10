@@ -36,7 +36,7 @@ export default function HomeCatalog() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10">
-      <div className="mb-10 overflow-hidden rounded-[20px] border border-[var(--gray-border)] bg-white p-4 shadow-[var(--shadow-md)] sm:p-5">
+      <div className="mb-10 overflow-hidden rounded-[20px] border border-[var(--gray-border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-md)] sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--gray-muted)]">
@@ -47,7 +47,7 @@ export default function HomeCatalog() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search tools... (e.g. PDF, Image)"
-              className="w-full rounded-full border border-[var(--gray-border)] bg-[var(--background)] py-3.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--brand)] focus:bg-white focus:shadow-[var(--glow-primary)]"
+              className="w-full rounded-full border border-[var(--gray-border)] bg-[var(--surface-muted)] py-3.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--brand)] focus:bg-[var(--surface)] focus:shadow-[var(--glow-primary)]"
             />
           </div>
           <button
@@ -67,7 +67,7 @@ export default function HomeCatalog() {
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                 family === id
                   ? "bg-[var(--brand)] text-white shadow-[var(--glow-primary)]"
-                  : "border border-[var(--gray-border)] bg-white text-[var(--text-secondary)] hover:border-[var(--brand)]/40 hover:text-[var(--brand)]"
+                  : "border border-[var(--gray-border)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--brand)]/40 hover:text-[var(--brand)]"
               }`}
             >
               {familyLabels[id]}

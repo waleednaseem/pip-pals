@@ -99,7 +99,7 @@ export default function OrganizeTool() {
           Page order (reorder / remove by omitting)
         </span>
         <input
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           value={order}
           onChange={(e) => setOrder(e.target.value)}
           placeholder="e.g. 3,1,2"
@@ -109,7 +109,7 @@ export default function OrganizeTool() {
         type="button"
         disabled={busy}
         onClick={runReorder}
-        className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60"
+        className="rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-60"
       >
         {busy ? "Working…" : "Apply order & download"}
       </button>
@@ -117,7 +117,7 @@ export default function OrganizeTool() {
       <label className="block text-sm">
         <span className="mb-1 block font-medium">Or delete pages</span>
         <input
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           value={deletePages}
           onChange={(e) => setDeletePages(e.target.value)}
           placeholder="e.g. 2,4"
@@ -127,7 +127,7 @@ export default function OrganizeTool() {
         type="button"
         disabled={busy}
         onClick={runDelete}
-        className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:border-teal-700 disabled:opacity-60"
+        className="rounded-lg border border-[var(--gray-border)] px-5 py-2.5 text-sm font-medium hover:border-[var(--brand)] disabled:opacity-60"
       >
         Delete pages & download
       </button>

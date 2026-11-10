@@ -139,7 +139,7 @@ export default function OtherToolClient({ tool }: { tool: OtherToolDef }) {
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-[var(--brand-soft)] px-4 py-10 text-center hover:border-[var(--brand)]"
+          className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--gray-border)] bg-[var(--brand-soft)] px-4 py-10 text-center hover:border-[var(--brand)]"
         >
           <span className="text-sm font-medium">
             {busy ? "Extracting…" : "Drop image or click to browse"}
@@ -183,10 +183,10 @@ export default function OtherToolClient({ tool }: { tool: OtherToolDef }) {
         />
       </label>
       {tool.slug === "qr" && (
-        <canvas ref={canvasRef} className="mx-auto rounded-xl border border-[var(--gray-border)] bg-white p-2" />
+        <canvas ref={canvasRef} className="mx-auto rounded-xl border border-[var(--gray-border)] bg-[var(--surface)] p-2" />
       )}
       {tool.slug === "barcode" && (
-        <div className="overflow-x-auto rounded-xl border border-[var(--gray-border)] bg-white p-4">
+        <div className="overflow-x-auto rounded-xl border border-[var(--gray-border)] bg-[var(--surface)] p-4">
           <svg ref={barcodeRef} />
         </div>
       )}

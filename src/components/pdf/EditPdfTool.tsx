@@ -378,7 +378,7 @@ export default function EditPdfTool() {
             className={`rounded-full px-4 py-1.5 text-sm font-medium ${
               mode === id
                 ? "bg-[var(--brand)] text-white"
-                : "border border-gray-300 bg-white"
+                : "border border-[var(--gray-border)] bg-[var(--surface)]"
             }`}
           >
             {label}
@@ -386,7 +386,7 @@ export default function EditPdfTool() {
         ))}
         <button
           type="button"
-          className="rounded-full border border-gray-300 px-4 py-1.5 text-sm"
+          className="rounded-full border border-[var(--gray-border)] px-4 py-1.5 text-sm"
           onClick={() => setOverlays([])}
         >
           Clear edits
@@ -413,7 +413,7 @@ export default function EditPdfTool() {
       />
       {mode === "text" && (
         <input
-          className="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="w-full max-w-md rounded-lg border border-[var(--gray-border)] px-3 py-2 text-sm"
           value={textValue}
           onChange={(e) => setTextValue(e.target.value)}
           placeholder="Text to place"
@@ -433,14 +433,14 @@ export default function EditPdfTool() {
               type="number"
               min={1}
               max={pageCount}
-              className="w-16 rounded-lg border border-gray-300 px-2 py-1.5"
+              className="w-16 rounded-lg border border-[var(--gray-border)] px-2 py-1.5"
               value={pageNumber}
               onChange={(e) => setPageNumber(Number(e.target.value) || 1)}
             />
             / {pageCount}
           </label>
           <div
-            className="relative w-full max-w-[640px] touch-none overflow-auto rounded-xl border border-gray-300 bg-zinc-100"
+            className="relative w-full max-w-[640px] touch-none overflow-auto rounded-xl border border-[var(--gray-border)] bg-[var(--surface-muted)]"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}

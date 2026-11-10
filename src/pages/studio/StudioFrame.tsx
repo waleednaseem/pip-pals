@@ -49,7 +49,7 @@ export function StudioFrame({ children }: { children?: ReactNode }) {
         navigate("/?tab=pair");
       }}
     >
-      <div className="studio rounded-2xl border border-border shadow-sm">
+      <div className="studio overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm">
         <Header />
         {children ?? <Outlet />}
         <Footer />

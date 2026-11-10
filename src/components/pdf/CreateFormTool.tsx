@@ -134,7 +134,7 @@ export default function CreateFormTool() {
         <label className="flex items-center gap-2 font-medium">
           Field type
           <select
-            className="rounded-lg border border-gray-300 px-2 py-1.5"
+            className="rounded-lg border border-[var(--gray-border)] px-2 py-1.5"
             value={fieldType}
             onChange={(e) => setFieldType(e.target.value as "text" | "checkbox")}
           >
@@ -149,7 +149,7 @@ export default function CreateFormTool() {
               type="number"
               min={1}
               max={pageCount}
-              className="w-16 rounded-lg border border-gray-300 px-2 py-1.5"
+              className="w-16 rounded-lg border border-[var(--gray-border)] px-2 py-1.5"
               value={pageNumber}
               onChange={(e) => setPageNumber(Number(e.target.value) || 1)}
             />
@@ -162,7 +162,7 @@ export default function CreateFormTool() {
       </p>
       {pdfBytes && (
         <div
-          className="relative w-full max-w-[640px] cursor-crosshair overflow-auto rounded-xl border border-gray-300 bg-zinc-100"
+          className="relative w-full max-w-[640px] cursor-crosshair overflow-auto rounded-xl border border-[var(--gray-border)] bg-[var(--surface-muted)]"
           onClick={onClickPreview}
         >
           <canvas ref={previewRef} className="block h-auto w-full" />
@@ -173,7 +173,7 @@ export default function CreateFormTool() {
           {fields.map((f) => (
             <li key={f.id} className="flex items-center gap-2">
               <input
-                className="flex-1 rounded border border-gray-300 px-2 py-1"
+                className="flex-1 rounded border border-[var(--gray-border)] px-2 py-1"
                 value={f.name}
                 onChange={(e) =>
                   setFields((prev) =>

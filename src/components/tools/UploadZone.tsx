@@ -73,13 +73,13 @@ export default function UploadZone({
         className={`flex w-full flex-col items-center justify-center rounded-[16px] border-2 border-dashed px-4 py-11 text-center transition ${
           dragging
             ? "border-[var(--brand)] bg-[var(--brand-soft)]"
-            : "border-[var(--gray-border)] bg-[var(--background)] hover:border-[var(--brand)]/45 hover:bg-[var(--brand-soft)]/40"
+            : "border-[var(--gray-border)] bg-[var(--surface-muted)] hover:border-[var(--brand)]/45 hover:bg-[var(--brand-soft)]/40"
         }`}
       >
-        <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-lg shadow-[var(--shadow-sm)]">
+        <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--surface)] text-lg shadow-[var(--shadow-sm)]">
           ↑
         </span>
-        <span className="text-sm font-semibold text-[var(--foreground)]">
+        <span className="text-sm font-semibold text-foreground">
           {label}
         </span>
         <span className="mt-1 text-xs text-[var(--gray-muted)]">{hint}</span>
@@ -122,10 +122,10 @@ export default function UploadZone({
           {files.map((f, i) => (
             <li
               key={`${f.name}-${i}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-[var(--gray-border)] bg-white px-3 py-2.5 text-sm shadow-[var(--shadow-sm)]"
+              className="flex items-center justify-between gap-3 rounded-xl border border-[var(--gray-border)] bg-[var(--surface)] px-3 py-2.5 text-sm shadow-[var(--shadow-sm)]"
             >
               <div className="min-w-0">
-                <p className="truncate font-medium text-[var(--foreground)]">
+                <p className="truncate font-medium text-foreground">
                   {f.name}
                 </p>
                 <p className="text-xs text-[var(--gray-muted)]">

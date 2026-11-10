@@ -74,7 +74,7 @@ export default function RotateTool() {
       <label className="block max-w-xs text-sm">
         <span className="mb-1 block font-medium">Rotate by</span>
         <select
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           value={angle}
           onChange={(e) => setAngle(Number(e.target.value) as RotateAngle)}
         >
@@ -88,7 +88,7 @@ export default function RotateTool() {
           Pages (optional, comma-separated — blank = all)
         </span>
         <input
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           value={pages}
           onChange={(e) => setPages(e.target.value)}
           placeholder="e.g. 1,3,5"
@@ -99,7 +99,7 @@ export default function RotateTool() {
         type="button"
         disabled={busy}
         onClick={run}
-        className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60"
+        className="rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-60"
       >
         {busy ? "Rotating…" : "Rotate & download"}
       </button>

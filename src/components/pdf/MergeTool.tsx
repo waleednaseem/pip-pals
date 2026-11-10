@@ -40,7 +40,7 @@ export default function MergeTool() {
         type="button"
         disabled={busy}
         onClick={run}
-        className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60"
+        className="rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-60"
       >
         {busy ? "Merging…" : "Merge & download"}
       </button>

@@ -119,7 +119,7 @@ export default function ConverterForm({ slug }: Props) {
   const favId = `convert:${slug}`;
 
   return (
-    <div className="rounded-[16px] border border-[var(--gray-border)] bg-white p-6 shadow-[var(--shadow-md)]">
+    <div className="rounded-[16px] border border-[var(--gray-border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-md)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="font-heading text-2xl font-extrabold tracking-tight">
           {converter.title}
@@ -168,7 +168,7 @@ export default function ConverterForm({ slug }: Props) {
         <button
           type="button"
           onClick={handleSwap}
-          className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[var(--gray-border)] bg-[var(--background)] text-[var(--foreground)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+          className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[var(--gray-border)] bg-[var(--surface-muted)] text-foreground transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
           aria-label="Swap units"
         >
           ⇄
@@ -197,7 +197,7 @@ export default function ConverterForm({ slug }: Props) {
           <input
             type="text"
             readOnly
-            className="w-full rounded-xl border border-[var(--gray-border)] bg-[var(--background)] px-3 py-3 text-lg font-semibold text-[var(--brand-dark)]"
+            className="w-full rounded-xl border border-[var(--gray-border)] bg-[var(--surface-muted)] px-3 py-3 text-lg font-semibold text-[var(--brand-dark)]"
             value={result}
           />
         </label>

@@ -39,7 +39,7 @@ export default function ExtractTextTool() {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-[var(--brand-soft)] px-4 py-10 text-center hover:border-[var(--brand)]"
+        className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--gray-border)] bg-[var(--brand-soft)] px-4 py-10 text-center hover:border-[var(--brand)]"
       >
         <span className="text-sm font-medium text-gray-800">
           {file ? file.name : "Drop PDF here or click to browse"}

@@ -20,13 +20,13 @@ const pills: Array<ToolFamily | "all"> = [
 ];
 
 const pillars = [
-  { title: "Fast", body: "Quick results", tone: "bg-sky-100 text-sky-700" },
+  { title: "Fast", body: "Quick results", tone: "bg-[var(--brand-soft)] text-[var(--brand)]" },
   {
     title: "Secure",
     body: "Files stay private",
-    tone: "bg-emerald-100 text-emerald-700",
+    tone: "bg-[var(--brand-soft)] text-[var(--brand)]",
   },
-  { title: "Free", body: "Always free", tone: "bg-violet-100 text-violet-700" },
+  { title: "Free", body: "Always free", tone: "bg-[var(--brand-soft)] text-[var(--brand)]" },
 ];
 
 export default function HomeExperience() {
@@ -56,12 +56,12 @@ export default function HomeExperience() {
 
   return (
     <>
-      <section className="border-b border-[var(--gray-border)] bg-white">
+      <section className="border-b border-[var(--gray-border)] bg-[var(--surface)]">
         <div className="mx-auto max-w-4xl px-4 pb-5 pt-10 text-center sm:pb-6 sm:pt-14">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[var(--brand)]">
             File Studio
           </p>
-          <h1 className="font-heading text-[1.85rem] font-extrabold tracking-tight text-[var(--foreground)] sm:text-5xl sm:leading-[1.12]">
+          <h1 className="font-heading text-[1.85rem] font-extrabold tracking-tight text-foreground sm:text-5xl sm:leading-[1.12]">
             Free Online Tools &amp; Utilities for Everyday Tasks
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-[15px] text-[var(--gray-muted)] sm:mt-4 sm:text-lg">
@@ -70,9 +70,9 @@ export default function HomeExperience() {
         </div>
 
         <div className="mx-auto max-w-5xl px-4 pb-10 sm:pb-12">
-          <div className="relative overflow-hidden rounded-[22px] border border-[var(--gray-border)] bg-gradient-to-br from-[#eef5ff] via-[#f8fbff] to-white px-4 py-7 shadow-[var(--shadow-md)] sm:px-8 sm:py-9">
-            <div className="pointer-events-none absolute -right-12 -top-8 h-44 w-44 rounded-full bg-sky-200/35 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-[var(--brand-light)]/50 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[22px] border border-[var(--gray-border)] bg-gradient-to-br from-[hsl(var(--primary)/0.12)] via-[var(--surface)] to-[hsl(var(--muted))] px-4 py-7 shadow-[var(--shadow-md)] sm:px-8 sm:py-9">
+            <div className="pointer-events-none absolute -right-12 -top-8 h-44 w-44 rounded-full bg-[var(--brand-soft)] blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-[var(--brand-light)] blur-3xl" />
 
             <div className="relative space-y-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -88,7 +88,7 @@ export default function HomeExperience() {
                       if (e.key === "Enter") runSearch();
                     }}
                     placeholder="Search tools... (e.g. PDF, Image, QR)"
-                    className="w-full rounded-full border border-[var(--gray-border)] bg-white py-3.5 pl-10 pr-4 text-sm shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--brand)] focus:shadow-[var(--glow-primary)]"
+                    className="w-full rounded-full border border-[var(--gray-border)] bg-[var(--surface)] py-3.5 pl-10 pr-4 text-sm shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--brand)] focus:shadow-[var(--glow-primary)]"
                   />
                 </div>
                 <button
@@ -112,7 +112,7 @@ export default function HomeExperience() {
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
                       family === id
                         ? "bg-[var(--brand)] text-white shadow-[var(--glow-primary)]"
-                        : "border border-white/80 bg-white/80 text-[var(--text-secondary)] hover:border-[var(--brand)]/35 hover:text-[var(--brand)]"
+                        : "border border-[var(--gray-border)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--brand)]/35 hover:text-[var(--brand)]"
                     }`}
                   >
                     {familyLabels[id]}
@@ -120,7 +120,7 @@ export default function HomeExperience() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-3 gap-3 border-t border-sky-100/80 pt-5 sm:gap-6">
+              <div className="grid grid-cols-3 gap-3 border-t border-[var(--gray-border)] pt-5 sm:gap-6">
                 {pillars.map((p) => (
                   <div key={p.title} className="flex items-start gap-2.5 sm:items-center sm:justify-center sm:gap-3">
                     <span
@@ -184,7 +184,7 @@ export default function HomeExperience() {
               ))}
             </div>
             {filtered.length === 0 && (
-              <div className="rounded-[20px] border border-dashed border-[var(--gray-border)] bg-white px-6 py-14 text-center">
+              <div className="rounded-[20px] border border-dashed border-[var(--gray-border)] bg-[var(--surface)] px-6 py-14 text-center">
                 <p className="font-heading text-lg font-bold">No tools found</p>
                 <p className="mt-1 text-sm text-[var(--gray-muted)]">
                   Try another keyword or browse a category.

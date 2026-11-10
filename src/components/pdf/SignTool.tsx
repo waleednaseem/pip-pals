@@ -381,7 +381,7 @@ export default function SignTool() {
                 type="number"
                 min={1}
                 max={pageCount}
-                className="w-20 rounded-lg border border-zinc-300 px-2 py-1.5"
+                className="w-20 rounded-lg border border-[var(--gray-border)] px-2 py-1.5"
                 value={pageNumber}
                 onChange={(e) => setPageNumber(Number(e.target.value) || 1)}
               />
@@ -393,8 +393,8 @@ export default function SignTool() {
               disabled={!pdfBytes}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${
                 placeMode
-                  ? "bg-teal-800 text-white"
-                  : "border border-zinc-300 text-zinc-800 hover:border-teal-700"
+                  ? "bg-[var(--brand)] text-white"
+                  : "border border-[var(--gray-border)] text-foreground hover:border-[var(--brand)]"
               }`}
             >
               {placeMode ? "Placement on — click PDF" : "Place signature on PDF"}
@@ -436,7 +436,7 @@ export default function SignTool() {
 
           <div
             data-sig-wrap
-            className={`relative w-full max-w-[640px] overflow-auto rounded-xl border border-zinc-300 bg-zinc-100 ${
+            className={`relative w-full max-w-[640px] overflow-auto rounded-xl border border-[var(--gray-border)] bg-[var(--surface-muted)] ${
               placeMode ? "cursor-crosshair ring-2 ring-teal-700/40" : ""
             }`}
             onPointerDown={onPreviewPointerDown}
@@ -446,7 +446,7 @@ export default function SignTool() {
             <canvas ref={previewRef} className="block h-auto w-full max-w-full" />
             {sigBox && (
               <div
-                className="absolute border-2 border-dashed border-teal-700 bg-white/30"
+                className="absolute border-2 border-dashed border-[var(--brand)] bg-[var(--brand-soft)]/40"
                 style={{
                   left: sigBox.x,
                   top: sigBox.y,
@@ -474,7 +474,7 @@ export default function SignTool() {
                       type="button"
                       data-handle={h}
                       aria-label={`Resize ${h}`}
-                      className={`absolute z-10 h-3.5 w-3.5 rounded-sm border-2 border-teal-800 bg-white shadow ${handleStyle[h]}`}
+                      className={`absolute z-10 h-3.5 w-3.5 rounded-sm border-2 border-[var(--brand)] bg-[var(--surface)] shadow ${handleStyle[h]}`}
                       onPointerDown={(e) => {
                         if (!sigBox) return;
                         startInteraction(e, h, sigBox);
@@ -493,7 +493,7 @@ export default function SignTool() {
           ref={drawRef}
           width={400}
           height={120}
-          className="w-full max-w-md touch-none rounded-lg border border-zinc-300 bg-white"
+          className="w-full max-w-md touch-none rounded-lg border border-[var(--gray-border)] bg-[var(--surface)]"
           onPointerDown={(e) => {
             drawing.current = true;
             const ctx = drawRef.current?.getContext("2d");
@@ -541,7 +541,7 @@ export default function SignTool() {
         type="button"
         disabled={busy || !pdfBytes}
         onClick={run}
-        className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60"
+        className="rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-60"
       >
         {busy ? "Signing…" : "Sign & download"}
       </button>

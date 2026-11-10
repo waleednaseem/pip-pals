@@ -89,7 +89,7 @@ function ToolIcon({ tone, arrow }: { tone: MegaLink["tone"]; arrow?: "up" | "dow
     >
       {letter}
       {arrow && (
-        <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-[9px] font-black text-[var(--foreground)] shadow">
+        <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface)] text-[9px] font-black text-foreground shadow">
           {arrow === "down" ? "↓" : "↑"}
         </span>
       )}
@@ -131,7 +131,7 @@ function WaffleIcon() {
 }
 
 const navBtn =
-  "inline-flex items-center whitespace-nowrap px-2.5 py-2 text-[13px] font-bold uppercase tracking-[0.02em] text-[var(--foreground)] transition-colors hover:text-[var(--brand)] group-hover:text-[var(--brand)] group-focus-within:text-[var(--brand)]";
+  "inline-flex items-center whitespace-nowrap px-2.5 py-2 text-[13px] font-bold uppercase tracking-[0.02em] text-foreground transition-colors hover:text-[var(--brand)] group-hover:text-[var(--brand)] group-focus-within:text-[var(--brand)]";
 
 const panel =
   "invisible absolute top-full z-[60] pt-3 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100";
@@ -140,7 +140,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="relative z-30 border-b border-[var(--gray-border)] bg-white">
+    <header className="relative z-30 border-b border-[var(--gray-border)] bg-[var(--surface)]">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 lg:gap-5">
         <Link to="/studio" className="flex shrink-0 items-center gap-2" aria-label="File Studio home">
           <span className="relative flex h-9 w-9 items-center justify-center">
@@ -149,7 +149,7 @@ export default function Header() {
             <span className="absolute inset-[7px] rounded-[3px] border border-white/90" />
           </span>
           <span className="font-heading text-[1.35rem] font-extrabold tracking-tight">
-            <span className="text-[var(--foreground)]">File</span>
+            <span className="text-foreground">File</span>
             <span className="text-[var(--brand)]">Studio</span>
           </span>
         </Link>
@@ -171,8 +171,8 @@ export default function Header() {
               <Chevron />
             </button>
             <div className={`${panel} left-1/2 w-[560px] -translate-x-1/2`}>
-              <div className="relative rounded-2xl border border-[var(--gray-border)] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
-                <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-[var(--gray-border)] bg-white" />
+              <div className="relative rounded-2xl border border-[var(--gray-border)] bg-[var(--surface)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
+                <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-[var(--gray-border)] bg-[var(--surface)]" />
                 <div className="relative grid grid-cols-2 gap-6">
                   <div>
                     <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--gray-muted)]">
@@ -186,7 +186,7 @@ export default function Header() {
                             className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-[var(--brand-soft)]"
                           >
                             <ToolIcon tone={item.tone} arrow={item.arrow} />
-                            <span className="text-[13px] font-bold uppercase tracking-wide text-[var(--foreground)]">
+                            <span className="text-[13px] font-bold uppercase tracking-wide text-foreground">
                               {item.label}
                             </span>
                           </Link>
@@ -206,7 +206,7 @@ export default function Header() {
                             className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-[var(--brand-soft)]"
                           >
                             <ToolIcon tone={item.tone} arrow={item.arrow} />
-                            <span className="text-[13px] font-bold uppercase tracking-wide text-[var(--foreground)]">
+                            <span className="text-[13px] font-bold uppercase tracking-wide text-foreground">
                               {item.label}
                             </span>
                           </Link>
@@ -225,8 +225,8 @@ export default function Header() {
               <Chevron />
             </button>
             <div className={`${panel} left-1/2 w-[640px] -translate-x-1/2`}>
-              <div className="relative rounded-2xl border border-[var(--gray-border)] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
-                <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-[var(--gray-border)] bg-white" />
+              <div className="relative rounded-2xl border border-[var(--gray-border)] bg-[var(--surface)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
+                <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-[var(--gray-border)] bg-[var(--surface)]" />
                 <div className="relative grid grid-cols-3 gap-5">
                   {allToolsGroups.map((group) => (
                     <div key={group.title}>
@@ -238,7 +238,7 @@ export default function Header() {
                           <li key={item.href}>
                             <Link
                               to={item.href}
-                              className="block rounded-lg px-2 py-2 text-[13px] font-semibold text-[var(--foreground)] transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
+                              className="block rounded-lg px-2 py-2 text-[13px] font-semibold text-foreground transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
                             >
                               {item.label}
                             </Link>
@@ -256,7 +256,7 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <Link
             to="/login"
-            className="hidden px-2 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:text-[var(--brand)] sm:inline-flex sm:items-center"
+            className="hidden px-2 py-2 text-sm font-semibold text-foreground transition hover:text-[var(--brand)] sm:inline-flex sm:items-center"
           >
             Login
           </Link>
@@ -270,13 +270,13 @@ export default function Header() {
           <div className="group relative hidden lg:block">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--foreground)] transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] group-hover:bg-[var(--brand-soft)] group-hover:text-[var(--brand)]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-foreground transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] group-hover:bg-[var(--brand-soft)] group-hover:text-[var(--brand)]"
               aria-label="More products"
             >
               <WaffleIcon />
             </button>
             <div className={`${panel} right-0 w-56`}>
-              <div className="rounded-2xl border border-[var(--gray-border)] bg-white p-2 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
+              <div className="rounded-2xl border border-[var(--gray-border)] bg-[var(--surface)] p-2 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
                 {[
                   { label: "Image Tools", href: "/studio/image" },
                   { label: "Text Tools", href: "/studio/text" },
@@ -308,7 +308,7 @@ export default function Header() {
       </div>
 
       {mobileOpen && (
-        <div className="max-h-[80vh] overflow-y-auto border-t border-[var(--gray-border)] bg-white px-4 py-4 lg:hidden">
+        <div className="max-h-[80vh] overflow-y-auto border-t border-[var(--gray-border)] bg-[var(--surface)] px-4 py-4 lg:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-1">
             {[
               { label: "Merge PDF", href: "/studio/pdf/merge" },

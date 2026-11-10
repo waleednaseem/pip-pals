@@ -43,7 +43,7 @@ export default function PageNumbersTool() {
       <label className="block max-w-xs text-sm">
         <span className="mb-1 block font-medium">Position</span>
         <select
-          className="w-full rounded-lg border border-gray-300 px-3 py-2"
+          className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
           value={position}
           onChange={(e) => setPosition(e.target.value as PageNumberPosition)}
         >

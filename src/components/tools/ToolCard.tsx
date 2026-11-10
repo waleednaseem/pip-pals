@@ -41,7 +41,7 @@ export default function ToolCard({
   return (
     <Link
       to={href}
-      className={`group flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--gray-border)] p-5 shadow-[var(--shadow-sm)] transition duration-200 hover:-translate-y-1 hover:border-[rgba(229,50,45,0.28)] hover:shadow-[var(--shadow-md)] ${surfaceClass[family]}`}
+      className={`group flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--gray-border)] p-5 shadow-[var(--shadow-sm)] transition duration-200 hover:-translate-y-1 hover:border-[var(--brand)]/40 hover:shadow-[var(--shadow-md)] ${surfaceClass[family]}`}
     >
       <div className="mb-4 flex items-start justify-between gap-2">
         <div
@@ -50,12 +50,12 @@ export default function ToolCard({
           {icon.slice(0, 3).toUpperCase()}
         </div>
         {badge && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+          <span className="rounded-full bg-[var(--brand-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--brand)]">
             {badge}
           </span>
         )}
       </div>
-      <h3 className="font-heading text-base font-bold text-[var(--foreground)] transition-colors group-hover:text-[var(--brand)]">
+      <h3 className="font-heading text-base font-bold text-foreground transition-colors group-hover:text-[var(--brand)]">
         {title}
       </h3>
       <p className="mt-1.5 flex-1 text-sm leading-relaxed text-[var(--gray-muted)]">

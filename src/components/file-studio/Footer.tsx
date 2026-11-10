@@ -31,7 +31,7 @@ const cols = [
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-[var(--gray-border)] bg-white">
+    <footer className="mt-auto border-t border-[var(--gray-border)] bg-[var(--surface)]">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="font-heading text-xl font-extrabold">
@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
         {cols.map((col) => (
           <div key={col.title}>
-            <p className="font-heading mb-4 text-sm font-bold text-[var(--foreground)]">
+            <p className="font-heading mb-4 text-sm font-bold text-foreground">
               {col.title}
             </p>
             <ul className="space-y-2.5 text-sm text-[var(--gray-muted)]">

@@ -19,7 +19,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
                   {item.label}
                 </Link>
               ) : (
-                <span className={last ? "font-semibold text-[var(--foreground)]" : ""}>
+                <span className={last ? "font-semibold text-foreground" : ""}>
                   {item.label}
                 </span>
               )}

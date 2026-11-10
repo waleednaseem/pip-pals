@@ -35,7 +35,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <div className="rounded-2xl border border-[var(--gray-border)] bg-white p-6 shadow-[var(--shadow-md)] sm:p-8">
+      <div className="rounded-2xl border border-[var(--gray-border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-md)] sm:p-8">
         <h1 className="font-heading text-2xl font-extrabold tracking-tight">
           {isLogin ? "Log in" : "Create your account"}
         </h1>

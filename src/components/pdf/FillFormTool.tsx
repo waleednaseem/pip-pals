@@ -91,7 +91,7 @@ export default function FillFormTool() {
                 />
               ) : field.type === "dropdown" ? (
                 <select
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+                  className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
                   value={values[field.name] ?? ""}
                   onChange={(e) =>
                     setValues((prev) => ({
@@ -109,7 +109,7 @@ export default function FillFormTool() {
                 </select>
               ) : (
                 <input
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+                  className="w-full rounded-lg border border-[var(--gray-border)] px-3 py-2"
                   value={values[field.name] ?? ""}
                   onChange={(e) =>
                     setValues((prev) => ({
@@ -129,7 +129,7 @@ export default function FillFormTool() {
         type="button"
         disabled={busy || !fields.length}
         onClick={run}
-        className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60"
+        className="rounded-lg bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-dark)] disabled:opacity-60"
       >
         {busy ? "Saving…" : "Fill & download"}
       </button>
