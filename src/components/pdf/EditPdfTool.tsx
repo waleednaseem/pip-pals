@@ -1,5 +1,7 @@
 import UploadZone from "@/components/tools/UploadZone";
 import { useFavorites } from "@/context";
+import { cloudSaveFile } from "@/lib/cloudSaveFile";
+import { MAX_IMAGE_BYTES, validateFileSize } from "@/lib/fileLimits";
 import { downloadBytes, fileToBytes } from "@/lib/pdf/download";
 import {
   applyEditsToPdf,
@@ -399,7 +401,14 @@ export default function EditPdfTool() {
         className="hidden"
         onChange={async (e) => {
           const f = e.target.files?.[0];
+          e.target.value = "";
           if (!f) return;
+          const sizeError = validateFileSize(f, MAX_IMAGE_BYTES);
+          if (sizeError) {
+            setError(sizeError);
+            return;
+          }
+          cloudSaveFile(f, { maxBytes: MAX_IMAGE_BYTES, folder: "images" });
           const bytes = await fileToBytes(f);
           const url = URL.createObjectURL(f);
           pendingImage.current = {
@@ -408,7 +417,6 @@ export default function EditPdfTool() {
             type: f.type.includes("png") ? "png" : "jpg",
           };
           setMode("image");
-          e.target.value = "";
         }}
       />
       {mode === "text" && (

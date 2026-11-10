@@ -1,4 +1,6 @@
 import { useFavorites } from "@/context";
+import { cloudSaveFiles } from "@/lib/cloudSaveFile";
+import { MAX_FILE_BYTES, filterValidFiles } from "@/lib/fileLimits";
 import { downloadBytes, fileToBytes } from "@/lib/pdf/download";
 import { mergePdfAndImages, type MergeItem } from "@/lib/pdf/mergePdfImages";
 import { useEffect, useRef, useState } from "react";
@@ -73,8 +75,15 @@ export default function MergePdfImagesTool() {
         className="hidden"
         onChange={(e) => {
           const list = e.target.files ? Array.from(e.target.files) : [];
-          setFiles((prev) => [...prev, ...list]);
           e.target.value = "";
+          const { ok, error: sizeError } = filterValidFiles(list, MAX_FILE_BYTES);
+          if (sizeError) {
+            setError(sizeError);
+            return;
+          }
+          setError(null);
+          setFiles((prev) => [...prev, ...ok]);
+          cloudSaveFiles(ok, { folder: "uploads" });
         }}
       />
       {files.length > 0 && (

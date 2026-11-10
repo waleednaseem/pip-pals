@@ -1,4 +1,6 @@
 import { useFavorites } from "@/context";
+import { cloudSaveFiles } from "@/lib/cloudSaveFile";
+import { MAX_IMAGE_BYTES, filterValidFiles } from "@/lib/fileLimits";
 import { downloadBytes, fileToBytes } from "@/lib/pdf/download";
 import { imagesToPdf } from "@/lib/pdf/jpgToPdf";
 import { useEffect, useRef, useState } from "react";
@@ -64,8 +66,15 @@ export default function JpgToPdfTool() {
         className="hidden"
         onChange={(e) => {
           const list = e.target.files ? Array.from(e.target.files) : [];
-          setFiles((prev) => [...prev, ...list]);
           e.target.value = "";
+          const { ok, error: sizeError } = filterValidFiles(list, MAX_IMAGE_BYTES);
+          if (sizeError) {
+            setError(sizeError);
+            return;
+          }
+          setError(null);
+          setFiles((prev) => [...prev, ...ok]);
+          cloudSaveFiles(ok, { maxBytes: MAX_IMAGE_BYTES, folder: "images" });
         }}
       />
       {files.length > 0 && (

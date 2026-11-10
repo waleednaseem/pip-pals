@@ -1,5 +1,6 @@
 import { useFavorites } from "@/context";
 import { downloadBlob } from "@/lib/downloadBlob";
+import { cloudSaveFile, cloudSaveFiles } from "@/lib/cloudSaveFile";
 import {
   MAX_ZIP_BYTES,
   filterValidFiles,
@@ -113,6 +114,7 @@ export default function ZipToolClient({ tool }: { tool: ZipToolDef }) {
             }
             setError(null);
             setFiles((prev) => [...prev, ...ok]);
+            cloudSaveFiles(ok, { maxBytes: MAX_ZIP_BYTES, folder: "zip" });
             return;
           }
           const next = list[0] || null;
@@ -128,6 +130,7 @@ export default function ZipToolClient({ tool }: { tool: ZipToolDef }) {
           }
           setError(null);
           setZipFile(next);
+          cloudSaveFile(next, { maxBytes: MAX_ZIP_BYTES, folder: "zip" });
         }}
       />
 

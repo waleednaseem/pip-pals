@@ -1,4 +1,6 @@
 import { useFavorites } from "@/context";
+import { cloudSaveFiles } from "@/lib/cloudSaveFile";
+import { MAX_IMAGE_BYTES, filterValidFiles } from "@/lib/fileLimits";
 import { downloadBytes } from "@/lib/pdf/download";
 import { imagesFilesToPdf } from "@/lib/pdf/officeConvert";
 import { useEffect, useRef, useState } from "react";
@@ -132,8 +134,16 @@ export default function ScanToPdfTool() {
           className="hidden"
           onChange={(e) => {
             const list = Array.from(e.target.files || []);
-            if (list.length) setShots((s) => [...s, ...list]);
             e.target.value = "";
+            const { ok, error: sizeError } = filterValidFiles(list, MAX_IMAGE_BYTES);
+            if (sizeError) {
+              setError(sizeError);
+              return;
+            }
+            if (!ok.length) return;
+            setError(null);
+            setShots((s) => [...s, ...ok]);
+            cloudSaveFiles(ok, { maxBytes: MAX_IMAGE_BYTES, folder: "scans" });
           }}
         />
       </div>

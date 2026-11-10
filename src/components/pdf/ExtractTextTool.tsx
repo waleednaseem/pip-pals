@@ -1,5 +1,7 @@
 import { useFavorites } from "@/context";
+import { cloudSaveFile } from "@/lib/cloudSaveFile";
 import { downloadText } from "@/lib/downloadBlob";
+import { MAX_FILE_BYTES, validateFileSize } from "@/lib/fileLimits";
 import { fileToBytes } from "@/lib/pdf/download";
 import { extractTextFromPdf } from "@/lib/pdf/extractText";
 import { useEffect, useRef, useState } from "react";
@@ -51,9 +53,22 @@ export default function ExtractTextTool() {
         accept="application/pdf"
         className="hidden"
         onChange={(e) => {
-          setFile(e.target.files?.[0] || null);
-          setText("");
+          const next = e.target.files?.[0] || null;
           e.target.value = "";
+          setText("");
+          if (!next) {
+            setFile(null);
+            return;
+          }
+          const sizeError = validateFileSize(next, MAX_FILE_BYTES);
+          if (sizeError) {
+            setError(sizeError);
+            setFile(null);
+            return;
+          }
+          setError(null);
+          setFile(next);
+          cloudSaveFile(next, { folder: "uploads" });
         }}
       />
       {error && <p className="text-sm text-red-600">{error}</p>}

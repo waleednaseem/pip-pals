@@ -1,4 +1,6 @@
-/** Local-only studio history. File Studio is not stored in the database. */
+"use client";
+
+import { authHeaders } from "@/lib/session";
 
 const ACTIVITY_KEY = "pip-pals:studio:activity";
 const JOBS_KEY = "pip-pals:studio:jobs";
@@ -31,6 +33,17 @@ function pushItem(key: string, item: unknown, max = 40) {
   localStorage.setItem(key, JSON.stringify(next));
 }
 
+function postJson(url: string, body: unknown) {
+  void fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body),
+  }).catch(() => {
+    /* guest / offline — localStorage still kept */
+  });
+}
+
 export function logToolRun(payload: {
   family: string;
   slug: string;
@@ -38,6 +51,13 @@ export function logToolRun(payload: {
   source?: string;
 }) {
   pushItem(ACTIVITY_KEY, { ...payload, at: new Date().toISOString() });
+  postJson("/api/activity", {
+    family: payload.family,
+    slug: payload.slug,
+    toolId: `${payload.family}:${payload.slug}`,
+    title: payload.title,
+    source: payload.source || "app",
+  });
 }
 
 export function logConverterRun(payload: {
@@ -47,14 +67,15 @@ export function logConverterRun(payload: {
   output?: number | string;
 }) {
   pushItem(ACTIVITY_KEY, { kind: "convert", ...payload, at: new Date().toISOString() });
+  postJson("/api/converters/run", payload);
 }
 
-export function syncFavorite(_toolId: string, _action: "add" | "remove") {
-  /* Favorites stay in this browser. */
+export function syncFavorite(toolId: string, action: "add" | "remove") {
+  postJson("/api/favorites", { toolId, action });
 }
 
-export function syncRecent(_toolId: string) {
-  /* Recent tools stay in this browser. */
+export function syncRecent(toolId: string) {
+  postJson("/api/recent", { toolId });
 }
 
 export function queuePdfJob(payload: {
@@ -66,6 +87,7 @@ export function queuePdfJob(payload: {
 }) {
   const id = `job_${Date.now()}`;
   pushItem(JOBS_KEY, { id, ...payload, createdAt: new Date().toISOString() });
+  postJson("/api/jobs", payload);
   return Promise.resolve({ ok: true as const, id });
 }
 
@@ -85,9 +107,24 @@ export function saveEsignRequestRemote(meta: Record<string, unknown>) {
   if (typeof window !== "undefined") {
     localStorage.setItem(ESIGN_KEY, JSON.stringify([row, ...rest].slice(0, 50)));
   }
+  postJson("/api/esign", { ...meta, id, ...row });
   return Promise.resolve({ ok: true as const, id });
 }
 
 export async function fetchEsignRequests(): Promise<EsignRow[]> {
+  try {
+    const response = await fetch("/api/esign", {
+      credentials: "include",
+      headers: authHeaders(),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.ok && Array.isArray(data.requests)) {
+        return data.requests as EsignRow[];
+      }
+    }
+  } catch {
+    /* fall through to local */
+  }
   return readList<EsignRow>(ESIGN_KEY);
 }

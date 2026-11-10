@@ -11,6 +11,7 @@ import {
   type ImageFormat,
 } from "@/lib/image/ops";
 import type { ImageToolDef } from "@/lib/image/registry";
+import { cloudSaveFile } from "@/lib/cloudSaveFile";
 import { MAX_IMAGE_BYTES, formatFileSize, validateFileSize } from "@/lib/fileLimits";
 import { useEffect, useRef, useState } from "react";
 
@@ -120,6 +121,7 @@ export default function ImageToolClient({ tool }: { tool: ImageToolDef }) {
           }
           setError(null);
           setFile(next);
+          cloudSaveFile(next, { maxBytes: MAX_IMAGE_BYTES, folder: "images" });
         }}
       />
 

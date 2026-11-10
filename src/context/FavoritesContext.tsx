@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import { logToolRun, syncFavorite, syncRecent } from "@/lib/client/persist";
 import {
   createContext,
@@ -45,17 +46,17 @@ function readList(key: string): string[] {
 }
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { historyReady } = useAuth();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const localFav = readList(FAVORITES_KEY);
-    const localRecent = readList(RECENT_KEY);
-    setFavorites(localFav);
-    setRecent(localRecent);
+    if (!historyReady) return;
+    setFavorites(readList(FAVORITES_KEY));
+    setRecent(readList(RECENT_KEY));
     setHydrated(true);
-  }, []);
+  }, [historyReady]);
 
   useEffect(() => {
     if (!hydrated) return;

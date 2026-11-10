@@ -3,7 +3,8 @@ import { authHeaders } from "@/lib/session";
 const SKIP_KEYS = new Set(["business_ideas_openai_key", "pip-pals-theme", "pip-pals:sid"]);
 
 function skipKey(key: string) {
-  return SKIP_KEYS.has(key) || key.startsWith("pip-pals:studio");
+  // Studio keys (favorites/recent/activity/jobs/esign) now sync via app_state + APIs.
+  return SKIP_KEYS.has(key);
 }
 
 type Pending = { type: "save"; value: string } | { type: "remove" };

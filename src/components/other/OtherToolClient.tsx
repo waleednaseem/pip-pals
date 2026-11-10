@@ -1,5 +1,7 @@
 import { useFavorites } from "@/context";
+import { cloudSaveFile } from "@/lib/cloudSaveFile";
 import { downloadBlob, downloadText } from "@/lib/downloadBlob";
+import { MAX_IMAGE_BYTES, validateFileSize } from "@/lib/fileLimits";
 import { extractPalette } from "@/lib/image/ops";
 import type { OtherToolDef } from "@/lib/other/registry";
 import JsBarcode from "jsbarcode";
@@ -152,8 +154,15 @@ export default function OtherToolClient({ tool }: { tool: OtherToolDef }) {
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) void runPalette(f);
             e.target.value = "";
+            if (!f) return;
+            const sizeError = validateFileSize(f, MAX_IMAGE_BYTES);
+            if (sizeError) {
+              setError(sizeError);
+              return;
+            }
+            cloudSaveFile(f, { maxBytes: MAX_IMAGE_BYTES, folder: "images" });
+            void runPalette(f);
           }}
         />
         {error && <p className="text-sm text-red-600">{error}</p>}

@@ -1,5 +1,7 @@
 import UploadZone from "@/components/tools/UploadZone";
 import { useFavorites } from "@/context";
+import { cloudSaveFile } from "@/lib/cloudSaveFile";
+import { MAX_IMAGE_BYTES, validateFileSize } from "@/lib/fileLimits";
 import { downloadBytes, fileToBytes } from "@/lib/pdf/download";
 import { loadPdfDocument } from "@/lib/pdf/pdfjs";
 import { addSignatureToPdf } from "@/lib/pdf/sign";
@@ -531,7 +533,20 @@ export default function SignTool() {
           type="file"
           accept="image/png,image/jpeg"
           onChange={(e) => {
-            setSigFile(e.target.files?.[0] ?? null);
+            const next = e.target.files?.[0] ?? null;
+            if (!next) {
+              setSigFile(null);
+              return;
+            }
+            const sizeError = validateFileSize(next, MAX_IMAGE_BYTES);
+            if (sizeError) {
+              setError(sizeError);
+              setSigFile(null);
+              return;
+            }
+            setError(null);
+            setSigFile(next);
+            cloudSaveFile(next, { maxBytes: MAX_IMAGE_BYTES, folder: "signatures" });
           }}
         />
       </label>

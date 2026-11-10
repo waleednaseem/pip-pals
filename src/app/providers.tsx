@@ -18,9 +18,9 @@ export function Providers({ children }: { children: ReactNode }) {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <FavoritesProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </FavoritesProvider>
+          <AuthProvider>
+            <FavoritesProvider>{children}</FavoritesProvider>
+          </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
