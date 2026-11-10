@@ -28,6 +28,8 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   requiresPair?: boolean;
+  /** Only shown to the advertising admin account. */
+  adminOnly?: boolean;
 };
 
 export type NavGroup = {
@@ -70,7 +72,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { value: "kanban", label: "Kanban Board", icon: Columns3 },
       { value: "business-ideas", label: "Business Ideas", icon: Lightbulb },
-      { value: "advertising", label: "Advertising", icon: Megaphone },
+      { value: "advertising", label: "Advertising", icon: Megaphone, adminOnly: true },
     ],
   },
   {
@@ -88,10 +90,17 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export const getVisibleNavGroups = (hasPair: boolean): NavGroup[] =>
+export const getVisibleNavGroups = (
+  hasPair: boolean,
+  opts?: { canManageAds?: boolean }
+): NavGroup[] =>
   NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => !item.requiresPair || hasPair),
+    items: group.items.filter((item) => {
+      if (item.requiresPair && !hasPair) return false;
+      if (item.adminOnly && !opts?.canManageAds) return false;
+      return true;
+    }),
   })).filter((group) => group.items.length > 0);
 
 export const getTabLabel = (value: string): string => {

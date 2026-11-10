@@ -40,6 +40,8 @@ import { AdvertisingTab } from "@/components/AdvertisingTab";
 import { AppShell } from "@/components/layout/AppShell";
 import { runRecurringEngine, getNotifications } from "@/utils/family";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { canManageAdvertising } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,6 +54,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 const Index = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [activeTab, setActiveTab] = useState(() => {
     const fromUrl = searchParams.get("tab");
@@ -185,6 +188,13 @@ const Index = () => {
     }
   }, [selectedPair, activeTab]);
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (activeTab === "advertising" && !canManageAdvertising(user?.email)) {
+      setActiveTab(selectedPair ? "calculator" : "canada");
+    }
+  }, [activeTab, authLoading, user?.email, selectedPair]);
+
   const totals = calculateTotals();
 
   return (
@@ -195,6 +205,7 @@ const Index = () => {
       hasHistory={trades.length > 0}
       onNavigate={(tab) => {
         if (tab === "studio") router.push("/studio");
+        else if (tab === "advertising" && !canManageAdvertising(user?.email)) return;
         else setActiveTab(tab);
       }}
       onClearHistory={handleClearHistory}

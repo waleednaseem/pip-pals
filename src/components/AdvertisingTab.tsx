@@ -24,9 +24,13 @@ import {
   toggleAdActive,
 } from "@/utils/ads";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { canManageAdvertising } from "@/lib/access";
 
 export const AdvertisingTab = () => {
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+  const allowed = canManageAdvertising(user?.email);
   const [ads, setAds] = useState<Ad[]>([]);
   const [type, setType] = useState<AdType>("banner");
   const [title, setTitle] = useState("");
@@ -37,8 +41,35 @@ export const AdvertisingTab = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!allowed) return;
     setAds(getAdsData().ads);
-  }, []);
+  }, [allowed]);
+
+  if (loading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          Checking access…
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Megaphone className="h-5 w-5" />
+            Advertising
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          You don&apos;t have access to this section.
+        </CardContent>
+      </Card>
+    );
+  }
 
   const refresh = () => setAds(getAdsData().ads);
 
